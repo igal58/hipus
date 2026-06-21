@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pageTitle">חיפוש כרטיסי טיסה</title>
+<style>
+/* ── ערכות צבעים (dark variants) ── */
+:root{
+  --bg-a:#0f172a;--bg-b:#1e293b;--panel:#1e293b;--panel2:#273449;
+  --accent:#38bdf8;--accent2:#0ea5e9;--text:#e2e8f0;--muted:#94a3b8;
+  --good:#22c55e;--line:#334155;--gold:#fbbf24;
+}
+body.theme-ocean  {--bg-a:#042f2e;--bg-b:#064e3b;--panel:#065f46;--panel2:#047857;--accent:#34d399;--accent2:#10b981;--text:#ecfdf5;--muted:#6ee7b7;--good:#4ade80;--line:#065f46}
+body.theme-sunset {--bg-a:#1c0a00;--bg-b:#3b1204;--panel:#431407;--panel2:#5c1a0a;--accent:#fb923c;--accent2:#f97316;--text:#fff7ed;--muted:#fed7aa;--good:#86efac;--line:#7c2d12}
+body.theme-purple {--bg-a:#1e1b4b;--bg-b:#312e81;--panel:#3730a3;--panel2:#4338ca;--accent:#a78bfa;--accent2:#818cf8;--text:#ede9fe;--muted:#c4b5fd;--good:#86efac;--line:#4338ca}
+body.theme-slate  {--bg-a:#1e293b;--bg-b:#334155;--panel:#334155;--panel2:#475569;--accent:#94a3b8;--accent2:#64748b;--text:#f8fafc;--muted:#cbd5e1;--good:#4ade80;--line:#475569}
+body.theme-rose   {--bg-a:#1a0010;--bg-b:#3b0024;--panel:#4c0030;--panel2:#6b003f;--accent:#f472b6;--accent2:#ec4899;--text:#fdf2f8;--muted:#fbcfe8;--good:#86efac;--line:#6b003f}
+
+/* ── מצב בהיר: דורס רק bg/panel/text, שומר על צבע ה-accent מהערכה ── */
+body.light{
+  --bg-a:#f0f4f8;--bg-b:#e2eaf4;--panel:#ffffff;--panel2:#f1f5fb;
+  --text:#0f172a;--muted:#475569;--line:#dde3ee;
+}
+
+*{box-sizing:border-box;transition:background-color .22s,color .22s,border-color .22s}
+body{margin:0;font-family:"Segoe UI",Tahoma,Arial,sans-serif;
+  background:linear-gradient(160deg,var(--bg-a),var(--bg-b));
+  color:var(--text);min-height:100vh}
+
+header{text-align:center;padding:18px 16px 4px}
+header h1{margin:0;font-size:25px}
+header p{color:var(--muted);margin:4px 0 0;font-size:13px}
+
+/* ── TOOLBAR ── */
+.toolbar{max-width:1020px;margin:8px auto 0;display:flex;align-items:center;
+  gap:10px;flex-wrap:wrap;padding:0 12px;justify-content:space-between}
+.toolbar-left,.toolbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* בחירת שפה */
+.lang-bar{display:flex;gap:3px;background:var(--panel);
+  border:1px solid var(--line);border-radius:20px;padding:3px}
+.lang-btn{background:transparent;border:none;color:var(--muted);
+  border-radius:16px;padding:4px 11px;cursor:pointer;font-size:13px;font-weight:700}
+.lang-btn.active{background:var(--accent);color:#04293f}
+.lang-btn:hover:not(.active){color:var(--text)}
+
+/* מצב כהה/בהיר */
+.theme-toggle{background:var(--panel);border:1px solid var(--line);
+  color:var(--text);border-radius:20px;padding:6px 13px;
+  cursor:pointer;font-size:13px;font-weight:600}
+.theme-toggle:hover{border-color:var(--accent)}
+
+/* ערכת צבעים */
+.palette{display:flex;align-items:center;gap:6px}
+.palette-lbl{font-size:12px;color:var(--muted)}
+.swatch{width:21px;height:21px;border-radius:50%;cursor:pointer;
+  border:2px solid transparent;transition:transform .12s,border-color .12s}
+.swatch:hover,.swatch.active{transform:scale(1.3);border-color:var(--text)}
+.sw-dark  {background:linear-gradient(135deg,#0f172a,#38bdf8)}
+.sw-ocean {background:linear-gradient(135deg,#042f2e,#34d399)}
+.sw-sunset{background:linear-gradient(135deg,#1c0a00,#fb923c)}
+.sw-purple{background:linear-gradient(135deg,#1e1b4b,#a78bfa)}
+.sw-slate {background:linear-gradient(135deg,#1e293b,#94a3b8)}
+.sw-rose  {background:linear-gradient(135deg,#1a0010,#f472b6)}
+
+/* ── SEARCH CARD ── */
+.search-card{max-width:1020px;margin:10px auto;background:var(--panel);
+  border:1px solid var(--line);border-radius:16px;padding:18px 20px;
+  box-shadow:0 8px 32px rgba(0,0,0,.22)}
+.grid{display:grid;gap:13px;grid-template-columns:repeat(auto-fit,minmax(168px,1fr))}
+.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
+.field input,.field select{width:100%;padding:10px 12px;border-radius:10px;
+  border:1px solid var(--line);background:var(--panel2);color:var(--text);
+  font-size:15px;outline:none}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.actions{display:flex;gap:12px;align-items:center;margin-top:13px;flex-wrap:wrap}
+button.search{background:linear-gradient(90deg,var(--accent),var(--accent2));
+  color:#fff;border:0;font-weight:700;font-size:15px;
+  padding:11px 26px;border-radius:10px;cursor:pointer}
+body.light button.search{color:#04293f}
+button.search:hover{filter:brightness(1.1)}
+.rate{color:var(--muted);font-size:13px}
+
+/* ── RESULTS ── */
+.results{max-width:1020px;margin:4px auto 60px;padding:0 8px}
+.results-head{display:flex;justify-content:space-between;align-items:center;
+  margin:12px 4px 0;flex-wrap:wrap;gap:8px}
+.results-head h2{margin:0;font-size:18px}
+
+/* ── CONTROL BAR ── */
+.ctrl-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;
+  background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:9px 13px;margin:8px 4px 12px}
+.ctrl-section{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.ctrl-sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+.ctrl-lbl{font-size:12px;color:var(--muted);white-space:nowrap}
+.ctrl-btn{background:var(--panel2);border:1px solid var(--line);color:var(--text);
+  border-radius:20px;padding:4px 12px;font-size:13px;cursor:pointer;font-weight:600;white-space:nowrap}
+.ctrl-btn.active{background:var(--accent);color:#04293f;border-color:var(--accent)}
+.ctrl-btn:hover:not(.active){border-color:var(--accent)}
+
+/* ── TICKET ── */
+.ticket{display:grid;grid-template-columns:auto 1fr auto auto;gap:14px;
+  align-items:center;background:var(--panel);border:1px solid var(--line);
+  border-radius:14px;padding:13px 16px;margin-bottom:9px;
+  transition:transform .12s,border-color .12s}
+.ticket:hover{transform:translateY(-2px);border-color:var(--accent)}
+.ticket.cheapest{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.airline{display:flex;align-items:center;gap:9px;min-width:100px}
+.logo{width:38px;height:38px;border-radius:9px;display:grid;place-items:center;
+  font-weight:800;color:#fff;font-size:13px}
+.airline-name{font-size:13px;line-height:1.3}
+.route .cities{font-weight:700;font-size:15px}
+.route .meta{color:var(--muted);font-size:12px;margin-top:3px;
+  display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+.stops-pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700}
+.s0{background:#dcfce7;color:#166534}
+.s1{background:#fef9c3;color:#713f12}
+.s2{background:#fee2e2;color:#991b1b}
+body.light .s0{background:#14532d;color:#dcfce7}
+body.light .s1{background:#854d0e;color:#fef9c3}
+body.light .s2{background:#991b1b;color:#fee2e2}
+.badge{font-size:11px;background:var(--gold);color:#3b2c00;
+  padding:2px 8px;border-radius:20px;font-weight:700;margin-inline-start:6px}
+.price{text-align:center}
+.price .ils{font-size:20px;font-weight:800;color:var(--accent)}
+.price .usd{color:var(--muted);font-size:13px;margin-top:2px}
+.buy{background:var(--good);color:#03260f;text-decoration:none;
+  font-weight:700;padding:9px 16px;border-radius:10px;white-space:nowrap;font-size:13px}
+.buy:hover{filter:brightness(1.1)}
+.empty{text-align:center;color:var(--muted);padding:40px;font-size:15px}
+
+/* ── SEARCH SUMMARY ── */
+.search-summary{background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:12px 16px;margin:8px 4px 12px}
+.ss-route{font-size:16px;font-weight:700;color:var(--accent)}
+.ss-sub{font-size:13px;color:var(--muted);margin-top:3px}
+.ss-price{font-size:15px;font-weight:800;color:var(--good);margin-top:7px;min-height:20px}
+
+/* ── ENGINE CARD (clickable link) ── */
+a.engine-card{grid-template-columns:auto 1fr auto auto;text-decoration:none;color:inherit;cursor:pointer}
+a.engine-card:hover{border-color:var(--accent)}
+.card-price{min-width:78px}
+.card-price .usd{font-size:11px}
+
+/* ── AUTOCOMPLETE ── */
+.ac-wrap{position:relative}
+.ac-wrap input{width:100%}
+.ac-drop{position:absolute;top:calc(100% + 4px);inset-inline-start:0;inset-inline-end:0;
+  z-index:999;background:var(--panel2);border:1px solid var(--accent);
+  border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.45);
+  display:none;max-height:260px;overflow-y:auto}
+.ac-drop.open{display:block}
+.ac-item{padding:8px 12px;cursor:pointer;font-size:14px;
+  display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover{background:var(--accent);color:#04293f;font-weight:600}
+.ac-item:hover .ac-city{color:#04293f}
+.ac-iata{font-size:11px;background:rgba(0,0,0,.18);padding:2px 6px;
+  border-radius:6px;font-weight:700;min-width:32px;text-align:center;flex-shrink:0}
+.ac-names{flex:1;display:flex;flex-direction:column;gap:1px}
+.ac-country{font-size:13px;font-weight:600}
+.ac-city{font-size:12px;color:var(--muted)}
+.ac-empty{padding:12px;color:var(--muted);font-size:14px}
+
+@media(max-width:640px){
+  .ticket{grid-template-columns:1fr 1fr;gap:10px}
+  .buy{grid-column:1/-1;text-align:center}
+  .toolbar{justify-content:flex-start}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="hTitle">✈️ חיפוש כרטיסי טיסה</h1>
+  <p id="hSub">השוואת מחירים בשקלים ובדולרים — מיון וסינון בזמן אמת</p>
+</header>
+
+<div class="toolbar">
+  <div class="toolbar-left">
+    <!-- בחירת שפה -->
+    <div class="lang-bar">
+      <button class="lang-btn active" data-lang="he">עב</button>
+      <button class="lang-btn"        data-lang="en">EN</button>
+      <button class="lang-btn"        data-lang="ru">RU</button>
+    </div>
+    <!-- מצב בהיר/כהה -->
+    <button class="theme-toggle" id="lightToggle">☀️ מצב בהיר</button>
+  </div>
+  <div class="toolbar-right">
+    <div class="palette">
+      <span class="palette-lbl" id="paletteLabel">ערכה:</span>
+      <div class="swatch sw-dark   active" data-theme="dark"   title="כחול כהה"></div>
+      <div class="swatch sw-ocean"         data-theme="ocean"  title="ים"></div>
+      <div class="swatch sw-sunset"        data-theme="sunset" title="שקיעה"></div>
+      <div class="swatch sw-purple"        data-theme="purple" title="סגול"></div>
+      <div class="swatch sw-slate"         data-theme="slate"  title="אפור"></div>
+      <div class="swatch sw-rose"          data-theme="rose"   title="ורוד"></div>
+    </div>
+  </div>
+</div>
+
+<section class="search-card">
+  <div class="grid">
+    <div class="field">
+      <label id="lFrom">ארץ יציאה</label>
+      <select id="from"></select>
+    </div>
+    <div class="field">
+      <label id="lTo">ארץ / עיר יעד</label>
+      <div class="ac-wrap">
+        <input id="to" autocomplete="off">
+        <div class="ac-drop" id="acDrop"></div>
+      </div>
+    </div>
+    <div class="field">
+      <label id="lDateOut">תאריך יציאה</label>
+      <input type="text" id="dateOut" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10">
+    </div>
+    <div class="field">
+      <label id="lNights">ימי שהייה</label>
+      <input type="number" id="nights" min="1" max="180" value="7">
+    </div>
+    <div class="field">
+      <label id="lDateRet">תאריך חזרה</label>
+      <input type="text" id="dateReturn" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10">
+    </div>
+  </div>
+  <div class="actions">
+    <button class="search" id="searchBtn">🔍 חפש כרטיסים</button>
+    <span class="rate" id="rateLabel"></span>
+  </div>
+</section>
+
+<section class="results" id="results"></section>
+
+<script>
+/* ══════════════════════════════════════════
+   תרגומים
+══════════════════════════════════════════ */
+const T={
+  he:{
+    dir:"rtl",lang:"he",
+    title:"חיפוש כרטיסי טיסה",
+    sub:"השוואת מחירים בשקלים ובדולרים — מיון וסינון בזמן אמת",
+    palette:"ערכה:",
+    lightBtn:"☀️ מצב בהיר",darkBtn:"🌙 מצב כהה",
+    fromLbl:"ארץ יציאה",toLbl:"ארץ / עיר יעד",
+    toPlh:"🔍 הקלד ארץ, עיר או קוד…",
+    dateOutLbl:"תאריך יציאה",nightsLbl:"ימי שהייה",dateRetLbl:"תאריך חזרה",
+    searchBtn:"🔍 חפש כרטיסים",
+    sortLbl:"מיון:",sortPrice:"💰 מחיר",sortStops:"🛑 עצירות+מחיר",
+    filtLbl:"עצירות:",filtAll:"הכל",filtDirect:"ישיר",filt1:"עצירה 1",filt2:"2+ עצירות",
+    showing:(n,t)=>`מציג ${n} מתוך ${t} כרטיסים`,
+    cheapest:"הזול ביותר",
+    sDirect:"ישיר ✈️",s1:"עצירה 1",s2:(n)=>`${n} עצירות`,
+    buyBtn:"לרכישה ←",
+    noFlt:"אין כרטיסים בסינון הנוכחי — שנה מסנן עצירות",
+    noRes:"לא נמצאו תוצאות",
+    errTo:"בחר ארץ יעד מהרשימה",errSame:"ארץ היציאה והיעד זהות",
+    errDate:"תאריך יציאה לא תקין — מבנה DD/MM/YYYY",
+    rate:(v)=>`שער המרה: 1$ = ${v} ₪`,rateL:(v)=>`שער חי: 1$ = ${v} ₪`,
+    resTitle:"חיפושים חיים אמיתיים",
+    resSub:"בחר אתר כדי לראות מחירים אמיתיים בזמן אמת ולרכוש",
+    routeFor:(o,d,a,b)=>`${o} ← ${d} · ${a} – ${b}`,
+    openLive:"פתח חיפוש חי ←",
+    priceChecking:"בודק מחיר אמיתי…",
+    priceFrom:(p,air,date,approx)=>`💰 ${approx?"בערך מ-":"מ-"}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
+    priceNone:"מחירים חיים יוצגו באתרי החיפוש למטה",
+    lowestLbl:"מהזול שנמצא",approxLbl:"בערך · החודש",
+  },
+  en:{
+    dir:"ltr",lang:"en",
+    title:"Flight Search",
+    sub:"Compare prices in ILS and USD — real-time sort & filter",
+    palette:"Theme:",
+    lightBtn:"☀️ Light",darkBtn:"🌙 Dark",
+    fromLbl:"Departure",toLbl:"Destination",
+    toPlh:"🔍 Type country, city or code…",
+    dateOutLbl:"Departure date",nightsLbl:"Nights",dateRetLbl:"Return date",
+    searchBtn:"🔍 Search flights",
+    sortLbl:"Sort:",sortPrice:"💰 Price",sortStops:"🛑 Stops+price",
+    filtLbl:"Stops:",filtAll:"All",filtDirect:"Direct",filt1:"1 stop",filt2:"2+ stops",
+    showing:(n,t)=>`Showing ${n} of ${t} tickets`,
+    cheapest:"Cheapest",
+    sDirect:"Direct ✈️",s1:"1 stop",s2:(n)=>`${n} stops`,
+    buyBtn:"Buy →",
+    noFlt:"No flights match this filter — try changing stops",
+    noRes:"No results found",
+    errTo:"Please select a destination from the list",errSame:"Origin and destination are the same",
+    errDate:"Invalid departure date — format DD/MM/YYYY",
+    rate:(v)=>`Exchange rate: 1$ = ${v} ₪`,rateL:(v)=>`Live rate: 1$ = ${v} ₪`,
+    resTitle:"Real live searches",
+    resSub:"Pick a site to see real-time prices and book",
+    routeFor:(o,d,a,b)=>`${o} → ${d} · ${a} – ${b}`,
+    openLive:"Open live search →",
+    priceChecking:"Checking live price…",
+    priceFrom:(p,air,date,approx)=>`💰 ${approx?"approx. ":"from "}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
+    priceNone:"Live prices shown on the search sites below",
+    lowestLbl:"lowest found",approxLbl:"approx · month",
+  },
+  ru:{
+    dir:"ltr",lang:"ru",
+    title:"Поиск авиабилетов",
+    sub:"Сравнение цен в шекелях и долларах — сортировка и фильтрация",
+    palette:"Тема:",
+    lightBtn:"☀️ Светлая",darkBtn:"🌙 Тёмная",
+    fromLbl:"Откуда",toLbl:"Куда",
+    toPlh:"🔍 Введите страну, город или код…",
+    dateOutLbl:"Дата вылета",nightsLbl:"Ночей",dateRetLbl:"Дата возврата",
+    searchBtn:"🔍 Найти рейсы",
+    sortLbl:"Сортировка:",sortPrice:"💰 Цена",sortStops:"🛑 Пересадки+цена",
+    filtLbl:"Пересадки:",filtAll:"Все",filtDirect:"Прямой",filt1:"1 пересадка",filt2:"2+ пересадки",
+    showing:(n,t)=>`Показано ${n} из ${t} билетов`,
+    cheapest:"Дешевле всего",
+    sDirect:"Прямой ✈️",s1:"1 пересадка",s2:(n)=>`${n} пересадки`,
+    buyBtn:"Купить →",
+    noFlt:"Нет рейсов по фильтру — измените параметры",
+    noRes:"Ничего не найдено",
+    errTo:"Выберите пункт назначения из списка",errSame:"Откуда и куда совпадают",
+    errDate:"Неверная дата — формат DD/MM/YYYY",
+    rate:(v)=>`Курс: 1$ = ${v} ₪`,rateL:(v)=>`Живой курс: 1$ = ${v} ₪`,
+    resTitle:"Реальный живой поиск",
+    resSub:"Выберите сайт, чтобы увидеть актуальные цены и купить",
+    routeFor:(o,d,a,b)=>`${o} → ${d} · ${a} – ${b}`,
+    openLive:"Открыть живой поиск →",
+    priceChecking:"Проверяю реальную цену…",
+    priceFrom:(p,air,date,approx)=>`💰 ${approx?"около ":"от "}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
+    priceNone:"Актуальные цены — на сайтах поиска ниже",
+    lowestLbl:"мин. найдено",approxLbl:"около · месяц",
+  }
+};
+
+/* ══════════════════════════════════════════
+   מדינות — שלוש שפות
+   c=country, ct=city
+══════════════════════════════════════════ */
+const COUNTRIES=[
+  {code:"IL",iata:"TLV",he:{c:"ישראל",ct:"תל אביב"},en:{c:"Israel",ct:"Tel Aviv"},ru:{c:"Израиль",ct:"Тель-Авив"}},
+  {code:"GB",iata:"LHR",he:{c:"בריטניה",ct:"לונדון"},en:{c:"UK",ct:"London"},ru:{c:"Великобритания",ct:"Лондон"}},
+  {code:"FR",iata:"CDG",he:{c:"צרפת",ct:"פריז"},en:{c:"France",ct:"Paris"},ru:{c:"Франция",ct:"Париж"}},
+  {code:"DE",iata:"BER",he:{c:"גרמניה",ct:"ברלין"},en:{c:"Germany",ct:"Berlin"},ru:{c:"Германия",ct:"Берлин"}},
+  {code:"DE2",iata:"MUC",he:{c:"גרמניה",ct:"מינכן"},en:{c:"Germany",ct:"Munich"},ru:{c:"Германия",ct:"Мюнхен"}},
+  {code:"DE3",iata:"FRA",he:{c:"גרמניה",ct:"פרנקפורט"},en:{c:"Germany",ct:"Frankfurt"},ru:{c:"Германия",ct:"Франкфурт"}},
+  {code:"IT",iata:"FCO",he:{c:"איטליה",ct:"רומא"},en:{c:"Italy",ct:"Rome"},ru:{c:"Италия",ct:"Рим"}},
+  {code:"IT2",iata:"MXP",he:{c:"איטליה",ct:"מילאנו"},en:{c:"Italy",ct:"Milan"},ru:{c:"Италия",ct:"Милан"}},
+  {code:"IT3",iata:"VCE",he:{c:"איטליה",ct:"ונציה"},en:{c:"Italy",ct:"Venice"},ru:{c:"Италия",ct:"Венеция"}},
+  {code:"IT4",iata:"NAP",he:{c:"איטליה",ct:"נאפולי"},en:{c:"Italy",ct:"Naples"},ru:{c:"Италия",ct:"Неаполь"}},
+  {code:"ES",iata:"MAD",he:{c:"ספרד",ct:"מדריד"},en:{c:"Spain",ct:"Madrid"},ru:{c:"Испания",ct:"Мадрид"}},
+  {code:"ES2",iata:"BCN",he:{c:"ספרד",ct:"ברצלונה"},en:{c:"Spain",ct:"Barcelona"},ru:{c:"Испания",ct:"Барселона"}},
+  {code:"ES3",iata:"PMI",he:{c:"ספרד",ct:"מאיורקה"},en:{c:"Spain",ct:"Mallorca"},ru:{c:"Испания",ct:"Майорка"}},
+  {code:"ES4",iata:"AGP",he:{c:"ספרד",ct:"מלגה"},en:{c:"Spain",ct:"Malaga"},ru:{c:"Испания",ct:"Малага"}},
+  {code:"GR",iata:"ATH",he:{c:"יוון",ct:"אתונה"},en:{c:"Greece",ct:"Athens"},ru:{c:"Греция",ct:"Афины"}},
+  {code:"GR2",iata:"SKG",he:{c:"יוון",ct:"תסלוניקי"},en:{c:"Greece",ct:"Thessaloniki"},ru:{c:"Греция",ct:"Салоники"}},
+  {code:"GR3",iata:"HER",he:{c:"יוון",ct:"כרתים"},en:{c:"Greece",ct:"Crete"},ru:{c:"Греция",ct:"Крит"}},
+  {code:"GR4",iata:"RHO",he:{c:"יוון",ct:"רודוס"},en:{c:"Greece",ct:"Rhodes"},ru:{c:"Греция",ct:"Родос"}},
+  {code:"GR5",iata:"CFU",he:{c:"יוון",ct:"קורפו"},en:{c:"Greece",ct:"Corfu"},ru:{c:"Греция",ct:"Корфу"}},
+  {code:"GR6",iata:"JTR",he:{c:"יוון",ct:"סנטוריני"},en:{c:"Greece",ct:"Santorini"},ru:{c:"Греция",ct:"Санторини"}},
+  {code:"GR7",iata:"JMK",he:{c:"יוון",ct:"מיקונוס"},en:{c:"Greece",ct:"Mykonos"},ru:{c:"Греция",ct:"Миконос"}},
+  {code:"GR8",iata:"KGS",he:{c:"יוון",ct:"קוס"},en:{c:"Greece",ct:"Kos"},ru:{c:"Греция",ct:"Кос"}},
+  {code:"TR",iata:"IST",he:{c:"טורקיה",ct:"איסטנבול"},en:{c:"Turkey",ct:"Istanbul"},ru:{c:"Турция",ct:"Стамбул"}},
+  {code:"TR2",iata:"ESB",he:{c:"טורקיה",ct:"אנקרה"},en:{c:"Turkey",ct:"Ankara"},ru:{c:"Турция",ct:"Анкара"}},
+  {code:"TR3",iata:"AYT",he:{c:"טורקיה",ct:"אנטליה"},en:{c:"Turkey",ct:"Antalya"},ru:{c:"Турция",ct:"Анталья"}},
+  {code:"TR4",iata:"BJV",he:{c:"טורקיה",ct:"בודרום"},en:{c:"Turkey",ct:"Bodrum"},ru:{c:"Турция",ct:"Бодрум"}},
+  {code:"TR5",iata:"ADB",he:{c:"טורקיה",ct:"איזמיר"},en:{c:"Turkey",ct:"Izmir"},ru:{c:"Турция",ct:"Измир"}},
+  {code:"PT",iata:"LIS",he:{c:"פורטוגל",ct:"ליסבון"},en:{c:"Portugal",ct:"Lisbon"},ru:{c:"Португалия",ct:"Лиссабон"}},
+  {code:"PT2",iata:"OPO",he:{c:"פורטוגל",ct:"פורטו"},en:{c:"Portugal",ct:"Porto"},ru:{c:"Португалия",ct:"Порту"}},
+  {code:"NL",iata:"AMS",he:{c:"הולנד",ct:"אמסטרדם"},en:{c:"Netherlands",ct:"Amsterdam"},ru:{c:"Нидерланды",ct:"Амстердам"}},
+  {code:"BE",iata:"BRU",he:{c:"בלגיה",ct:"בריסל"},en:{c:"Belgium",ct:"Brussels"},ru:{c:"Бельгия",ct:"Брюссель"}},
+  {code:"CH",iata:"ZRH",he:{c:"שוויץ",ct:"ציריך"},en:{c:"Switzerland",ct:"Zurich"},ru:{c:"Швейцария",ct:"Цюрих"}},
+  {code:"CH2",iata:"GVA",he:{c:"שוויץ",ct:"ז׳נבה"},en:{c:"Switzerland",ct:"Geneva"},ru:{c:"Швейцария",ct:"Женева"}},
+  {code:"AT",iata:"VIE",he:{c:"אוסטריה",ct:"וינה"},en:{c:"Austria",ct:"Vienna"},ru:{c:"Австрия",ct:"Вена"}},
+  {code:"SE",iata:"ARN",he:{c:"שוודיה",ct:"שטוקהולם"},en:{c:"Sweden",ct:"Stockholm"},ru:{c:"Швеция",ct:"Стокгольм"}},
+  {code:"NO",iata:"OSL",he:{c:"נורווגיה",ct:"אוסלו"},en:{c:"Norway",ct:"Oslo"},ru:{c:"Норвегия",ct:"Осло"}},
+  {code:"DK",iata:"CPH",he:{c:"דנמרק",ct:"קופנהגן"},en:{c:"Denmark",ct:"Copenhagen"},ru:{c:"Дания",ct:"Копенгаген"}},
+  {code:"FI",iata:"HEL",he:{c:"פינלנד",ct:"הלסינקי"},en:{c:"Finland",ct:"Helsinki"},ru:{c:"Финляндия",ct:"Хельсинки"}},
+  {code:"PL",iata:"WAW",he:{c:"פולין",ct:"ורשה"},en:{c:"Poland",ct:"Warsaw"},ru:{c:"Польша",ct:"Варшава"}},
+  {code:"PL2",iata:"KRK",he:{c:"פולין",ct:"קרקוב"},en:{c:"Poland",ct:"Krakow"},ru:{c:"Польша",ct:"Краков"}},
+  {code:"CZ",iata:"PRG",he:{c:"צ׳כיה",ct:"פראג"},en:{c:"Czech Republic",ct:"Prague"},ru:{c:"Чехия",ct:"Прага"}},
+  {code:"HU",iata:"BUD",he:{c:"הונגריה",ct:"בודפשט"},en:{c:"Hungary",ct:"Budapest"},ru:{c:"Венгрия",ct:"Будапешт"}},
+  {code:"RO",iata:"OTP",he:{c:"רומניה",ct:"בוקרשט"},en:{c:"Romania",ct:"Bucharest"},ru:{c:"Румыния",ct:"Бухарест"}},
+  {code:"BG",iata:"SOF",he:{c:"בולגריה",ct:"סופיה"},en:{c:"Bulgaria",ct:"Sofia"},ru:{c:"Болгария",ct:"София"}},
+  {code:"HR",iata:"ZAG",he:{c:"קרואטיה",ct:"זגרב"},en:{c:"Croatia",ct:"Zagreb"},ru:{c:"Хорватия",ct:"Загреб"}},
+  {code:"HR2",iata:"DBV",he:{c:"קרואטיה",ct:"דוברובניק"},en:{c:"Croatia",ct:"Dubrovnik"},ru:{c:"Хорватия",ct:"Дубровник"}},
+  {code:"HR3",iata:"SPU",he:{c:"קרואטיה",ct:"ספליט"},en:{c:"Croatia",ct:"Split"},ru:{c:"Хорватия",ct:"Сплит"}},
+  {code:"RS",iata:"BEG",he:{c:"סרביה",ct:"בלגרד"},en:{c:"Serbia",ct:"Belgrade"},ru:{c:"Сербия",ct:"Белград"}},
+  {code:"SK",iata:"BTS",he:{c:"סלובקיה",ct:"ברטיסלבה"},en:{c:"Slovakia",ct:"Bratislava"},ru:{c:"Словакия",ct:"Братислава"}},
+  {code:"SI",iata:"LJU",he:{c:"סלובניה",ct:"לובליאנה"},en:{c:"Slovenia",ct:"Ljubljana"},ru:{c:"Словения",ct:"Любляна"}},
+  {code:"ME",iata:"TGD",he:{c:"מונטנגרו",ct:"פודגוריצה"},en:{c:"Montenegro",ct:"Podgorica"},ru:{c:"Черногория",ct:"Подгорица"}},
+  {code:"AL",iata:"TIA",he:{c:"אלבניה",ct:"טירנה"},en:{c:"Albania",ct:"Tirana"},ru:{c:"Албания",ct:"Тирана"}},
+  {code:"MK",iata:"SKP",he:{c:"מקדוניה",ct:"סקופיה"},en:{c:"North Macedonia",ct:"Skopje"},ru:{c:"Македония",ct:"Скопье"}},
+  {code:"LT",iata:"VNO",he:{c:"ליטא",ct:"וילנה"},en:{c:"Lithuania",ct:"Vilnius"},ru:{c:"Литва",ct:"Вильнюс"}},
+  {code:"LV",iata:"RIX",he:{c:"לטביה",ct:"ריגה"},en:{c:"Latvia",ct:"Riga"},ru:{c:"Латвия",ct:"Рига"}},
+  {code:"EE",iata:"TLL",he:{c:"אסטוניה",ct:"טלין"},en:{c:"Estonia",ct:"Tallinn"},ru:{c:"Эстония",ct:"Таллин"}},
+  {code:"UA",iata:"KBP",he:{c:"אוקראינה",ct:"קייב"},en:{c:"Ukraine",ct:"Kyiv"},ru:{c:"Украина",ct:"Киев"}},
+  {code:"CY",iata:"LCA",he:{c:"קפריסין",ct:"לרנקה"},en:{c:"Cyprus",ct:"Larnaca"},ru:{c:"Кипр",ct:"Ларнака"}},
+  {code:"CY2",iata:"PFO",he:{c:"קפריסין",ct:"פאפוס"},en:{c:"Cyprus",ct:"Paphos"},ru:{c:"Кипр",ct:"Пафос"}},
+  {code:"MT",iata:"MLA",he:{c:"מלטה",ct:"ולטה"},en:{c:"Malta",ct:"Valletta"},ru:{c:"Мальта",ct:"Валлетта"}},
+  {code:"IS",iata:"KEF",he:{c:"איסלנד",ct:"רייקיאוויק"},en:{c:"Iceland",ct:"Reykjavik"},ru:{c:"Исландия",ct:"Рейкьявик"}},
+  {code:"IE",iata:"DUB",he:{c:"אירלנד",ct:"דבלין"},en:{c:"Ireland",ct:"Dublin"},ru:{c:"Ирландия",ct:"Дублин"}},
+  {code:"RU",iata:"SVO",he:{c:"רוסיה",ct:"מוסקבה"},en:{c:"Russia",ct:"Moscow"},ru:{c:"Россия",ct:"Москва"}},
+  {code:"GE",iata:"TBS",he:{c:"גיאורגיה",ct:"טביליסי"},en:{c:"Georgia",ct:"Tbilisi"},ru:{c:"Грузия",ct:"Тбилиси"}},
+  {code:"AM",iata:"EVN",he:{c:"ארמניה",ct:"ירוואן"},en:{c:"Armenia",ct:"Yerevan"},ru:{c:"Армения",ct:"Ереван"}},
+  {code:"AZ",iata:"GYD",he:{c:"אזרבייג׳ן",ct:"באקו"},en:{c:"Azerbaijan",ct:"Baku"},ru:{c:"Азербайджан",ct:"Баку"}},
+  {code:"AE",iata:"DXB",he:{c:"איחוד האמירויות",ct:"דובאי"},en:{c:"UAE",ct:"Dubai"},ru:{c:"ОАЭ",ct:"Дубай"}},
+  {code:"AE2",iata:"AUH",he:{c:"איחוד האמירויות",ct:"אבו דאבי"},en:{c:"UAE",ct:"Abu Dhabi"},ru:{c:"ОАЭ",ct:"Абу-Даби"}},
+  {code:"SA",iata:"RUH",he:{c:"ערב הסעודית",ct:"ריאד"},en:{c:"Saudi Arabia",ct:"Riyadh"},ru:{c:"Саудовская Аравия",ct:"Эр-Рияд"}},
+  {code:"SA2",iata:"JED",he:{c:"ערב הסעודית",ct:"ג׳דה"},en:{c:"Saudi Arabia",ct:"Jeddah"},ru:{c:"Саудовская Аравия",ct:"Джедда"}},
+  {code:"JO",iata:"AMM",he:{c:"ירדן",ct:"עמאן"},en:{c:"Jordan",ct:"Amman"},ru:{c:"Иордания",ct:"Амман"}},
+  {code:"EG",iata:"CAI",he:{c:"מצרים",ct:"קהיר"},en:{c:"Egypt",ct:"Cairo"},ru:{c:"Египет",ct:"Каир"}},
+  {code:"EG2",iata:"SSH",he:{c:"מצרים",ct:"שארם אל-שיח"},en:{c:"Egypt",ct:"Sharm el-Sheikh"},ru:{c:"Египет",ct:"Шарм-эль-Шейх"}},
+  {code:"EG3",iata:"HRG",he:{c:"מצרים",ct:"הורגדה"},en:{c:"Egypt",ct:"Hurghada"},ru:{c:"Египет",ct:"Хургада"}},
+  {code:"MA",iata:"CMN",he:{c:"מרוקו",ct:"קזבלנקה"},en:{c:"Morocco",ct:"Casablanca"},ru:{c:"Марокко",ct:"Касабланка"}},
+  {code:"MA2",iata:"RAK",he:{c:"מרוקו",ct:"מרקש"},en:{c:"Morocco",ct:"Marrakesh"},ru:{c:"Марокко",ct:"Марракеш"}},
+  {code:"TN",iata:"TUN",he:{c:"תוניסיה",ct:"תוניס"},en:{c:"Tunisia",ct:"Tunis"},ru:{c:"Тунис",ct:"Тунис"}},
+  {code:"QA",iata:"DOH",he:{c:"קטאר",ct:"דוחא"},en:{c:"Qatar",ct:"Doha"},ru:{c:"Катар",ct:"Доха"}},
+  {code:"KW",iata:"KWI",he:{c:"כווית",ct:"כווית סיטי"},en:{c:"Kuwait",ct:"Kuwait City"},ru:{c:"Кувейт",ct:"Кувейт"}},
+  {code:"BH",iata:"BAH",he:{c:"בחריין",ct:"מנאמה"},en:{c:"Bahrain",ct:"Manama"},ru:{c:"Бахрейн",ct:"Манама"}},
+  {code:"OM",iata:"MCT",he:{c:"עומאן",ct:"מוסקט"},en:{c:"Oman",ct:"Muscat"},ru:{c:"Оман",ct:"Маскат"}},
+  {code:"TH",iata:"BKK",he:{c:"תאילנד",ct:"בנגקוק"},en:{c:"Thailand",ct:"Bangkok"},ru:{c:"Таиланд",ct:"Бангкок"}},
+  {code:"TH2",iata:"HKT",he:{c:"תאילנד",ct:"פוקט"},en:{c:"Thailand",ct:"Phuket"},ru:{c:"Таиланд",ct:"Пхукет"}},
+  {code:"TH3",iata:"CNX",he:{c:"תאילנד",ct:"צ׳יאנג מאי"},en:{c:"Thailand",ct:"Chiang Mai"},ru:{c:"Таиланд",ct:"Чиангмай"}},
+  {code:"JP",iata:"NRT",he:{c:"יפן",ct:"טוקיו"},en:{c:"Japan",ct:"Tokyo"},ru:{c:"Япония",ct:"Токио"}},
+  {code:"JP2",iata:"KIX",he:{c:"יפן",ct:"אוסקה"},en:{c:"Japan",ct:"Osaka"},ru:{c:"Япония",ct:"Осака"}},
+  {code:"CN",iata:"PEK",he:{c:"סין",ct:"בייג׳ינג"},en:{c:"China",ct:"Beijing"},ru:{c:"Китай",ct:"Пекин"}},
+  {code:"CN2",iata:"PVG",he:{c:"סין",ct:"שנגחאי"},en:{c:"China",ct:"Shanghai"},ru:{c:"Китай",ct:"Шанхай"}},
+  {code:"CN3",iata:"CAN",he:{c:"סין",ct:"גואנגג׳ואו"},en:{c:"China",ct:"Guangzhou"},ru:{c:"Китай",ct:"Гуанчжоу"}},
+  {code:"HK",iata:"HKG",he:{c:"הונג קונג",ct:"הונג קונג"},en:{c:"Hong Kong",ct:"Hong Kong"},ru:{c:"Гонконг",ct:"Гонконг"}},
+  {code:"SG",iata:"SIN",he:{c:"סינגפור",ct:"סינגפור"},en:{c:"Singapore",ct:"Singapore"},ru:{c:"Сингапур",ct:"Сингапур"}},
+  {code:"KR",iata:"ICN",he:{c:"קוריאה הדרומית",ct:"סיאול"},en:{c:"South Korea",ct:"Seoul"},ru:{c:"Южная Корея",ct:"Сеул"}},
+  {code:"IN",iata:"BOM",he:{c:"הודו",ct:"מומבאי"},en:{c:"India",ct:"Mumbai"},ru:{c:"Индия",ct:"Мумбай"}},
+  {code:"IN2",iata:"DEL",he:{c:"הודו",ct:"דלהי"},en:{c:"India",ct:"Delhi"},ru:{c:"Индия",ct:"Дели"}},
+  {code:"IN3",iata:"BLR",he:{c:"הודו",ct:"בנגלור"},en:{c:"India",ct:"Bangalore"},ru:{c:"Индия",ct:"Бангалор"}},
+  {code:"IN4",iata:"GOI",he:{c:"הודו",ct:"גואה"},en:{c:"India",ct:"Goa"},ru:{c:"Индия",ct:"Гоа"}},
+  {code:"VN",iata:"HAN",he:{c:"וייטנאם",ct:"האנוי"},en:{c:"Vietnam",ct:"Hanoi"},ru:{c:"Вьетнам",ct:"Ханой"}},
+  {code:"VN2",iata:"SGN",he:{c:"וייטנאם",ct:"הו צ׳י מין"},en:{c:"Vietnam",ct:"Ho Chi Minh"},ru:{c:"Вьетнам",ct:"Хошимин"}},
+  {code:"ID",iata:"CGK",he:{c:"אינדונזיה",ct:"ג׳קרטה"},en:{c:"Indonesia",ct:"Jakarta"},ru:{c:"Индонезия",ct:"Джакарта"}},
+  {code:"ID2",iata:"DPS",he:{c:"אינדונזיה",ct:"באלי"},en:{c:"Indonesia",ct:"Bali"},ru:{c:"Индонезия",ct:"Бали"}},
+  {code:"MY",iata:"KUL",he:{c:"מלזיה",ct:"קואלה לומפור"},en:{c:"Malaysia",ct:"Kuala Lumpur"},ru:{c:"Малайзия",ct:"Куала-Лумпур"}},
+  {code:"PH",iata:"MNL",he:{c:"פיליפינים",ct:"מנילה"},en:{c:"Philippines",ct:"Manila"},ru:{c:"Филиппины",ct:"Манила"}},
+  {code:"NP",iata:"KTM",he:{c:"נפאל",ct:"קטמנדו"},en:{c:"Nepal",ct:"Kathmandu"},ru:{c:"Непал",ct:"Катманду"}},
+  {code:"LK",iata:"CMB",he:{c:"סרי לנקה",ct:"קולומבו"},en:{c:"Sri Lanka",ct:"Colombo"},ru:{c:"Шри-Ланка",ct:"Коломбо"}},
+  {code:"MV",iata:"MLE",he:{c:"מלדיוויים",ct:"מאלה"},en:{c:"Maldives",ct:"Malé"},ru:{c:"Мальдивы",ct:"Мале"}},
+  {code:"UZ",iata:"TAS",he:{c:"אוזבקיסטן",ct:"טשקנט"},en:{c:"Uzbekistan",ct:"Tashkent"},ru:{c:"Узбекистан",ct:"Ташкент"}},
+  {code:"KZ",iata:"ALA",he:{c:"קזחסטן",ct:"אלמאטי"},en:{c:"Kazakhstan",ct:"Almaty"},ru:{c:"Казахстан",ct:"Алматы"}},
+  {code:"US",iata:"JFK",he:{c:"ארה\"ב",ct:"ניו יורק"},en:{c:"USA",ct:"New York"},ru:{c:"США",ct:"Нью-Йорк"}},
+  {code:"US2",iata:"LAX",he:{c:"ארה\"ב",ct:"לוס אנג׳לס"},en:{c:"USA",ct:"Los Angeles"},ru:{c:"США",ct:"Лос-Анджелес"}},
+  {code:"US3",iata:"MIA",he:{c:"ארה\"ב",ct:"מיאמי"},en:{c:"USA",ct:"Miami"},ru:{c:"США",ct:"Майами"}},
+  {code:"US4",iata:"ORD",he:{c:"ארה\"ב",ct:"שיקגו"},en:{c:"USA",ct:"Chicago"},ru:{c:"США",ct:"Чикаго"}},
+  {code:"US5",iata:"BOS",he:{c:"ארה\"ב",ct:"בוסטון"},en:{c:"USA",ct:"Boston"},ru:{c:"США",ct:"Бостон"}},
+  {code:"US6",iata:"LAS",he:{c:"ארה\"ב",ct:"לאס וגאס"},en:{c:"USA",ct:"Las Vegas"},ru:{c:"США",ct:"Лас-Вегас"}},
+  {code:"US7",iata:"SFO",he:{c:"ארה\"ב",ct:"סן פרנסיסקו"},en:{c:"USA",ct:"San Francisco"},ru:{c:"США",ct:"Сан-Франциско"}},
+  {code:"CA",iata:"YYZ",he:{c:"קנדה",ct:"טורונטו"},en:{c:"Canada",ct:"Toronto"},ru:{c:"Канада",ct:"Торонто"}},
+  {code:"CA2",iata:"YVR",he:{c:"קנדה",ct:"ונקובר"},en:{c:"Canada",ct:"Vancouver"},ru:{c:"Канада",ct:"Ванкувер"}},
+  {code:"CA3",iata:"YUL",he:{c:"קנדה",ct:"מונטריאול"},en:{c:"Canada",ct:"Montreal"},ru:{c:"Канада",ct:"Монреаль"}},
+  {code:"MX",iata:"MEX",he:{c:"מקסיקו",ct:"מקסיקו סיטי"},en:{c:"Mexico",ct:"Mexico City"},ru:{c:"Мексика",ct:"Мехико"}},
+  {code:"MX2",iata:"CUN",he:{c:"מקסיקו",ct:"קנקון"},en:{c:"Mexico",ct:"Cancun"},ru:{c:"Мексика",ct:"Канкун"}},
+  {code:"BR",iata:"GRU",he:{c:"ברזיל",ct:"סאו פאולו"},en:{c:"Brazil",ct:"São Paulo"},ru:{c:"Бразилия",ct:"Сан-Паулу"}},
+  {code:"BR2",iata:"GIG",he:{c:"ברזיל",ct:"ריו דה ז׳נרו"},en:{c:"Brazil",ct:"Rio de Janeiro"},ru:{c:"Бразилия",ct:"Рио-де-Жанейро"}},
+  {code:"AR",iata:"EZE",he:{c:"ארגנטינה",ct:"בואנוס איירס"},en:{c:"Argentina",ct:"Buenos Aires"},ru:{c:"Аргентина",ct:"Буэнос-Айрес"}},
+  {code:"CL",iata:"SCL",he:{c:"צ׳ילה",ct:"סנטיאגו"},en:{c:"Chile",ct:"Santiago"},ru:{c:"Чили",ct:"Сантьяго"}},
+  {code:"CO",iata:"BOG",he:{c:"קולומביה",ct:"בוגוטה"},en:{c:"Colombia",ct:"Bogotá"},ru:{c:"Колумбия",ct:"Богота"}},
+  {code:"PE",iata:"LIM",he:{c:"פרו",ct:"לימה"},en:{c:"Peru",ct:"Lima"},ru:{c:"Перу",ct:"Лима"}},
+  {code:"CU",iata:"HAV",he:{c:"קובה",ct:"הוואנה"},en:{c:"Cuba",ct:"Havana"},ru:{c:"Куба",ct:"Гавана"}},
+  {code:"DO",iata:"PUJ",he:{c:"הרפובליקה הדומיניקנית",ct:"פונטה קאנה"},en:{c:"Dominican Rep.",ct:"Punta Cana"},ru:{c:"Доминикана",ct:"Пунта-Кана"}},
+  {code:"ZA",iata:"JNB",he:{c:"דרום אפריקה",ct:"יוהנסבורג"},en:{c:"South Africa",ct:"Johannesburg"},ru:{c:"ЮАР",ct:"Йоханнесбург"}},
+  {code:"ZA2",iata:"CPT",he:{c:"דרום אפריקה",ct:"קייפ טאון"},en:{c:"South Africa",ct:"Cape Town"},ru:{c:"ЮАР",ct:"Кейптаун"}},
+  {code:"KE",iata:"NBO",he:{c:"קניה",ct:"נאירובי"},en:{c:"Kenya",ct:"Nairobi"},ru:{c:"Кения",ct:"Найроби"}},
+  {code:"TZ",iata:"DAR",he:{c:"טנזניה",ct:"דאר א-סלאם"},en:{c:"Tanzania",ct:"Dar es Salaam"},ru:{c:"Танзания",ct:"Дар-эс-Салам"}},
+  {code:"TZ2",iata:"ZNZ",he:{c:"טנזניה",ct:"זנזיבר"},en:{c:"Tanzania",ct:"Zanzibar"},ru:{c:"Танзания",ct:"Занзибар"}},
+  {code:"ET",iata:"ADD",he:{c:"אתיופיה",ct:"אדיס אבבה"},en:{c:"Ethiopia",ct:"Addis Ababa"},ru:{c:"Эфиопия",ct:"Аддис-Абеба"}},
+  {code:"NG",iata:"LOS",he:{c:"ניגריה",ct:"לאגוס"},en:{c:"Nigeria",ct:"Lagos"},ru:{c:"Нигерия",ct:"Лагос"}},
+  {code:"GH",iata:"ACC",he:{c:"גאנה",ct:"אקרה"},en:{c:"Ghana",ct:"Accra"},ru:{c:"Гана",ct:"Аккра"}},
+  {code:"SN",iata:"DSS",he:{c:"סנגל",ct:"דאקאר"},en:{c:"Senegal",ct:"Dakar"},ru:{c:"Сенегал",ct:"Дакар"}},
+  {code:"AU",iata:"SYD",he:{c:"אוסטרליה",ct:"סידני"},en:{c:"Australia",ct:"Sydney"},ru:{c:"Австралия",ct:"Сидней"}},
+  {code:"AU2",iata:"MEL",he:{c:"אוסטרליה",ct:"מלבורן"},en:{c:"Australia",ct:"Melbourne"},ru:{c:"Австралия",ct:"Мельбурн"}},
+  {code:"AU3",iata:"BNE",he:{c:"אוסטרליה",ct:"בריזביין"},en:{c:"Australia",ct:"Brisbane"},ru:{c:"Австралия",ct:"Брисбен"}},
+  {code:"NZ",iata:"AKL",he:{c:"ניו זילנד",ct:"אוקלנד"},en:{c:"New Zealand",ct:"Auckland"},ru:{c:"Новая Зеландия",ct:"Окленд"}},
+  /* ── אירופה נוספת ── */
+  {code:"MD",iata:"KIV",he:{c:"מולדובה",ct:"קישינב"},en:{c:"Moldova",ct:"Chișinău"},ru:{c:"Молдова",ct:"Кишинёв"}},
+  {code:"BY",iata:"MSQ",he:{c:"בלארוס",ct:"מינסק"},en:{c:"Belarus",ct:"Minsk"},ru:{c:"Беларусь",ct:"Минск"}},
+  {code:"LU",iata:"LUX",he:{c:"לוקסמבורג",ct:"לוקסמבורג"},en:{c:"Luxembourg",ct:"Luxembourg"},ru:{c:"Люксембург",ct:"Люксембург"}},
+  {code:"BA",iata:"SJJ",he:{c:"בוסניה",ct:"סרייבו"},en:{c:"Bosnia",ct:"Sarajevo"},ru:{c:"Босния",ct:"Сараево"}},
+  {code:"XK",iata:"PRN",he:{c:"קוסובו",ct:"פרישטינה"},en:{c:"Kosovo",ct:"Pristina"},ru:{c:"Косово",ct:"Приштина"}},
+  {code:"GI",iata:"GIB",he:{c:"גיברלטר",ct:"גיברלטר"},en:{c:"Gibraltar",ct:"Gibraltar"},ru:{c:"Гибралтар",ct:"Гибралтар"}},
+  {code:"GR9",iata:"CHQ",he:{c:"יוון",ct:"חאניה"},en:{c:"Greece",ct:"Chania"},ru:{c:"Греция",ct:"Ханья"}},
+  {code:"GB2",iata:"MAN",he:{c:"בריטניה",ct:"מנצ׳סטר"},en:{c:"UK",ct:"Manchester"},ru:{c:"Великобритания",ct:"Манчестер"}},
+  {code:"FR2",iata:"NCE",he:{c:"צרפת",ct:"ניס"},en:{c:"France",ct:"Nice"},ru:{c:"Франция",ct:"Ницца"}},
+  {code:"ES5",iata:"SVQ",he:{c:"ספרד",ct:"סביליה"},en:{c:"Spain",ct:"Seville"},ru:{c:"Испания",ct:"Севилья"}},
+  /* ── אסיה נוספת ── */
+  {code:"LB",iata:"BEY",he:{c:"לבנון",ct:"ביירות"},en:{c:"Lebanon",ct:"Beirut"},ru:{c:"Ливан",ct:"Бейрут"}},
+  {code:"IR",iata:"IKA",he:{c:"איראן",ct:"טהראן"},en:{c:"Iran",ct:"Tehran"},ru:{c:"Иран",ct:"Тегеран"}},
+  {code:"IQ",iata:"BGW",he:{c:"עיראק",ct:"בגדאד"},en:{c:"Iraq",ct:"Baghdad"},ru:{c:"Ирак",ct:"Багдад"}},
+  {code:"PK",iata:"ISB",he:{c:"פקיסטן",ct:"איסלמאבאד"},en:{c:"Pakistan",ct:"Islamabad"},ru:{c:"Пакистан",ct:"Исламабад"}},
+  {code:"PK2",iata:"KHI",he:{c:"פקיסטן",ct:"קראצ׳י"},en:{c:"Pakistan",ct:"Karachi"},ru:{c:"Пакистан",ct:"Карачи"}},
+  {code:"BD",iata:"DAC",he:{c:"בנגלדש",ct:"דאקה"},en:{c:"Bangladesh",ct:"Dhaka"},ru:{c:"Бангладеш",ct:"Дакка"}},
+  {code:"MM",iata:"RGN",he:{c:"מיאנמר",ct:"יאנגון"},en:{c:"Myanmar",ct:"Yangon"},ru:{c:"Мьянма",ct:"Янгон"}},
+  {code:"KH",iata:"PNH",he:{c:"קמבודיה",ct:"פנום פן"},en:{c:"Cambodia",ct:"Phnom Penh"},ru:{c:"Камбоджа",ct:"Пномпень"}},
+  {code:"LA",iata:"VTE",he:{c:"לאוס",ct:"ויינטיאן"},en:{c:"Laos",ct:"Vientiane"},ru:{c:"Лаос",ct:"Вьентьян"}},
+  {code:"TW",iata:"TPE",he:{c:"טייוואן",ct:"טאיפיי"},en:{c:"Taiwan",ct:"Taipei"},ru:{c:"Тайвань",ct:"Тайбэй"}},
+  {code:"MN",iata:"ULN",he:{c:"מונגוליה",ct:"אולן באטור"},en:{c:"Mongolia",ct:"Ulaanbaatar"},ru:{c:"Монголия",ct:"Улан-Батор"}},
+  {code:"KG",iata:"FRU",he:{c:"קירגיזסטן",ct:"בישקק"},en:{c:"Kyrgyzstan",ct:"Bishkek"},ru:{c:"Киргизия",ct:"Бишкек"}},
+  {code:"TJ",iata:"DYU",he:{c:"טג׳יקיסטן",ct:"דושנבה"},en:{c:"Tajikistan",ct:"Dushanbe"},ru:{c:"Таджикистан",ct:"Душанбе"}},
+  {code:"TM",iata:"ASB",he:{c:"טורקמניסטן",ct:"אשגבט"},en:{c:"Turkmenistan",ct:"Ashgabat"},ru:{c:"Туркменистан",ct:"Ашхабад"}},
+  {code:"BN",iata:"BWN",he:{c:"ברוניי",ct:"בנדר סרי בגוואן"},en:{c:"Brunei",ct:"Bandar Seri Begawan"},ru:{c:"Бруней",ct:"Бандар-Сери-Бегаван"}},
+  {code:"BT",iata:"PBH",he:{c:"בהוטן",ct:"פארו"},en:{c:"Bhutan",ct:"Paro"},ru:{c:"Бутан",ct:"Паро"}},
+  {code:"TH4",iata:"USM",he:{c:"תאילנד",ct:"קו סמוי"},en:{c:"Thailand",ct:"Koh Samui"},ru:{c:"Таиланд",ct:"Самуи"}},
+  {code:"ID3",iata:"SUB",he:{c:"אינדונזיה",ct:"סורבאיה"},en:{c:"Indonesia",ct:"Surabaya"},ru:{c:"Индонезия",ct:"Сурабая"}},
+  /* ── הרחבה: ערים נוספות אירופה ── */
+  {code:"RU2",iata:"LED",he:{c:"רוסיה",ct:"סנט פטרבורג"},en:{c:"Russia",ct:"Saint Petersburg"},ru:{c:"Россия",ct:"Санкт-Петербург"}},
+  {code:"RU3",iata:"AER",he:{c:"רוסיה",ct:"סוצ׳י"},en:{c:"Russia",ct:"Sochi"},ru:{c:"Россия",ct:"Сочи"}},
+  {code:"RU4",iata:"KZN",he:{c:"רוסיה",ct:"קאזאן"},en:{c:"Russia",ct:"Kazan"},ru:{c:"Россия",ct:"Казань"}},
+  {code:"RU5",iata:"SVX",he:{c:"רוסיה",ct:"יקטרינבורג"},en:{c:"Russia",ct:"Yekaterinburg"},ru:{c:"Россия",ct:"Екатеринбург"}},
+  {code:"DE4",iata:"HAM",he:{c:"גרמניה",ct:"המבורג"},en:{c:"Germany",ct:"Hamburg"},ru:{c:"Германия",ct:"Гамбург"}},
+  {code:"DE5",iata:"DUS",he:{c:"גרמניה",ct:"דיסלדורף"},en:{c:"Germany",ct:"Düsseldorf"},ru:{c:"Германия",ct:"Дюссельдорф"}},
+  {code:"DE6",iata:"CGN",he:{c:"גרמניה",ct:"קלן"},en:{c:"Germany",ct:"Cologne"},ru:{c:"Германия",ct:"Кёльн"}},
+  {code:"DE7",iata:"STR",he:{c:"גרמניה",ct:"שטוטגרט"},en:{c:"Germany",ct:"Stuttgart"},ru:{c:"Германия",ct:"Штутгарт"}},
+  {code:"FR3",iata:"LYS",he:{c:"צרפת",ct:"ליון"},en:{c:"France",ct:"Lyon"},ru:{c:"Франция",ct:"Лион"}},
+  {code:"FR4",iata:"MRS",he:{c:"צרפת",ct:"מרסיי"},en:{c:"France",ct:"Marseille"},ru:{c:"Франция",ct:"Марсель"}},
+  {code:"FR5",iata:"TLS",he:{c:"צרפת",ct:"טולוז"},en:{c:"France",ct:"Toulouse"},ru:{c:"Франция",ct:"Тулуза"}},
+  {code:"FR6",iata:"BOD",he:{c:"צרפת",ct:"בורדו"},en:{c:"France",ct:"Bordeaux"},ru:{c:"Франция",ct:"Бордо"}},
+  {code:"IT5",iata:"BLQ",he:{c:"איטליה",ct:"בולוניה"},en:{c:"Italy",ct:"Bologna"},ru:{c:"Италия",ct:"Болонья"}},
+  {code:"IT6",iata:"FLR",he:{c:"איטליה",ct:"פירנצה"},en:{c:"Italy",ct:"Florence"},ru:{c:"Италия",ct:"Флоренция"}},
+  {code:"IT7",iata:"TRN",he:{c:"איטליה",ct:"טורינו"},en:{c:"Italy",ct:"Turin"},ru:{c:"Италия",ct:"Турин"}},
+  {code:"IT8",iata:"CTA",he:{c:"איטליה",ct:"קטניה"},en:{c:"Italy",ct:"Catania"},ru:{c:"Италия",ct:"Катания"}},
+  {code:"IT9",iata:"BRI",he:{c:"איטליה",ct:"ברי"},en:{c:"Italy",ct:"Bari"},ru:{c:"Италия",ct:"Бари"}},
+  {code:"IT10",iata:"PSA",he:{c:"איטליה",ct:"פיזה"},en:{c:"Italy",ct:"Pisa"},ru:{c:"Италия",ct:"Пиза"}},
+  {code:"ES6",iata:"VLC",he:{c:"ספרד",ct:"ולנסיה"},en:{c:"Spain",ct:"Valencia"},ru:{c:"Испания",ct:"Валенсия"}},
+  {code:"ES7",iata:"BIO",he:{c:"ספרד",ct:"בילבאו"},en:{c:"Spain",ct:"Bilbao"},ru:{c:"Испания",ct:"Бильбао"}},
+  {code:"ES8",iata:"ALC",he:{c:"ספרד",ct:"אליקנטה"},en:{c:"Spain",ct:"Alicante"},ru:{c:"Испания",ct:"Аликанте"}},
+  {code:"ES9",iata:"TFS",he:{c:"ספרד",ct:"טנריף"},en:{c:"Spain",ct:"Tenerife"},ru:{c:"Испания",ct:"Тенерифе"}},
+  {code:"GB3",iata:"EDI",he:{c:"בריטניה",ct:"אדינבורו"},en:{c:"UK",ct:"Edinburgh"},ru:{c:"Великобритания",ct:"Эдинбург"}},
+  {code:"GB4",iata:"GLA",he:{c:"בריטניה",ct:"גלזגו"},en:{c:"UK",ct:"Glasgow"},ru:{c:"Великобритания",ct:"Глазго"}},
+  {code:"GB5",iata:"BHX",he:{c:"בריטניה",ct:"ברמינגהם"},en:{c:"UK",ct:"Birmingham"},ru:{c:"Великобритания",ct:"Бирмингем"}},
+  {code:"GB6",iata:"BRS",he:{c:"בריטניה",ct:"בריסטול"},en:{c:"UK",ct:"Bristol"},ru:{c:"Великобритания",ct:"Бристоль"}},
+  {code:"PL3",iata:"GDN",he:{c:"פולין",ct:"גדנסק"},en:{c:"Poland",ct:"Gdansk"},ru:{c:"Польша",ct:"Гданьск"}},
+  {code:"PL4",iata:"WRO",he:{c:"פולין",ct:"ורוצלב"},en:{c:"Poland",ct:"Wroclaw"},ru:{c:"Польша",ct:"Вроцлав"}},
+  {code:"PL5",iata:"POZ",he:{c:"פולין",ct:"פוזנן"},en:{c:"Poland",ct:"Poznan"},ru:{c:"Польша",ct:"Познань"}},
+  {code:"PL6",iata:"KTW",he:{c:"פולין",ct:"קטוביץ"},en:{c:"Poland",ct:"Katowice"},ru:{c:"Польша",ct:"Катовице"}},
+  {code:"GR10",iata:"ZTH",he:{c:"יוון",ct:"זאקינתוס"},en:{c:"Greece",ct:"Zakynthos"},ru:{c:"Греция",ct:"Закинф"}},
+  {code:"GR11",iata:"KLX",he:{c:"יוון",ct:"קלמטה"},en:{c:"Greece",ct:"Kalamata"},ru:{c:"Греция",ct:"Каламата"}},
+  {code:"GR12",iata:"KVA",he:{c:"יוון",ct:"קוואלה"},en:{c:"Greece",ct:"Kavala"},ru:{c:"Греция",ct:"Кавала"}},
+  {code:"SE2",iata:"GOT",he:{c:"שוודיה",ct:"גטבורג"},en:{c:"Sweden",ct:"Gothenburg"},ru:{c:"Швеция",ct:"Гётеборг"}},
+  {code:"NO2",iata:"BGO",he:{c:"נורווגיה",ct:"ברגן"},en:{c:"Norway",ct:"Bergen"},ru:{c:"Норвегия",ct:"Берген"}},
+  {code:"NO3",iata:"TOS",he:{c:"נורווגיה",ct:"טרומסה"},en:{c:"Norway",ct:"Tromsø"},ru:{c:"Норвегия",ct:"Тромсё"}},
+  {code:"PT3",iata:"FAO",he:{c:"פורטוגל",ct:"פארו"},en:{c:"Portugal",ct:"Faro"},ru:{c:"Португалия",ct:"Фару"}},
+  {code:"RO2",iata:"CLJ",he:{c:"רומניה",ct:"קלוז׳"},en:{c:"Romania",ct:"Cluj-Napoca"},ru:{c:"Румыния",ct:"Клуж-Напока"}},
+  {code:"AT2",iata:"SZG",he:{c:"אוסטריה",ct:"זלצבורג"},en:{c:"Austria",ct:"Salzburg"},ru:{c:"Австрия",ct:"Зальцбург"}},
+  {code:"HR4",iata:"ZAD",he:{c:"קרואטיה",ct:"זאדאר"},en:{c:"Croatia",ct:"Zadar"},ru:{c:"Хорватия",ct:"Задар"}},
+  /* ── הרחבה: ערים נוספות אסיה ── */
+  {code:"JP3",iata:"CTS",he:{c:"יפן",ct:"סאפורו"},en:{c:"Japan",ct:"Sapporo"},ru:{c:"Япония",ct:"Саппоро"}},
+  {code:"JP4",iata:"FUK",he:{c:"יפן",ct:"פוקואוקה"},en:{c:"Japan",ct:"Fukuoka"},ru:{c:"Япония",ct:"Фукуока"}},
+  {code:"JP5",iata:"NGO",he:{c:"יפן",ct:"נגויה"},en:{c:"Japan",ct:"Nagoya"},ru:{c:"Япония",ct:"Нагоя"}},
+  {code:"JP6",iata:"OKA",he:{c:"יפן",ct:"אוקינאווה"},en:{c:"Japan",ct:"Okinawa"},ru:{c:"Япония",ct:"Окинава"}},
+  {code:"CN4",iata:"CTU",he:{c:"סין",ct:"צ׳נגדו"},en:{c:"China",ct:"Chengdu"},ru:{c:"Китай",ct:"Чэнду"}},
+  {code:"CN5",iata:"SZX",he:{c:"סין",ct:"שנזן"},en:{c:"China",ct:"Shenzhen"},ru:{c:"Китай",ct:"Шэньчжэнь"}},
+  {code:"CN6",iata:"XIY",he:{c:"סין",ct:"שיאן"},en:{c:"China",ct:"Xi'an"},ru:{c:"Китай",ct:"Сиань"}},
+  {code:"CN7",iata:"HGH",he:{c:"סין",ct:"האנגג׳ואו"},en:{c:"China",ct:"Hangzhou"},ru:{c:"Китай",ct:"Ханчжоу"}},
+  {code:"CN8",iata:"CKG",he:{c:"סין",ct:"צ׳ונגצ׳ינג"},en:{c:"China",ct:"Chongqing"},ru:{c:"Китай",ct:"Чунцин"}},
+  {code:"IN5",iata:"MAA",he:{c:"הודו",ct:"צ׳נאי"},en:{c:"India",ct:"Chennai"},ru:{c:"Индия",ct:"Ченнаи"}},
+  {code:"IN6",iata:"HYD",he:{c:"הודו",ct:"היידראבאד"},en:{c:"India",ct:"Hyderabad"},ru:{c:"Индия",ct:"Хайдарабад"}},
+  {code:"IN7",iata:"CCU",he:{c:"הודו",ct:"קולקטה"},en:{c:"India",ct:"Kolkata"},ru:{c:"Индия",ct:"Калькутта"}},
+  {code:"IN8",iata:"COK",he:{c:"הודו",ct:"קוצ׳י"},en:{c:"India",ct:"Kochi"},ru:{c:"Индия",ct:"Кочи"}},
+  {code:"IN9",iata:"AMD",he:{c:"הודו",ct:"אחמדאבאד"},en:{c:"India",ct:"Ahmedabad"},ru:{c:"Индия",ct:"Ахмадабад"}},
+  {code:"TH5",iata:"KBV",he:{c:"תאילנד",ct:"קראבי"},en:{c:"Thailand",ct:"Krabi"},ru:{c:"Таиланд",ct:"Краби"}},
+  {code:"TH6",iata:"UTP",he:{c:"תאילנד",ct:"פטאיה"},en:{c:"Thailand",ct:"Pattaya"},ru:{c:"Таиланд",ct:"Паттайя"}},
+  {code:"VN3",iata:"DAD",he:{c:"וייטנאם",ct:"דה נאנג"},en:{c:"Vietnam",ct:"Da Nang"},ru:{c:"Вьетнам",ct:"Дананг"}},
+  {code:"KR2",iata:"PUS",he:{c:"קוריאה הדרומית",ct:"בוסאן"},en:{c:"South Korea",ct:"Busan"},ru:{c:"Южная Корея",ct:"Пусан"}},
+  {code:"TR6",iata:"DLM",he:{c:"טורקיה",ct:"דלמאן"},en:{c:"Turkey",ct:"Dalaman"},ru:{c:"Турция",ct:"Даламан"}},
+  {code:"TR7",iata:"TZX",he:{c:"טורקיה",ct:"טרבזון"},en:{c:"Turkey",ct:"Trabzon"},ru:{c:"Турция",ct:"Трабзон"}},
+  {code:"GE2",iata:"BUS",he:{c:"גיאורגיה",ct:"בטומי"},en:{c:"Georgia",ct:"Batumi"},ru:{c:"Грузия",ct:"Батуми"}},
+  {code:"GE3",iata:"KUT",he:{c:"גיאורגיה",ct:"קוטאיסי"},en:{c:"Georgia",ct:"Kutaisi"},ru:{c:"Грузия",ct:"Кутаиси"}},
+  {code:"ID4",iata:"JOG",he:{c:"אינדונזיה",ct:"יוגיאקרטה"},en:{c:"Indonesia",ct:"Yogyakarta"},ru:{c:"Индонезия",ct:"Джокьякарта"}},
+  {code:"ID5",iata:"LOP",he:{c:"אינדונזיה",ct:"לומבוק"},en:{c:"Indonesia",ct:"Lombok"},ru:{c:"Индонезия",ct:"Ломбок"}},
+  {code:"PH2",iata:"CEB",he:{c:"פיליפינים",ct:"סבו"},en:{c:"Philippines",ct:"Cebu"},ru:{c:"Филиппины",ct:"Себу"}},
+];
+
+const AIRLINES=[
+  {name:"אל על",     code:"LY",color:"#1d6fa4",site:"https://www.elal.com"},
+  {name:"Wizz Air",  code:"W6",color:"#8b00c9",site:"https://wizzair.com"},
+  {name:"Ryanair",   code:"FR",color:"#0050a0",site:"https://www.ryanair.com"},
+  {name:"Lufthansa", code:"LH",color:"#05164d",site:"https://www.lufthansa.com"},
+  {name:"Turkish",   code:"TK",color:"#c8102e",site:"https://www.turkishairlines.com"},
+  {name:"Emirates",  code:"EK",color:"#c00",   site:"https://www.emirates.com"},
+  {name:"Air France",code:"AF",color:"#002157",site:"https://www.airfrance.com"},
+];
+
+/* ══════════════════════════════════════════
+   מצב גלובלי
+══════════════════════════════════════════ */
+let currentLang   = "he";
+let currentTheme  = "dark";
+let isLight       = false;
+let lastSearch    = null;
+let selectedToCode= "GR";
+let USD_TO_ILS    = 3.72;
+/* כשהדף מוגש ע"י server.js (מקומי או בענן) — אותו origin, נתיב יחסי.
+   כשפותחים את הקובץ ישירות (file://) — נופלים לשרת המקומי. */
+const PROXY_BASE  = location.protocol.startsWith("http") ? "" : "http://127.0.0.1:8787";
+
+/* ── helper: שם ארץ/עיר בשפה הנוכחית ── */
+function cLng(c){ return c[currentLang]||c.he; }
+
+/* ══════════════════════════════════════════
+   שפה
+══════════════════════════════════════════ */
+function applyLang(lang){
+  currentLang=lang;
+  const t=T[lang];
+  document.documentElement.lang=t.lang;
+  document.documentElement.dir =t.dir;
+  document.getElementById("pageTitle").textContent=t.title;
+  document.getElementById("hTitle").textContent="✈️ "+t.title;
+  document.getElementById("hSub").textContent=t.sub;
+  document.getElementById("paletteLabel").textContent=t.palette;
+  document.getElementById("lightToggle").textContent=isLight?t.darkBtn:t.lightBtn;
+  document.getElementById("lFrom").textContent=t.fromLbl;
+  document.getElementById("lTo").textContent=t.toLbl;
+  document.getElementById("to").placeholder=t.toPlh;
+  document.getElementById("lDateOut").textContent=t.dateOutLbl;
+  document.getElementById("lNights").textContent=t.nightsLbl;
+  document.getElementById("lDateRet").textContent=t.dateRetLbl;
+  document.getElementById("searchBtn").textContent=t.searchBtn;
+  document.querySelectorAll(".lang-btn").forEach(b=>b.classList.toggle("active",b.dataset.lang===lang));
+  /* עדכון תפריט יציאה */
+  rebuildFromSel();
+  /* עדכון שדה יעד נוכחי */
+  const tc=COUNTRIES.find(c=>c.code===selectedToCode);
+  if(tc){ const n=cLng(tc); document.getElementById("to").value=`${n.c} — ${n.ct}`; }
+  /* עדכון תוצאות */
+  applyView();
+}
+
+document.querySelectorAll(".lang-btn").forEach(b=>
+  b.addEventListener("click",()=>applyLang(b.dataset.lang))
+);
+
+/* ══════════════════════════════════════════
+   ערכות צבעים
+══════════════════════════════════════════ */
+const THEMES=["dark","ocean","sunset","purple","slate","rose"];
+document.querySelectorAll(".swatch").forEach(sw=>
+  sw.addEventListener("click",()=>{ currentTheme=sw.dataset.theme; applyTheme(); })
+);
+document.getElementById("lightToggle").addEventListener("click",()=>{ isLight=!isLight; applyTheme(); });
+
+function applyTheme(){
+  THEMES.forEach(t=>document.body.classList.remove("theme-"+t));
+  document.body.classList.add("theme-"+currentTheme);
+  document.body.classList.toggle("light",isLight);
+  document.getElementById("lightToggle").textContent=isLight?T[currentLang].darkBtn:T[currentLang].lightBtn;
+  document.querySelectorAll(".swatch").forEach(sw=>sw.classList.toggle("active",sw.dataset.theme===currentTheme));
+}
+applyTheme();
+
+/* ══════════════════════════════════════════
+   תפריט יציאה
+══════════════════════════════════════════ */
+const fromSel=document.getElementById("from");
+function rebuildFromSel(){
+  const prev=fromSel.value||"IL";
+  fromSel.innerHTML="";
+  COUNTRIES.forEach(c=>{
+    const n=cLng(c);
+    fromSel.add(new Option(`${n.c} (${c.iata})`,c.code));
+  });
+  fromSel.value=prev;
+}
+rebuildFromSel();
+fromSel.value="IL";
+
+/* ══════════════════════════════════════════
+   Autocomplete יעד
+══════════════════════════════════════════ */
+const toInput=document.getElementById("to");
+const acDrop =document.getElementById("acDrop");
+(()=>{ const n=cLng(COUNTRIES.find(c=>c.code==="GR")); toInput.value=`${n.c} — ${n.ct}`; })();
+
+function renderDrop(list){
+  acDrop.innerHTML=list.length
+    ? list.map(c=>{ const n=cLng(c); return `<div class="ac-item" data-code="${c.code}">
+        <span class="ac-iata">${c.iata}</span>
+        <div class="ac-names">
+          <span class="ac-country">${n.c}</span>
+          <span class="ac-city">${n.ct}</span>
+        </div></div>`; }).join("")
+    : `<div class="ac-empty">${T[currentLang].noRes}</div>`;
+  acDrop.classList.add("open");
+}
+function closeDrop(){ acDrop.classList.remove("open"); }
+
+toInput.addEventListener("input",()=>{
+  const q=toInput.value.trim().toLowerCase();
+  if(!q){ closeDrop(); return; }
+  renderDrop(COUNTRIES.filter(c=>{
+    /* חיפוש בכל שלוש השפות + קוד IATA, ללא תלות בשפת הממשק */
+    const hay=[c.iata,c.code,c.he.c,c.he.ct,c.en.c,c.en.ct,c.ru.c,c.ru.ct]
+      .join(" ").toLowerCase();
+    return hay.includes(q);
+  }));
+});
+toInput.addEventListener("focus",()=>{ if(toInput.value.trim()) toInput.dispatchEvent(new Event("input")); });
+acDrop.addEventListener("mousedown",e=>{
+  const item=e.target.closest(".ac-item");
+  if(!item) return;
+  selectedToCode=item.dataset.code;
+  const n=cLng(COUNTRIES.find(c=>c.code===selectedToCode));
+  toInput.value=`${n.c} — ${n.ct}`;
+  closeDrop();
+});
+document.addEventListener("click",e=>{ if(!e.target.closest(".ac-wrap")) closeDrop(); });
+
+/* ══════════════════════════════════════════
+   תאריכים DD/MM/YYYY
+══════════════════════════════════════════ */
+const pad=n=>String(n).padStart(2,"0");
+const fmtDMY=d=>`${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+const fmtISO=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+function parseDMY(s){
+  const m=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec((s||"").trim());
+  if(!m) return null;
+  const d=new Date(+m[3],+m[2]-1,+m[1]);
+  return isNaN(d)?null:d;
+}
+function maskDate(e){
+  let v=e.target.value.replace(/\D/g,"").slice(0,8);
+  if(v.length>=5) v=v.slice(0,2)+"/"+v.slice(2,4)+"/"+v.slice(4);
+  else if(v.length>=3) v=v.slice(0,2)+"/"+v.slice(2);
+  e.target.value=v;
+}
+const dateOut   =document.getElementById("dateOut");
+const dateReturn=document.getElementById("dateReturn");
+const nights    =document.getElementById("nights");
+[dateOut,dateReturn].forEach(el=>el.addEventListener("input",maskDate));
+function syncRet(){ const dep=parseDMY(dateOut.value),n=Number(nights.value); if(dep&&n>0){const r=new Date(dep);r.setDate(r.getDate()+n);dateReturn.value=fmtDMY(r);} }
+function syncNts(){ const dep=parseDMY(dateOut.value),ret=parseDMY(dateReturn.value); if(dep&&ret){const d=Math.round((ret-dep)/86400000);if(d>0)nights.value=d;} }
+dateOut.addEventListener("change",syncRet);
+nights.addEventListener("input",syncRet);
+dateReturn.addEventListener("change",syncNts);
+dateOut.value=fmtDMY(new Date());
+syncRet();
+
+/* ══════════════════════════════════════════
+   שער המרה חי
+══════════════════════════════════════════ */
+async function loadRate(){
+  try{
+    const r=await fetch("https://api.exchangerate-api.com/v4/latest/USD");
+    const d=await r.json();
+    if(d?.rates?.ILS){
+      USD_TO_ILS=d.rates.ILS;
+      document.getElementById("rateLabel").textContent=T[currentLang].rateL(USD_TO_ILS.toFixed(2));
+    }
+  }catch(e){}
+}
+document.getElementById("rateLabel").textContent=T[currentLang].rate(USD_TO_ILS);
+
+/* ══════════════════════════════════════════
+   רענון תצוגה (למשל בעת החלפת שפה)
+══════════════════════════════════════════ */
+function applyView(){ if(lastSearch) render(); }
+
+/* ══════════════════════════════════════════
+   חיפוש
+══════════════════════════════════════════ */
+/* ── בניית קישורים חיים אמיתיים לאתרי חיפוש הטיסות ──
+   כל קישור פותח חיפוש אמיתי עם המסלול והתאריכים שנבחרו */
+function fmtSky(d){ return `${String(d.getFullYear()).slice(2)}${pad(d.getMonth()+1)}${pad(d.getDate())}`; } // YYMMDD
+function buildEngines(fromC,toC,dep,ret){
+  const o=fromC.iata, d=toC.iata;
+  const depI=fmtISO(dep), retI=fmtISO(ret);
+  return [
+    { name:"Google Flights", code:"G", color:"#4285f4",
+      url:`https://www.google.com/travel/flights?q=${encodeURIComponent(`flights from ${o} to ${d} on ${depI} returning ${retI}`)}` },
+    { name:"Skyscanner", code:"SK", color:"#0770e3",
+      url:`https://www.skyscanner.net/transport/flights/${o.toLowerCase()}/${d.toLowerCase()}/${fmtSky(dep)}/${fmtSky(ret)}/` },
+    { name:"Kiwi.com", code:"KW", color:"#00a991",
+      url:`https://www.kiwi.com/en/search/results/${o}/${d}/${depI}/${retI}` },
+    { name:"Kayak", code:"KY", color:"#ff690f",
+      url:`https://www.kayak.com/flights/${o}-${d}/${depI}/${retI}` },
+    { name:"Momondo", code:"MO", color:"#e6175c",
+      url:`https://www.momondo.com/flight-search/${o}-${d}/${depI}/${retI}` },
+  ];
+}
+
+function render(){
+  const t=T[currentLang];
+  const box=document.getElementById("results");
+  if(!lastSearch){ box.innerHTML=""; return; }
+  const {fromC,toC,dep,ret}=lastSearch;
+  const fromN=cLng(fromC), toN=cLng(toC);
+  const engines=buildEngines(fromC,toC,dep,ret);
+
+  const head=`
+  <div class="results-head">
+    <h2>${t.resTitle}</h2>
+  </div>
+  <div class="search-summary">
+    <div class="ss-route">${t.routeFor(`${fromN.c} (${fromC.iata})`,`${toN.c} (${toC.iata})`,fmtDMY(dep),fmtDMY(ret))}</div>
+    <div class="ss-sub">${t.resSub}</div>
+    <div class="ss-price" id="ssPrice"></div>
+  </div>`;
+
+  const cards=engines.map(e=>`
+    <a class="ticket engine-card" href="${e.url}" target="_blank" rel="noopener">
+      <div class="airline">
+        <div class="logo" style="background:${e.color}">${e.code}</div>
+        <div class="airline-name">${e.name}</div>
+      </div>
+      <div class="route">
+        <div class="cities">${fromC.iata} → ${toC.iata}</div>
+        <div class="meta"><span>${fmtDMY(dep)}</span><span>·</span><span>${fmtDMY(ret)}</span></div>
+      </div>
+      <div class="price card-price"></div>
+      <span class="buy">${t.openLive}</span>
+    </a>`).join("");
+
+  box.innerHTML=head+cards;
+  fetchRoutePrice(lastSearch);
+}
+
+/* ── משיכת מחיר אמיתי מה-proxy המקומי (proxy.js → Travelpayouts) ── */
+async function fetchRoutePrice(s){
+  const el=document.getElementById("ssPrice");
+  if(!el||!s) return;
+  const t=T[currentLang];
+  const cards=document.querySelectorAll(".card-price");
+  el.textContent=t.priceChecking;
+  cards.forEach(c=>c.innerHTML=`<div class="usd">${t.priceChecking}</div>`);
+  try{
+    const u=`${PROXY_BASE}/price?origin=${s.fromC.iata}&destination=${s.toC.iata}`+
+            `&depart=${fmtISO(s.dep)}&return=${fmtISO(s.ret)}`;
+    const r=await fetch(u);
+    const d=await r.json();
+    if(d&&d.found){
+      const p=Number(d.price).toLocaleString();
+      el.innerHTML=t.priceFrom(p,d.airline,d.depart,d.approx);
+      /* אותו מחיר אמיתי (הזול שנמצא, מקור Aviasales) על כל כרטיס */
+      const cardHtml=`<div class="ils">${p} ₪</div><div class="usd">${d.approx?t.approxLbl:t.lowestLbl}</div>`;
+      cards.forEach(c=>c.innerHTML=cardHtml);
+    }else{
+      el.textContent=t.priceNone;   /* proxy כבוי / אין token / אין נתון → fallback */
+      cards.forEach(c=>c.innerHTML="");
+    }
+  }catch(e){
+    el.textContent=t.priceNone;     /* proxy לא רץ → הדף ממשיך לעבוד עם הקישורים */
+    cards.forEach(c=>c.innerHTML="");
+  }
+}
+
+function doSearch(){
+  const t=T[currentLang];
+  const fromC=COUNTRIES.find(c=>c.code===fromSel.value);
+  const toC  =COUNTRIES.find(c=>c.code===selectedToCode);
+  if(!toC){alert(t.errTo);return}
+  if(fromC.code===toC.code){alert(t.errSame);return}
+  const dep=parseDMY(dateOut.value);
+  if(!dep){alert(t.errDate);return}
+  let ret=parseDMY(dateReturn.value);
+  if(!ret){ ret=new Date(dep); ret.setDate(ret.getDate()+Number(nights.value||7)); }
+  lastSearch={fromC,toC,dep,ret};
+  render();
+}
+
+document.getElementById("searchBtn").addEventListener("click",doSearch);
+doSearch();
+loadRate();
+</script>
+</body>
+</html>

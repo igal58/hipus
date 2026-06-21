@@ -1,0 +1,9 @@
+# NEVER upload the secret token to the cloud repo — it goes in as an env var (TP_TOKEN) instead
+proxy.config.json
+
+# local backups and junk
+Backup/
+node_modules/
+.claude/
+*.log
+.DS_Store

@@ -1,0 +1,12 @@
+{
+  "name": "hipis-flight-search",
+  "version": "1.0.0",
+  "description": "Trilingual flight search with live deep-links and real Aviasales prices",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
