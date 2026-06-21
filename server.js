@@ -57,12 +57,6 @@ function getJSON(url) {
       r.on("end",()=>{ try{resolve(JSON.parse(b));}catch{resolve(null);} }); }).on("error", reject);
   });
 }
-function getRaw(url) {  // for the temporary /debug endpoint
-  return new Promise((resolve, reject) => {
-    https.get(url, r => { let b=""; r.on("data",c=>b+=c);
-      r.on("end",()=>resolve({ status:r.statusCode, body:b })); }).on("error", reject);
-  });
-}
 function tpUrl(o, d, depart, ret, mode) {
   const dep = mode === "month" ? depart.slice(0,7) : depart;
   const rtn = mode === "month" ? ret.slice(0,7)    : ret;
@@ -110,21 +104,6 @@ const server = http.createServer(async (req, res) => {
     const out = await fetchPrice(o,d,depart,ret);
     res.writeHead(200,{"Content-Type":"application/json"});
     return res.end(JSON.stringify(out));
-  }
-  if (u.pathname === "/debug") {   // TEMPORARY diagnostics — remove later
-    const o=(u.searchParams.get("origin")||"TLV").toUpperCase();
-    const d=(u.searchParams.get("destination")||"ATH").toUpperCase();
-    const depart=u.searchParams.get("depart")||"2026-07-01", ret=u.searchParams.get("return")||"2026-07-08";
-    const url=tpUrl(o,d,depart,ret,"exact");
-    const tk=CFG.token||"";
-    let info={ tokenConfigured:TOKEN_OK, market:CFG.market,
-      tokenLen:tk.length, tokenHasWhitespace:/\s/.test(tk),
-      tokenPreview: tk.length>=6 ? tk.slice(0,3)+"..."+tk.slice(-3) : "(short)" };
-    try { const raw=await getRaw(url); info.upstreamStatus=raw.status; info.bodySnippet=raw.body.slice(0,900); }
-    catch(e){ info.error=String(e); }
-    info.urlSansToken=url.replace(/token=[^&]+/,"token=***");
-    res.writeHead(200,{"Content-Type":"application/json"});
-    return res.end(JSON.stringify(info));
   }
   return serveStatic(req, res);   // everything else → static files (index.html, etc.)
 });
