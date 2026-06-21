@@ -171,6 +171,8 @@ button.deals-btn:hover{filter:brightness(1.1)}
   background:var(--panel);color:var(--text);font-size:18px;cursor:pointer;line-height:1}
 .pax-ctl button:hover{border-color:var(--accent);color:var(--accent)}
 .pax-ctl span{min-width:18px;text-align:center;font-weight:700}
+.pax-group{font-size:12px;font-weight:700;color:var(--muted);padding:8px 6px 2px;
+  margin-top:4px;border-top:1px solid var(--line)}
 
 /* ── AUTOCOMPLETE ── */
 .ac-wrap{position:relative}
@@ -272,6 +274,15 @@ button.deals-btn:hover{filter:brightness(1.1)}
             <div class="pax-info"><span id="lInfants">תינוקות</span><small id="sInfants">עד שנתיים</small></div>
             <div class="pax-ctl"><button type="button" data-pax="infants" data-dir="-1">−</button><span id="nInfants">0</span><button type="button" data-pax="infants" data-dir="1">+</button></div>
           </div>
+          <div class="pax-group" id="lBagsGroup">תיקים</div>
+          <div class="pax-row">
+            <div class="pax-info"><span id="lCabin">כבודת יד</span></div>
+            <div class="pax-ctl"><button type="button" data-bag="cabin" data-dir="-1">−</button><span id="nCabin">0</span><button type="button" data-bag="cabin" data-dir="1">+</button></div>
+          </div>
+          <div class="pax-row">
+            <div class="pax-info"><span id="lChecked">כבודה רשומה</span></div>
+            <div class="pax-ctl"><button type="button" data-bag="checked" data-dir="-1">−</button><span id="nChecked">0</span><button type="button" data-bag="checked" data-dir="1">+</button></div>
+          </div>
         </div>
       </div>
     </div>
@@ -324,6 +335,7 @@ const T={
     dealsLoading:"מחפש מבצעים…",dealsNone:"אין מבצעים כרגע — נסה שוב מאוחר יותר",
     paxLbl:"נוסעים",adultsLbl:"מבוגרים",adultsSub:"מעל 12",childrenLbl:"ילדים",childrenSub:"2–11",
     infantsLbl:"תינוקות",infantsSub:"עד שנתיים",paxSummary:(n)=>`${n} 👤`,perPerson:"לנוסע",
+    bagsGroup:"תיקים",cabinBag:"כבודת יד",checkedBag:"כבודה רשומה",bagNote:"כבודה רשומה בתשלום נפרד בהזמנה",
   },
   en:{
     dir:"ltr",lang:"en",
@@ -359,6 +371,7 @@ const T={
     dealsLoading:"Finding deals…",dealsNone:"No deals right now — try again later",
     paxLbl:"Passengers",adultsLbl:"Adults",adultsSub:"12+",childrenLbl:"Children",childrenSub:"2–11",
     infantsLbl:"Infants",infantsSub:"under 2",paxSummary:(n)=>`${n} 👤`,perPerson:"per person",
+    bagsGroup:"Bags",cabinBag:"Carry-on",checkedBag:"Checked bag",bagNote:"checked bags priced at booking",
   },
   ru:{
     dir:"ltr",lang:"ru",
@@ -394,6 +407,7 @@ const T={
     dealsLoading:"Ищу акции…",dealsNone:"Сейчас нет акций — попробуйте позже",
     paxLbl:"Пассажиры",adultsLbl:"Взрослые",adultsSub:"12+",childrenLbl:"Дети",childrenSub:"2–11",
     infantsLbl:"Младенцы",infantsSub:"до 2 лет",paxSummary:(n)=>`${n} 👤`,perPerson:"за человека",
+    bagsGroup:"Багаж",cabinBag:"Ручная кладь",checkedBag:"Багаж",bagNote:"багаж оплачивается при бронировании",
   }
 };
 
@@ -659,6 +673,7 @@ let currentTheme  = "dark";
 let isLight       = false;
 let lastSearch    = null;
 let pax           = {adults:1, children:0, infants:0};
+let bags          = {cabin:0, checked:0};
 let selectedToCode= "GR";
 let USD_TO_ILS    = 3.72;
 /* כשהדף מוגש ע"י server.js (מקומי או בענן) — אותו origin, נתיב יחסי.
@@ -693,6 +708,8 @@ function applyLang(lang){
   document.getElementById("lAdults").textContent=t.adultsLbl;   document.getElementById("sAdults").textContent=t.adultsSub;
   document.getElementById("lChildren").textContent=t.childrenLbl; document.getElementById("sChildren").textContent=t.childrenSub;
   document.getElementById("lInfants").textContent=t.infantsLbl;  document.getElementById("sInfants").textContent=t.infantsSub;
+  document.getElementById("lBagsGroup").textContent=t.bagsGroup;
+  document.getElementById("lCabin").textContent=t.cabinBag;  document.getElementById("lChecked").textContent=t.checkedBag;
   if(typeof updatePaxBtn==="function") updatePaxBtn();
   document.querySelectorAll(".lang-btn").forEach(b=>b.classList.toggle("active",b.dataset.lang===lang));
   /* עדכון תפריט יציאה */
@@ -848,7 +865,7 @@ function buildEngines(fromC,toC,dep,ret){
   const total=a+ch+inf;
   return [
     { name:"Google Flights", code:"G", color:"#4285f4",
-      url:`https://www.google.com/travel/flights?q=${encodeURIComponent(`flights from ${o} to ${d} on ${depI} returning ${retI}${total>1?` for ${gPax}`:""}`)}` },
+      url:`https://www.google.com/travel/flights?q=${encodeURIComponent(`flights from ${o} to ${d} on ${depI} returning ${retI}${total>1?` for ${gPax}`:""}${bags.checked?` with ${bags.checked} checked bags`:""}`)}` },
     { name:"Skyscanner", code:"SK", color:"#0770e3",
       url:`https://www.skyscanner.net/transport/flights/${o.toLowerCase()}/${d.toLowerCase()}/${fmtSky(dep)}/${fmtSky(ret)}/?${qPax}&cabinclass=economy` },
     { name:"Kiwi.com", code:"KW", color:"#00a991",
@@ -886,7 +903,7 @@ function render(){
       </div>
       <div class="route">
         <div class="cities">${fromC.iata} → ${toC.iata}</div>
-        <div class="meta"><span>${fmtDMY(dep)}</span><span>·</span><span>${fmtDMY(ret)}</span></div>
+        <div class="meta"><span>${fmtDMY(dep)}</span><span>·</span><span>${fmtDMY(ret)}</span><span class="card-extra"></span></div>
       </div>
       <div class="price card-price"></div>
       <span class="buy">${t.openLive}</span>
@@ -912,9 +929,11 @@ async function fetchRoutePrice(s){
   if(!el||!s) return;
   const t=T[currentLang];
   const cards=document.querySelectorAll(".card-price");
+  const extras=document.querySelectorAll(".card-extra");
   const best=document.getElementById("bestCard");
   el.textContent=t.priceChecking;
   cards.forEach(c=>c.innerHTML=`<div class="usd">${t.priceChecking}</div>`);
+  extras.forEach(e=>e.innerHTML="");
   if(best) best.innerHTML="";
   try{
     const u=`${PROXY_BASE}/price?origin=${s.fromC.iata}&destination=${s.toC.iata}`+
@@ -924,10 +943,14 @@ async function fetchRoutePrice(s){
     if(d&&d.found){
       const p=Number(d.price).toLocaleString();
       const perP=(pax.adults+pax.children+pax.infants)>1?` · ${t.perPerson}`:"";
-      el.innerHTML=t.priceFrom(p,d.airline,d.depart,d.approx)+perP;
+      const bagNote=bags.checked>0?` · ${t.bagNote}`:"";
+      el.innerHTML=t.priceFrom(p,d.airline,d.depart,d.approx)+perP+bagNote;
       /* אותו מחיר אמיתי (הזול שנמצא, מקור Aviasales) על כל כרטיס */
       const cardHtml=`<div class="ils">${p} ₪</div><div class="usd">${d.approx?t.approxLbl:t.lowestLbl}</div>`;
       cards.forEach(c=>c.innerHTML=cardHtml);
+      /* עצירות + משך (כמו בכרטיס Aviasales) על כל שורה — מהזול שנמצא */
+      const extraHtml=stopsHtml(d.transfers)+(d.duration?`<span>·</span><span>${fmtDur(d.duration)}</span>`:"");
+      extras.forEach(e=>e.innerHTML=extraHtml);
       /* כרטיס Aviasales — הטיסה האמיתית: עצירות + משך + קישור רכישה עם ה-marker */
       if(best && d.link){
         const durTxt=fmtDur(d.duration);
@@ -947,6 +970,7 @@ async function fetchRoutePrice(s){
     }else{
       el.textContent=t.priceNone;   /* proxy כבוי / אין token / אין נתון → fallback */
       cards.forEach(c=>c.innerHTML="");
+      extras.forEach(e=>e.innerHTML="");
       if(best) best.innerHTML="";
     }
   }catch(e){
@@ -1039,19 +1063,28 @@ const paxBtn=document.getElementById("paxBtn");
 const paxPanel=document.getElementById("paxPanel");
 function updatePaxBtn(){
   const total=pax.adults+pax.children+pax.infants;
-  paxBtn.textContent=T[currentLang].paxSummary(total);
+  const bagN=bags.cabin+bags.checked;
+  paxBtn.textContent=T[currentLang].paxSummary(total)+(bagN>0?` · ${bagN}🧳`:"");
   document.getElementById("nAdults").textContent=pax.adults;
   document.getElementById("nChildren").textContent=pax.children;
   document.getElementById("nInfants").textContent=pax.infants;
+  document.getElementById("nCabin").textContent=bags.cabin;
+  document.getElementById("nChecked").textContent=bags.checked;
 }
 paxBtn.addEventListener("click",e=>{ e.stopPropagation(); paxPanel.classList.toggle("open"); });
 paxPanel.addEventListener("click",e=>{
-  const b=e.target.closest("button[data-pax]"); if(!b) return;
-  const k=b.dataset.pax, min=(k==="adults")?1:0;
-  pax[k]=Math.max(min,Math.min(9,pax[k]+Number(b.dataset.dir)));
-  if(pax.infants>pax.adults) pax.infants=pax.adults;   /* תינוק בחיק מבוגר */
+  const pb=e.target.closest("button[data-pax]");
+  const bb=e.target.closest("button[data-bag]");
+  if(pb){
+    const k=pb.dataset.pax, min=(k==="adults")?1:0;
+    pax[k]=Math.max(min,Math.min(9,pax[k]+Number(pb.dataset.dir)));
+    if(pax.infants>pax.adults) pax.infants=pax.adults;   /* תינוק בחיק מבוגר */
+  } else if(bb){
+    const k=bb.dataset.bag;
+    bags[k]=Math.max(0,Math.min(9,bags[k]+Number(bb.dataset.dir)));
+  } else return;
   updatePaxBtn();
-  if(lastSearch) render();                              /* רענון קישורים עם הנוסעים החדשים */
+  if(lastSearch) render();                                /* רענון קישורים עם הבחירה החדשה */
 });
 document.addEventListener("click",e=>{ if(!e.target.closest(".pax-wrap")) paxPanel.classList.remove("open"); });
 updatePaxBtn();
