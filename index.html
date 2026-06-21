@@ -34,7 +34,8 @@ header p{color:var(--muted);margin:4px 0 0;font-size:13px}
 
 /* ── TOOLBAR ── */
 .toolbar{max-width:1020px;margin:8px auto 0;display:flex;align-items:center;
-  gap:10px;flex-wrap:wrap;padding:0 12px;justify-content:space-between}
+  gap:10px;flex-wrap:wrap;padding:0 12px;justify-content:space-between;
+  direction:ltr}  /* קבוע — לא זז בין עברית לאנגלית */
 .toolbar-left,.toolbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
 /* בחירת שפה */
@@ -152,6 +153,25 @@ button.deals-btn:hover{filter:brightness(1.1)}
 .deal-row{cursor:pointer}
 .deal-row .logo{font-size:12px}
 
+/* ── PASSENGERS ── */
+.pax-wrap{position:relative}
+.pax-btn{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--text);font-size:15px;cursor:pointer;text-align:start}
+.pax-btn:hover{border-color:var(--accent)}
+.pax-panel{position:absolute;top:calc(100% + 4px);inset-inline-start:0;inset-inline-end:0;z-index:999;
+  background:var(--panel2);border:1px solid var(--accent);border-radius:10px;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);padding:6px;display:none}
+.pax-panel.open{display:block}
+.pax-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 6px}
+.pax-row+.pax-row{border-top:1px solid var(--line)}
+.pax-info{display:flex;flex-direction:column}
+.pax-info small{color:var(--muted);font-size:11px}
+.pax-ctl{display:flex;align-items:center;gap:10px}
+.pax-ctl button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);
+  background:var(--panel);color:var(--text);font-size:18px;cursor:pointer;line-height:1}
+.pax-ctl button:hover{border-color:var(--accent);color:var(--accent)}
+.pax-ctl span{min-width:18px;text-align:center;font-weight:700}
+
 /* ── AUTOCOMPLETE ── */
 .ac-wrap{position:relative}
 .ac-wrap input{width:100%}
@@ -235,6 +255,26 @@ button.deals-btn:hover{filter:brightness(1.1)}
       <label id="lDateRet">תאריך חזרה</label>
       <input type="text" id="dateReturn" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10">
     </div>
+    <div class="field">
+      <label id="lPax">נוסעים</label>
+      <div class="pax-wrap">
+        <button type="button" class="pax-btn" id="paxBtn">1 👤</button>
+        <div class="pax-panel" id="paxPanel">
+          <div class="pax-row">
+            <div class="pax-info"><span id="lAdults">מבוגרים</span><small id="sAdults">מעל 12</small></div>
+            <div class="pax-ctl"><button type="button" data-pax="adults" data-dir="-1">−</button><span id="nAdults">1</span><button type="button" data-pax="adults" data-dir="1">+</button></div>
+          </div>
+          <div class="pax-row">
+            <div class="pax-info"><span id="lChildren">ילדים</span><small id="sChildren">2–11</small></div>
+            <div class="pax-ctl"><button type="button" data-pax="children" data-dir="-1">−</button><span id="nChildren">0</span><button type="button" data-pax="children" data-dir="1">+</button></div>
+          </div>
+          <div class="pax-row">
+            <div class="pax-info"><span id="lInfants">תינוקות</span><small id="sInfants">עד שנתיים</small></div>
+            <div class="pax-ctl"><button type="button" data-pax="infants" data-dir="-1">−</button><span id="nInfants">0</span><button type="button" data-pax="infants" data-dir="1">+</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="actions">
     <button class="search" id="searchBtn">🔍 חפש כרטיסים</button>
@@ -282,6 +322,8 @@ const T={
     dur:(h,m)=>`${h}ש ${m}ד`,aviasalesBuy:"רכישה ב-Aviasales ←",
     dealsBtn:"🔥 מבצעים חמים",dealsTitle:"🔥 טיסות סודיות — הזול ביותר מתל אביב",
     dealsLoading:"מחפש מבצעים…",dealsNone:"אין מבצעים כרגע — נסה שוב מאוחר יותר",
+    paxLbl:"נוסעים",adultsLbl:"מבוגרים",adultsSub:"מעל 12",childrenLbl:"ילדים",childrenSub:"2–11",
+    infantsLbl:"תינוקות",infantsSub:"עד שנתיים",paxSummary:(n)=>`${n} 👤`,perPerson:"לנוסע",
   },
   en:{
     dir:"ltr",lang:"en",
@@ -315,6 +357,8 @@ const T={
     dur:(h,m)=>`${h}h ${m}m`,aviasalesBuy:"Book on Aviasales →",
     dealsBtn:"🔥 Hot deals",dealsTitle:"🔥 Secret flights — cheapest from Tel Aviv",
     dealsLoading:"Finding deals…",dealsNone:"No deals right now — try again later",
+    paxLbl:"Passengers",adultsLbl:"Adults",adultsSub:"12+",childrenLbl:"Children",childrenSub:"2–11",
+    infantsLbl:"Infants",infantsSub:"under 2",paxSummary:(n)=>`${n} 👤`,perPerson:"per person",
   },
   ru:{
     dir:"ltr",lang:"ru",
@@ -348,6 +392,8 @@ const T={
     dur:(h,m)=>`${h}ч ${m}м`,aviasalesBuy:"Купить на Aviasales →",
     dealsBtn:"🔥 Горящие",dealsTitle:"🔥 Секретные рейсы — дешевле всего из Тель-Авива",
     dealsLoading:"Ищу акции…",dealsNone:"Сейчас нет акций — попробуйте позже",
+    paxLbl:"Пассажиры",adultsLbl:"Взрослые",adultsSub:"12+",childrenLbl:"Дети",childrenSub:"2–11",
+    infantsLbl:"Младенцы",infantsSub:"до 2 лет",paxSummary:(n)=>`${n} 👤`,perPerson:"за человека",
   }
 };
 
@@ -612,6 +658,7 @@ let currentLang   = "he";
 let currentTheme  = "dark";
 let isLight       = false;
 let lastSearch    = null;
+let pax           = {adults:1, children:0, infants:0};
 let selectedToCode= "GR";
 let USD_TO_ILS    = 3.72;
 /* כשהדף מוגש ע"י server.js (מקומי או בענן) — אותו origin, נתיב יחסי.
@@ -642,6 +689,11 @@ function applyLang(lang){
   document.getElementById("lDateRet").textContent=t.dateRetLbl;
   document.getElementById("searchBtn").textContent=t.searchBtn;
   document.getElementById("dealsBtn").textContent=t.dealsBtn;
+  document.getElementById("lPax").textContent=t.paxLbl;
+  document.getElementById("lAdults").textContent=t.adultsLbl;   document.getElementById("sAdults").textContent=t.adultsSub;
+  document.getElementById("lChildren").textContent=t.childrenLbl; document.getElementById("sChildren").textContent=t.childrenSub;
+  document.getElementById("lInfants").textContent=t.infantsLbl;  document.getElementById("sInfants").textContent=t.infantsSub;
+  if(typeof updatePaxBtn==="function") updatePaxBtn();
   document.querySelectorAll(".lang-btn").forEach(b=>b.classList.toggle("active",b.dataset.lang===lang));
   /* עדכון תפריט יציאה */
   rebuildFromSel();
@@ -790,17 +842,21 @@ function fmtSky(d){ return `${String(d.getFullYear()).slice(2)}${pad(d.getMonth(
 function buildEngines(fromC,toC,dep,ret){
   const o=fromC.iata, d=toC.iata;
   const depI=fmtISO(dep), retI=fmtISO(ret);
+  const a=pax.adults, ch=pax.children, inf=pax.infants;
+  const qPax=`adults=${a}&children=${ch}&infants=${inf}`;          /* Skyscanner / Kiwi */
+  const gPax=`${a} adult${a>1?"s":""}${ch?` ${ch} children`:""}${inf?` ${inf} infants`:""}`; /* Google text */
+  const total=a+ch+inf;
   return [
     { name:"Google Flights", code:"G", color:"#4285f4",
-      url:`https://www.google.com/travel/flights?q=${encodeURIComponent(`flights from ${o} to ${d} on ${depI} returning ${retI}`)}` },
+      url:`https://www.google.com/travel/flights?q=${encodeURIComponent(`flights from ${o} to ${d} on ${depI} returning ${retI}${total>1?` for ${gPax}`:""}`)}` },
     { name:"Skyscanner", code:"SK", color:"#0770e3",
-      url:`https://www.skyscanner.net/transport/flights/${o.toLowerCase()}/${d.toLowerCase()}/${fmtSky(dep)}/${fmtSky(ret)}/` },
+      url:`https://www.skyscanner.net/transport/flights/${o.toLowerCase()}/${d.toLowerCase()}/${fmtSky(dep)}/${fmtSky(ret)}/?${qPax}&cabinclass=economy` },
     { name:"Kiwi.com", code:"KW", color:"#00a991",
-      url:`https://www.kiwi.com/en/search/results/${o}/${d}/${depI}/${retI}` },
+      url:`https://www.kiwi.com/en/search/results/${o}/${d}/${depI}/${retI}?${qPax}` },
     { name:"Kayak", code:"KY", color:"#ff690f",
-      url:`https://www.kayak.com/flights/${o}-${d}/${depI}/${retI}` },
+      url:`https://www.kayak.com/flights/${o}-${d}/${depI}/${retI}/${a}adults${ch?`/${ch}children`:""}` },
     { name:"Momondo", code:"MO", color:"#e6175c",
-      url:`https://www.momondo.com/flight-search/${o}-${d}/${depI}/${retI}` },
+      url:`https://www.momondo.com/flight-search/${o}-${d}/${depI}/${retI}/${a}adults${ch?`/${ch}children`:""}` },
   ];
 }
 
@@ -867,7 +923,8 @@ async function fetchRoutePrice(s){
     const d=await r.json();
     if(d&&d.found){
       const p=Number(d.price).toLocaleString();
-      el.innerHTML=t.priceFrom(p,d.airline,d.depart,d.approx);
+      const perP=(pax.adults+pax.children+pax.infants)>1?` · ${t.perPerson}`:"";
+      el.innerHTML=t.priceFrom(p,d.airline,d.depart,d.approx)+perP;
       /* אותו מחיר אמיתי (הזול שנמצא, מקור Aviasales) על כל כרטיס */
       const cardHtml=`<div class="ils">${p} ₪</div><div class="usd">${d.approx?t.approxLbl:t.lowestLbl}</div>`;
       cards.forEach(c=>c.innerHTML=cardHtml);
@@ -974,6 +1031,30 @@ document.addEventListener("click",e=>{
   }
 });
 document.getElementById("dealsBtn").addEventListener("click",showDeals);
+
+/* ══════════════════════════════════════════
+   👨‍👩‍👧 בורר נוסעים
+══════════════════════════════════════════ */
+const paxBtn=document.getElementById("paxBtn");
+const paxPanel=document.getElementById("paxPanel");
+function updatePaxBtn(){
+  const total=pax.adults+pax.children+pax.infants;
+  paxBtn.textContent=T[currentLang].paxSummary(total);
+  document.getElementById("nAdults").textContent=pax.adults;
+  document.getElementById("nChildren").textContent=pax.children;
+  document.getElementById("nInfants").textContent=pax.infants;
+}
+paxBtn.addEventListener("click",e=>{ e.stopPropagation(); paxPanel.classList.toggle("open"); });
+paxPanel.addEventListener("click",e=>{
+  const b=e.target.closest("button[data-pax]"); if(!b) return;
+  const k=b.dataset.pax, min=(k==="adults")?1:0;
+  pax[k]=Math.max(min,Math.min(9,pax[k]+Number(b.dataset.dir)));
+  if(pax.infants>pax.adults) pax.infants=pax.adults;   /* תינוק בחיק מבוגר */
+  updatePaxBtn();
+  if(lastSearch) render();                              /* רענון קישורים עם הנוסעים החדשים */
+});
+document.addEventListener("click",e=>{ if(!e.target.closest(".pax-wrap")) paxPanel.classList.remove("open"); });
+updatePaxBtn();
 
 document.getElementById("searchBtn").addEventListener("click",doSearch);
 doSearch();
