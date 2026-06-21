@@ -116,7 +116,10 @@ const server = http.createServer(async (req, res) => {
     const d=(u.searchParams.get("destination")||"ATH").toUpperCase();
     const depart=u.searchParams.get("depart")||"2026-07-01", ret=u.searchParams.get("return")||"2026-07-08";
     const url=tpUrl(o,d,depart,ret,"exact");
-    let info={ tokenConfigured:TOKEN_OK, market:CFG.market };
+    const tk=CFG.token||"";
+    let info={ tokenConfigured:TOKEN_OK, market:CFG.market,
+      tokenLen:tk.length, tokenHasWhitespace:/\s/.test(tk),
+      tokenPreview: tk.length>=6 ? tk.slice(0,3)+"..."+tk.slice(-3) : "(short)" };
     try { const raw=await getRaw(url); info.upstreamStatus=raw.status; info.bodySnippet=raw.body.slice(0,900); }
     catch(e){ info.error=String(e); }
     info.urlSansToken=url.replace(/token=[^&]+/,"token=***");
