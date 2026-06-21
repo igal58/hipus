@@ -26,6 +26,7 @@ const CFG = {
   token:    process.env.TP_TOKEN   || FILE_CFG.token   || "",
   marker:   process.env.TP_MARKER  || FILE_CFG.marker  || "",
   currency: process.env.TP_CURRENCY|| FILE_CFG.currency|| "ils",
+  market:   process.env.TP_MARKET  || FILE_CFG.market  || "il",  // force IL market so cloud servers get Israeli fares
   port:     process.env.PORT       || FILE_CFG.port    || 8787,
 };
 const IS_CLOUD = !!process.env.PORT;                       // most hosts set PORT
@@ -60,7 +61,7 @@ function tpUrl(o, d, depart, ret, mode) {
   const dep = mode === "month" ? depart.slice(0,7) : depart;
   const rtn = mode === "month" ? ret.slice(0,7)    : ret;
   const p = new URLSearchParams({ origin:o, destination:d, departure_at:dep, return_at:rtn,
-    currency:CFG.currency, sorting:"price", limit:"1", one_way:"false", token:CFG.token });
+    currency:CFG.currency, market:CFG.market, sorting:"price", limit:"1", one_way:"false", token:CFG.token });
   return "https://api.travelpayouts.com/aviasales/v3/prices_for_dates?" + p.toString();
 }
 async function fetchPrice(o, d, depart, ret) {
