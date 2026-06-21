@@ -145,6 +145,13 @@ a.engine-card:hover{border-color:var(--accent)}
 .card-price .usd{font-size:11px}
 a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;margin-bottom:9px}
 
+/* ── HOT DEALS ── */
+button.deals-btn{background:linear-gradient(90deg,#f59e0b,#f97316);color:#fff;border:0;
+  font-weight:700;font-size:15px;padding:11px 20px;border-radius:10px;cursor:pointer}
+button.deals-btn:hover{filter:brightness(1.1)}
+.deal-row{cursor:pointer}
+.deal-row .logo{font-size:12px}
+
 /* ── AUTOCOMPLETE ── */
 .ac-wrap{position:relative}
 .ac-wrap input{width:100%}
@@ -231,6 +238,7 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
   </div>
   <div class="actions">
     <button class="search" id="searchBtn">🔍 חפש כרטיסים</button>
+    <button class="deals-btn" id="dealsBtn">🔥 מבצעים חמים</button>
     <span class="rate" id="rateLabel"></span>
   </div>
 </section>
@@ -272,6 +280,8 @@ const T={
     priceNone:"מחירים חיים יוצגו באתרי החיפוש למטה",
     lowestLbl:"מהזול שנמצא",approxLbl:"בערך · החודש",
     dur:(h,m)=>`${h}ש ${m}ד`,aviasalesBuy:"רכישה ב-Aviasales ←",
+    dealsBtn:"🔥 מבצעים חמים",dealsTitle:"🔥 טיסות סודיות — הזול ביותר מתל אביב",
+    dealsLoading:"מחפש מבצעים…",dealsNone:"אין מבצעים כרגע — נסה שוב מאוחר יותר",
   },
   en:{
     dir:"ltr",lang:"en",
@@ -303,6 +313,8 @@ const T={
     priceNone:"Live prices shown on the search sites below",
     lowestLbl:"lowest found",approxLbl:"approx · month",
     dur:(h,m)=>`${h}h ${m}m`,aviasalesBuy:"Book on Aviasales →",
+    dealsBtn:"🔥 Hot deals",dealsTitle:"🔥 Secret flights — cheapest from Tel Aviv",
+    dealsLoading:"Finding deals…",dealsNone:"No deals right now — try again later",
   },
   ru:{
     dir:"ltr",lang:"ru",
@@ -334,6 +346,8 @@ const T={
     priceNone:"Актуальные цены — на сайтах поиска ниже",
     lowestLbl:"мин. найдено",approxLbl:"около · месяц",
     dur:(h,m)=>`${h}ч ${m}м`,aviasalesBuy:"Купить на Aviasales →",
+    dealsBtn:"🔥 Горящие",dealsTitle:"🔥 Секретные рейсы — дешевле всего из Тель-Авива",
+    dealsLoading:"Ищу акции…",dealsNone:"Сейчас нет акций — попробуйте позже",
   }
 };
 
@@ -627,6 +641,7 @@ function applyLang(lang){
   document.getElementById("lNights").textContent=t.nightsLbl;
   document.getElementById("lDateRet").textContent=t.dateRetLbl;
   document.getElementById("searchBtn").textContent=t.searchBtn;
+  document.getElementById("dealsBtn").textContent=t.dealsBtn;
   document.querySelectorAll(".lang-btn").forEach(b=>b.classList.toggle("active",b.dataset.lang===lang));
   /* עדכון תפריט יציאה */
   rebuildFromSel();
@@ -897,6 +912,68 @@ function doSearch(){
   lastSearch={fromC,toC,dep,ret};
   render();
 }
+
+/* ══════════════════════════════════════════
+   🔥 טיסות סודיות / מבצעים חמים
+══════════════════════════════════════════ */
+function parseISO(s){ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s||""); return m?new Date(+m[1],+m[2]-1,+m[3]):null; }
+
+/* קודי "אזור מטרופולין" → שדה תעופה ברשימה שלנו */
+const METRO={MOW:"SVO",LON:"LHR",ROM:"FCO",MIL:"MXP",PAR:"CDG",BUH:"OTP",STO:"ARN",BJS:"PEK",NYC:"JFK",OSA:"KIX",TYO:"NRT",SAO:"GRU",RIO:"GIG",BUE:"EZE"};
+function findByIata(code){ return COUNTRIES.find(x=>x.iata===code)||COUNTRIES.find(x=>x.iata===METRO[code]); }
+
+async function showDeals(){
+  const t=T[currentLang];
+  const box=document.getElementById("results");
+  const origin=(COUNTRIES.find(c=>c.code===fromSel.value)||{iata:"TLV"}).iata;
+  box.innerHTML=`<div class="results-head"><h2>${t.dealsTitle}</h2></div><div class="empty">${t.dealsLoading}</div>`;
+  try{
+    const r=await fetch(`${PROXY_BASE}/deals?origin=${origin}`);
+    const d=await r.json();
+    if(d&&d.deals&&d.deals.length){
+      let rows="";
+      d.deals.forEach(dl=>{
+        const c=findByIata(dl.dest);
+        const name=c?(()=>{const n=cLng(c);return `${n.c} · ${n.ct}`;})():dl.dest;
+        const dep=dl.depart?fmtDMY(parseISO(dl.depart)):"";
+        rows+=`<div class="ticket deal-row" data-dest="${dl.dest}" data-depart="${dl.depart}" data-ret="${dl.ret}">
+          <div class="airline"><div class="logo" style="background:var(--accent2)">${dl.dest}</div></div>
+          <div class="route">
+            <div class="cities">${origin} → ${dl.dest}</div>
+            <div class="meta"><span>${name}</span>${dep?`<span>·</span><span>${dep}</span>`:""}</div>
+          </div>
+          <div class="price"><div class="ils">${Number(dl.price).toLocaleString()} ₪</div></div>
+          <span class="buy">${t.openLive}</span>
+        </div>`;
+      });
+      box.innerHTML=`<div class="results-head"><h2>${t.dealsTitle}</h2></div>`+rows;
+    }else{
+      box.innerHTML=`<div class="results-head"><h2>${t.dealsTitle}</h2></div><div class="empty">${t.dealsNone}</div>`;
+    }
+  }catch(e){
+    box.innerHTML=`<div class="results-head"><h2>${t.dealsTitle}</h2></div><div class="empty">${t.dealsNone}</div>`;
+  }
+}
+
+/* לחיצה על מבצע → ממלא את החיפוש ומריץ אותו */
+document.addEventListener("click",e=>{
+  const row=e.target.closest(".deal-row");
+  if(!row) return;
+  const c=findByIata(row.dataset.dest);
+  if(c){
+    selectedToCode=c.code;
+    const n=cLng(c); toInput.value=`${n.c} — ${n.ct}`;
+    const dp=parseISO(row.dataset.depart); if(dp) dateOut.value=fmtDMY(dp);
+    const rt=parseISO(row.dataset.ret); if(rt){ dateReturn.value=fmtDMY(rt); syncNts(); } else { syncRet(); }
+    doSearch();
+    window.scrollTo({top:0,behavior:"smooth"});
+  }else{
+    /* יעד שלא ברשימה שלנו → פתיחת חיפוש חי ב-Google */
+    const o=(COUNTRIES.find(x=>x.code===fromSel.value)||{iata:"TLV"}).iata;
+    window.open(`https://www.google.com/travel/flights?q=${encodeURIComponent(`flights from ${o} to ${row.dataset.dest} on ${row.dataset.depart} returning ${row.dataset.ret}`)}`,"_blank");
+  }
+});
+document.getElementById("dealsBtn").addEventListener("click",showDeals);
 
 document.getElementById("searchBtn").addEventListener("click",doSearch);
 doSearch();

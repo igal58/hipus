@@ -86,6 +86,31 @@ async function fetchPrice(o, d, depart, ret) {
   return { found:false, reason:"no-data" };
 }
 
+/* ── "secret flights" — cheapest fares from an origin to anywhere ── */
+function tpLatestUrl(origin) {
+  const p = new URLSearchParams({ origin, currency:CFG.currency, market:CFG.market,
+    sorting:"price", limit:"60", one_way:"false", token:CFG.token });
+  return "https://api.travelpayouts.com/v2/prices/latest?" + p.toString();
+}
+async function fetchDeals(origin) {
+  if (!TOKEN_OK) return { deals:[], reason:"no-token" };
+  try {
+    const json = await getJSON(tpLatestUrl(origin));
+    if (json && json.success && Array.isArray(json.data)) {
+      const seen = new Set(); const out = [];
+      for (const it of json.data) {
+        if (!it.destination || !it.value || seen.has(it.destination)) continue;
+        seen.add(it.destination);
+        out.push({ dest:it.destination, price:Math.round(it.value),
+          depart:it.depart_date || "", ret:it.return_date || "" });
+      }
+      out.sort((a,b)=>a.price-b.price);
+      return { deals: out.slice(0, 18) };
+    }
+  } catch {}
+  return { deals:[], reason:"no-data" };
+}
+
 /* ── HTTP server ── */
 const server = http.createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");   // harmless; same-origin anyway
@@ -103,6 +128,12 @@ const server = http.createServer(async (req, res) => {
       return res.end(JSON.stringify({found:false,reason:"bad-params"})); }
     const out = await fetchPrice(o,d,depart,ret);
     res.writeHead(200,{"Content-Type":"application/json"});
+    return res.end(JSON.stringify(out));
+  }
+  if (u.pathname === "/deals") {
+    const o = (u.searchParams.get("origin") || "TLV").toUpperCase();
+    const out = await fetchDeals(o);
+    res.writeHead(200, {"Content-Type":"application/json"});
     return res.end(JSON.stringify(out));
   }
   return serveStatic(req, res);   // everything else → static files (index.html, etc.)
