@@ -143,6 +143,7 @@ a.engine-card{grid-template-columns:auto 1fr auto auto;text-decoration:none;colo
 a.engine-card:hover{border-color:var(--accent)}
 .card-price{min-width:78px}
 .card-price .usd{font-size:11px}
+a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;margin-bottom:9px}
 
 /* ── AUTOCOMPLETE ── */
 .ac-wrap{position:relative}
@@ -270,6 +271,7 @@ const T={
     priceFrom:(p,air,date,approx)=>`💰 ${approx?"בערך מ-":"מ-"}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"מחירים חיים יוצגו באתרי החיפוש למטה",
     lowestLbl:"מהזול שנמצא",approxLbl:"בערך · החודש",
+    dur:(h,m)=>`${h}ש ${m}ד`,aviasalesBuy:"רכישה ב-Aviasales ←",
   },
   en:{
     dir:"ltr",lang:"en",
@@ -300,6 +302,7 @@ const T={
     priceFrom:(p,air,date,approx)=>`💰 ${approx?"approx. ":"from "}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"Live prices shown on the search sites below",
     lowestLbl:"lowest found",approxLbl:"approx · month",
+    dur:(h,m)=>`${h}h ${m}m`,aviasalesBuy:"Book on Aviasales →",
   },
   ru:{
     dir:"ltr",lang:"ru",
@@ -330,6 +333,7 @@ const T={
     priceFrom:(p,air,date,approx)=>`💰 ${approx?"около ":"от "}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"Актуальные цены — на сайтах поиска ниже",
     lowestLbl:"мин. найдено",approxLbl:"около · месяц",
+    dur:(h,m)=>`${h}ч ${m}м`,aviasalesBuy:"Купить на Aviasales →",
   }
 };
 
@@ -817,18 +821,30 @@ function render(){
       <span class="buy">${t.openLive}</span>
     </a>`).join("");
 
-  box.innerHTML=head+cards;
+  box.innerHTML=head+'<div id="bestCard"></div>'+cards;
   fetchRoutePrice(lastSearch);
 }
 
 /* ── משיכת מחיר אמיתי מה-proxy המקומי (proxy.js → Travelpayouts) ── */
+/* תווית עצירות + משך טיסה (מהנתון האמיתי של Aviasales) */
+function stopsHtml(n){
+  if(n==null) return "";
+  const t=T[currentLang];
+  const cls=n===0?"s0":n===1?"s1":"s2";
+  const lbl=n===0?t.sDirect:n===1?t.s1:t.s2(n);
+  return ` <span class="stops-pill ${cls}">${lbl}</span>`;
+}
+function fmtDur(min){ if(!min) return ""; const t=T[currentLang]; return t.dur(Math.floor(min/60),min%60); }
+
 async function fetchRoutePrice(s){
   const el=document.getElementById("ssPrice");
   if(!el||!s) return;
   const t=T[currentLang];
   const cards=document.querySelectorAll(".card-price");
+  const best=document.getElementById("bestCard");
   el.textContent=t.priceChecking;
   cards.forEach(c=>c.innerHTML=`<div class="usd">${t.priceChecking}</div>`);
+  if(best) best.innerHTML="";
   try{
     const u=`${PROXY_BASE}/price?origin=${s.fromC.iata}&destination=${s.toC.iata}`+
             `&depart=${fmtISO(s.dep)}&return=${fmtISO(s.ret)}`;
@@ -840,13 +856,31 @@ async function fetchRoutePrice(s){
       /* אותו מחיר אמיתי (הזול שנמצא, מקור Aviasales) על כל כרטיס */
       const cardHtml=`<div class="ils">${p} ₪</div><div class="usd">${d.approx?t.approxLbl:t.lowestLbl}</div>`;
       cards.forEach(c=>c.innerHTML=cardHtml);
+      /* כרטיס Aviasales — הטיסה האמיתית: עצירות + משך + קישור רכישה עם ה-marker */
+      if(best && d.link){
+        const durTxt=fmtDur(d.duration);
+        best.innerHTML=`<a class="ticket engine-card best-card" href="${d.link}" target="_blank" rel="noopener">
+          <div class="airline">
+            <div class="logo" style="background:#00a991">✈</div>
+            <div class="airline-name">Aviasales${d.airline?` · ${d.airline}`:""}</div>
+          </div>
+          <div class="route">
+            <div class="cities">${s.fromC.iata} → ${s.toC.iata}${stopsHtml(d.transfers)}<span class="badge">${t.cheapest}</span></div>
+            <div class="meta"><span>${fmtDMY(s.dep)}</span><span>·</span><span>${fmtDMY(s.ret)}</span>${durTxt?`<span>·</span><span>${durTxt}</span>`:""}</div>
+          </div>
+          <div class="price"><div class="ils">${p} ₪</div><div class="usd">${d.approx?t.approxLbl:t.lowestLbl}</div></div>
+          <span class="buy">${t.aviasalesBuy}</span>
+        </a>`;
+      }
     }else{
       el.textContent=t.priceNone;   /* proxy כבוי / אין token / אין נתון → fallback */
       cards.forEach(c=>c.innerHTML="");
+      if(best) best.innerHTML="";
     }
   }catch(e){
     el.textContent=t.priceNone;     /* proxy לא רץ → הדף ממשיך לעבוד עם הקישורים */
     cards.forEach(c=>c.innerHTML="");
+    if(best) best.innerHTML="";
   }
 }
 
