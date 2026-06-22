@@ -79,6 +79,8 @@ async function fetchPrice(o, d, depart, ret) {
           currency:(it.currency||CFG.currency).toUpperCase(), airline:it.airline||"",
           depart:depDMY, transfers: (typeof it.transfers==="number"?it.transfers:null),
           duration: (it.duration||null),
+          departTime: (it.departure_at||"").slice(11,16),   // local "HH:MM" of outbound flight
+          returnTime: (it.return_at||"").slice(11,16),      // local "HH:MM" of return flight
           link: link ? "https://www.aviasales.com"+link : "" };
       }
     } catch {}

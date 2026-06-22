@@ -331,6 +331,7 @@ const T={
     priceNone:"מחירים חיים יוצגו באתרי החיפוש למטה",
     lowestLbl:"מהזול שנמצא",approxLbl:"בערך · החודש",
     dur:(h,m)=>`${h}ש ${m}ד`,aviasalesBuy:"רכישה ב-Aviasales ←",
+    outTime:"🛫 יציאה",retTime:"🛬 חזרה",noBag:"🧳 ללא כבודה רשומה",
     dealsBtn:"🔥 מבצעים חמים",dealsTitle:"🔥 טיסות סודיות — הזול ביותר מתל אביב",
     dealsLoading:"מחפש מבצעים…",dealsNone:"אין מבצעים כרגע — נסה שוב מאוחר יותר",
     paxLbl:"נוסעים",adultsLbl:"מבוגרים",adultsSub:"מעל 12",childrenLbl:"ילדים",childrenSub:"2–11",
@@ -367,6 +368,7 @@ const T={
     priceNone:"Live prices shown on the search sites below",
     lowestLbl:"lowest found",approxLbl:"approx · month",
     dur:(h,m)=>`${h}h ${m}m`,aviasalesBuy:"Book on Aviasales →",
+    outTime:"🛫 Out",retTime:"🛬 Back",noBag:"🧳 No checked bag",
     dealsBtn:"🔥 Hot deals",dealsTitle:"🔥 Secret flights — cheapest from Tel Aviv",
     dealsLoading:"Finding deals…",dealsNone:"No deals right now — try again later",
     paxLbl:"Passengers",adultsLbl:"Adults",adultsSub:"12+",childrenLbl:"Children",childrenSub:"2–11",
@@ -403,6 +405,7 @@ const T={
     priceNone:"Актуальные цены — на сайтах поиска ниже",
     lowestLbl:"мин. найдено",approxLbl:"около · месяц",
     dur:(h,m)=>`${h}ч ${m}м`,aviasalesBuy:"Купить на Aviasales →",
+    outTime:"🛫 Вылет",retTime:"🛬 Обратно",noBag:"🧳 Без багажа",
     dealsBtn:"🔥 Горящие",dealsTitle:"🔥 Секретные рейсы — дешевле всего из Тель-Авива",
     dealsLoading:"Ищу акции…",dealsNone:"Сейчас нет акций — попробуйте позже",
     paxLbl:"Пассажиры",adultsLbl:"Взрослые",adultsSub:"12+",childrenLbl:"Дети",childrenSub:"2–11",
@@ -944,12 +947,15 @@ async function fetchRoutePrice(s){
       const p=Number(d.price).toLocaleString();
       const perP=(pax.adults+pax.children+pax.infants)>1?` · ${t.perPerson}`:"";
       const bagNote=bags.checked>0?` · ${t.bagNote}`:"";
-      el.innerHTML=t.priceFrom(p,d.airline,d.depart,d.approx)+perP+bagNote;
+      /* שעות יציאה/חזרה של הטיסה האמיתית שנמצאה (מקור Aviasales) */
+      const timesTxt=(d.departTime?` · ${t.outTime} ${d.departTime}`:"")+(d.returnTime?` · ${t.retTime} ${d.returnTime}`:"");
+      el.innerHTML=t.priceFrom(p,d.airline,d.depart,d.approx)+timesTxt+` · ${t.noBag}`+perP+bagNote;
       /* אותו מחיר אמיתי (הזול שנמצא, מקור Aviasales) על כל כרטיס */
       const cardHtml=`<div class="ils">${p} ₪</div><div class="usd">${d.approx?t.approxLbl:t.lowestLbl}</div>`;
       cards.forEach(c=>c.innerHTML=cardHtml);
-      /* עצירות + משך (כמו בכרטיס Aviasales) על כל שורה — מהזול שנמצא */
-      const extraHtml=stopsHtml(d.transfers)+(d.duration?`<span>·</span><span>${fmtDur(d.duration)}</span>`:"");
+      /* עצירות + משך + שעות + מזוודה (כמו בכרטיס Aviasales) על כל שורה — מהזול שנמצא */
+      const timesSpans=(d.departTime?`<span>·</span><span>${t.outTime} ${d.departTime}</span>`:"")+(d.returnTime?`<span>·</span><span>${t.retTime} ${d.returnTime}</span>`:"");
+      const extraHtml=stopsHtml(d.transfers)+(d.duration?`<span>·</span><span>${fmtDur(d.duration)}</span>`:"")+timesSpans+`<span>·</span><span>${t.noBag}</span>`;
       extras.forEach(e=>e.innerHTML=extraHtml);
       /* כרטיס Aviasales — הטיסה האמיתית: עצירות + משך + קישור רכישה עם ה-marker */
       if(best && d.link){
@@ -961,7 +967,7 @@ async function fetchRoutePrice(s){
           </div>
           <div class="route">
             <div class="cities">${s.fromC.iata} → ${s.toC.iata}${stopsHtml(d.transfers)}<span class="badge">${t.cheapest}</span></div>
-            <div class="meta"><span>${fmtDMY(s.dep)}</span><span>·</span><span>${fmtDMY(s.ret)}</span>${durTxt?`<span>·</span><span>${durTxt}</span>`:""}</div>
+            <div class="meta"><span>${fmtDMY(s.dep)}</span><span>·</span><span>${fmtDMY(s.ret)}</span>${durTxt?`<span>·</span><span>${durTxt}</span>`:""}${d.departTime?`<span>·</span><span>${t.outTime} ${d.departTime}</span>`:""}${d.returnTime?`<span>·</span><span>${t.retTime} ${d.returnTime}</span>`:""}<span>·</span><span>${t.noBag}</span></div>
           </div>
           <div class="price"><div class="ils">${p} ₪</div><div class="usd">${d.approx?t.approxLbl:t.lowestLbl}</div></div>
           <span class="buy">${t.aviasalesBuy}</span>
