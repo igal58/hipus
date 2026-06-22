@@ -150,6 +150,7 @@ a.engine-card{grid-template-columns:auto 1fr auto auto;text-decoration:none;colo
 a.engine-card:hover{border-color:var(--accent)}
 .card-price{min-width:78px}
 .card-price .usd{font-size:11px}
+.ref-note{font-size:10px;color:var(--muted);opacity:.8;font-style:italic;margin-top:1px;cursor:help}
 a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;margin-bottom:9px}
 
 /* ── HOT DEALS ── */
@@ -332,6 +333,7 @@ const T={
     resSub:"בחר אתר כדי לראות מחירים אמיתיים בזמן אמת ולרכוש",
     routeFor:(o,d,a,b)=>`${o} ← ${d} · ${a} – ${b}`,
     openLive:"פתח חיפוש חי ←",buyLbl:"רכישה ←",
+    refLbl:"מחיר ייחוס",refTitle:"המחיר מקורו ב-Aviasales — לייחוס בלבד, ייתכן שונה במנוע זה",
     priceChecking:"בודק מחיר אמיתי…",
     priceFrom:(p,air,date,approx)=>`💰 ${approx?"בערך מ-":"מ-"}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"מחירים חיים יוצגו באתרי החיפוש למטה",
@@ -370,6 +372,7 @@ const T={
     resSub:"Pick a site to see real-time prices and book",
     routeFor:(o,d,a,b)=>`${o} → ${d} · ${a} – ${b}`,
     openLive:"Open live search →",buyLbl:"Buy →",
+    refLbl:"reference price",refTitle:"Price sourced from Aviasales — reference only, may differ on this engine",
     priceChecking:"Checking live price…",
     priceFrom:(p,air,date,approx)=>`💰 ${approx?"approx. ":"from "}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"Live prices shown on the search sites below",
@@ -408,6 +411,7 @@ const T={
     resSub:"Выберите сайт, чтобы увидеть актуальные цены и купить",
     routeFor:(o,d,a,b)=>`${o} → ${d} · ${a} – ${b}`,
     openLive:"Открыть живой поиск →",buyLbl:"Купить →",
+    refLbl:"справочная цена",refTitle:"Цена взята с Aviasales — справочно, может отличаться на этом сайте",
     priceChecking:"Проверяю реальную цену…",
     priceFrom:(p,air,date,approx)=>`💰 ${approx?"около ":"от "}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"Актуальные цены — на сайтах поиска ниже",
@@ -961,8 +965,8 @@ async function fetchRoutePrice(s){
       const showRet=!s.flex;
       const timesTxt=(d.departTime?` · ${t.outTime} ${d.departTime}`:"")+((showRet&&d.returnTime)?` · ${t.retTime} ${d.returnTime}`:"");
       el.innerHTML=t.priceFrom(p,d.airline,d.depart,d.approx)+timesTxt+` · ${t.noBag}`+perP+bagNote;
-      /* אותו מחיר אמיתי (הזול שנמצא, מקור Aviasales) על כל כרטיס */
-      const cardHtml=`<div class="ils">${p} ₪</div><div class="usd">${d.approx?t.approxLbl:t.lowestLbl}</div>`;
+      /* שורות המנועים: המחיר מקורו ב-Aviasales (לא נשלף מהמנוע) → מסומן "מחיר ייחוס" ביושר */
+      const cardHtml=`<div class="ils">${p} ₪</div><div class="usd">${d.approx?t.approxLbl:t.lowestLbl}</div><div class="ref-note" title="${t.refTitle}">${t.refLbl}</div>`;
       cards.forEach(c=>c.innerHTML=cardHtml);
       /* עצירות + משך + שעות + מזוודה (כמו בכרטיס Aviasales) על כל שורה — מהזול שנמצא */
       const timesSpans=(d.departTime?`<span>·</span><span>${t.outTime} ${d.departTime}</span>`:"")+((showRet&&d.returnTime)?`<span>·</span><span>${t.retTime} ${d.returnTime}</span>`:"");
