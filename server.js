@@ -58,11 +58,12 @@ function getJSON(url) {
   });
 }
 function tpUrl(o, d, depart, ret, mode) {
+  const flex = !ret;                                   // no return chosen → flexible round-trip (return open)
   const dep = mode === "month" ? depart.slice(0,7) : depart;
-  const rtn = mode === "month" ? ret.slice(0,7)    : ret;
-  const p = new URLSearchParams({ origin:o, destination:d, departure_at:dep, return_at:rtn,
-    currency:CFG.currency, market:CFG.market, sorting:"price", limit:"1", one_way:"false", token:CFG.token });
-  return "https://api.travelpayouts.com/aviasales/v3/prices_for_dates?" + p.toString();
+  const params = { origin:o, destination:d, departure_at:dep,
+    currency:CFG.currency, market:CFG.market, sorting:"price", limit:"1", one_way:"false", token:CFG.token };
+  if (!flex) params.return_at = mode === "month" ? ret.slice(0,7) : ret;
+  return "https://api.travelpayouts.com/aviasales/v3/prices_for_dates?" + new URLSearchParams(params).toString();
 }
 async function fetchPrice(o, d, depart, ret) {
   if (!TOKEN_OK) return { found:false, reason:"no-token" };
@@ -72,12 +73,14 @@ async function fetchPrice(o, d, depart, ret) {
       const it = json && json.success && Array.isArray(json.data) && json.data[0];
       if (it && it.price) {
         const da = (it.departure_at||"").slice(0,10);
+        const ra = (it.return_at||"").slice(0,10);
         const depDMY = da ? `${da.slice(8,10)}/${da.slice(5,7)}/${da.slice(0,4)}` : "";
         let link = it.link || "";
         if (link && CFG.marker) link += (link.includes("?")?"&":"?") + "marker=" + CFG.marker;
-        return { found:true, approx:mode==="month", price:Math.round(it.price),
+        return { found:true, approx:mode==="month", flex:!ret, price:Math.round(it.price),
           currency:(it.currency||CFG.currency).toUpperCase(), airline:it.airline||"",
-          depart:depDMY, transfers: (typeof it.transfers==="number"?it.transfers:null),
+          depart:depDMY, departISO:da, returnISO:ra,           // ISO dates so the client can rebuild deep-links / fill the form
+          transfers: (typeof it.transfers==="number"?it.transfers:null),
           duration: (it.duration||null),
           departTime: (it.departure_at||"").slice(11,16),   // local "HH:MM" of outbound flight
           returnTime: (it.return_at||"").slice(11,16),      // local "HH:MM" of return flight
