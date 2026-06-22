@@ -75,7 +75,10 @@ header p{color:var(--muted);margin:4px 0 0;font-size:13px}
   border:1px solid var(--line);background:var(--panel2);color:var(--text);
   font-size:15px;outline:none}
 .field input:focus,.field select:focus{border-color:var(--accent)}
-.actions{display:flex;gap:12px;align-items:center;margin-top:13px;flex-wrap:wrap}
+.actions{display:flex;gap:12px;align-items:flex-end;margin-top:13px;flex-wrap:wrap}
+.pax-field{margin:0;flex:0 0 160px}
+.pax-field label{margin-bottom:5px}
+.actions button.search,.actions button.deals-btn{align-self:flex-end}
 button.search{background:linear-gradient(90deg,var(--accent),var(--accent2));
   color:#fff;border:0;font-weight:700;font-size:15px;
   padding:11px 26px;border-radius:10px;cursor:pointer}
@@ -124,6 +127,9 @@ body.light .s1{background:#854d0e;color:#fef9c3}
 body.light .s2{background:#991b1b;color:#fee2e2}
 .badge{font-size:11px;background:var(--gold);color:#3b2c00;
   padding:2px 8px;border-radius:20px;font-weight:700;margin-inline-start:6px}
+.flex-pill{display:inline-block;font-size:12px;background:var(--accent);color:#fff;
+  padding:2px 9px;border-radius:20px;font-weight:700}
+body.light .flex-pill{color:#04293f}
 .price{text-align:center}
 .price .ils{font-size:20px;font-weight:800;color:var(--accent)}
 .price .usd{color:var(--muted);font-size:13px;margin-top:2px}
@@ -251,13 +257,15 @@ button.deals-btn:hover{filter:brightness(1.1)}
     </div>
     <div class="field">
       <label id="lNights">ימי שהייה</label>
-      <input type="number" id="nights" min="1" max="180" value="7">
+      <input type="number" id="nights" min="0" max="180" value="7">
     </div>
     <div class="field">
       <label id="lDateRet">תאריך חזרה</label>
       <input type="text" id="dateReturn" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10">
     </div>
-    <div class="field">
+  </div>
+  <div class="actions">
+    <div class="field pax-field">
       <label id="lPax">נוסעים</label>
       <div class="pax-wrap">
         <button type="button" class="pax-btn" id="paxBtn">1 👤</button>
@@ -286,8 +294,6 @@ button.deals-btn:hover{filter:brightness(1.1)}
         </div>
       </div>
     </div>
-  </div>
-  <div class="actions">
     <button class="search" id="searchBtn">🔍 חפש כרטיסים</button>
     <button class="deals-btn" id="dealsBtn">🔥 מבצעים חמים</button>
     <span class="rate" id="rateLabel"></span>
@@ -332,6 +338,7 @@ const T={
     lowestLbl:"מהזול שנמצא",approxLbl:"בערך · החודש",
     dur:(h,m)=>`${h}ש ${m}ד`,aviasalesBuy:"רכישה ב-Aviasales ←",
     outTime:"🛫 יציאה",retTime:"🛬 חזרה",noBag:"🧳 ללא כבודה רשומה",
+    flexLbl:"תאריכים גמישים",flexSearching:"מחפש את הזול ביותר מהתאריך והלאה…",
     dealsBtn:"🔥 מבצעים חמים",dealsTitle:"🔥 טיסות סודיות — הזול ביותר מתל אביב",
     dealsLoading:"מחפש מבצעים…",dealsNone:"אין מבצעים כרגע — נסה שוב מאוחר יותר",
     paxLbl:"נוסעים",adultsLbl:"מבוגרים",adultsSub:"מעל 12",childrenLbl:"ילדים",childrenSub:"2–11",
@@ -369,6 +376,7 @@ const T={
     lowestLbl:"lowest found",approxLbl:"approx · month",
     dur:(h,m)=>`${h}h ${m}m`,aviasalesBuy:"Book on Aviasales →",
     outTime:"🛫 Out",retTime:"🛬 Back",noBag:"🧳 No checked bag",
+    flexLbl:"flexible dates",flexSearching:"Finding the cheapest from this date onward…",
     dealsBtn:"🔥 Hot deals",dealsTitle:"🔥 Secret flights — cheapest from Tel Aviv",
     dealsLoading:"Finding deals…",dealsNone:"No deals right now — try again later",
     paxLbl:"Passengers",adultsLbl:"Adults",adultsSub:"12+",childrenLbl:"Children",childrenSub:"2–11",
@@ -406,6 +414,7 @@ const T={
     lowestLbl:"мин. найдено",approxLbl:"около · месяц",
     dur:(h,m)=>`${h}ч ${m}м`,aviasalesBuy:"Купить на Aviasales →",
     outTime:"🛫 Вылет",retTime:"🛬 Обратно",noBag:"🧳 Без багажа",
+    flexLbl:"гибкие даты",flexSearching:"Ищем самый дешёвый с этой даты…",
     dealsBtn:"🔥 Горящие",dealsTitle:"🔥 Секретные рейсы — дешевле всего из Тель-Авива",
     dealsLoading:"Ищу акции…",dealsNone:"Сейчас нет акций — попробуйте позже",
     paxLbl:"Пассажиры",adultsLbl:"Взрослые",adultsSub:"12+",childrenLbl:"Дети",childrenSub:"2–11",
@@ -825,7 +834,7 @@ const dateOut   =document.getElementById("dateOut");
 const dateReturn=document.getElementById("dateReturn");
 const nights    =document.getElementById("nights");
 [dateOut,dateReturn].forEach(el=>el.addEventListener("input",maskDate));
-function syncRet(){ const dep=parseDMY(dateOut.value),n=Number(nights.value); if(dep&&n>0){const r=new Date(dep);r.setDate(r.getDate()+n);dateReturn.value=fmtDMY(r);} }
+function syncRet(){ const dep=parseDMY(dateOut.value),n=Number(nights.value); if(n===0){dateReturn.value="";return;} if(dep&&n>0){const r=new Date(dep);r.setDate(r.getDate()+n);dateReturn.value=fmtDMY(r);} }
 function syncNts(){ const dep=parseDMY(dateOut.value),ret=parseDMY(dateReturn.value); if(dep&&ret){const d=Math.round((ret-dep)/86400000);if(d>0)nights.value=d;} }
 dateOut.addEventListener("change",syncRet);
 nights.addEventListener("input",syncRet);
@@ -893,7 +902,7 @@ function render(){
     <h2>${t.resTitle}</h2>
   </div>
   <div class="search-summary">
-    <div class="ss-route">${t.routeFor(`${fromN.c} (${fromC.iata})`,`${toN.c} (${toC.iata})`,fmtDMY(dep),fmtDMY(ret))}</div>
+    <div class="ss-route">${t.routeFor(`${fromN.c} (${fromC.iata})`,`${toN.c} (${toC.iata})`,fmtDMY(dep),fmtDMY(ret))}${lastSearch.flex?` · <span class="flex-pill">${t.flexLbl}</span>`:""}</div>
     <div class="ss-sub">${t.resSub}</div>
     <div class="ss-price" id="ssPrice"></div>
   </div>`;
@@ -994,10 +1003,34 @@ function doSearch(){
   if(fromC.code===toC.code){alert(t.errSame);return}
   const dep=parseDMY(dateOut.value);
   if(!dep){alert(t.errDate);return}
+  const n=Number(nights.value);
+  if(n===0){ resolveFlexDates(fromC,toC,dep); return; }   /* ימי שהייה=0 → דו-כיווני, התאריכים עוד לא נבחרו: חפש מהתאריך והלאה את הזול */
   let ret=parseDMY(dateReturn.value);
-  if(!ret){ ret=new Date(dep); ret.setDate(ret.getDate()+Number(nights.value||7)); }
-  lastSearch={fromC,toC,dep,ret};
+  if(!ret){ ret=new Date(dep); ret.setDate(ret.getDate()+(n||7)); }
+  lastSearch={fromC,toC,dep,ret,flex:false};
   render();
+}
+
+/* חיפוש דו-כיווני גמיש: יציאה קבועה, חזרה פתוחה — נמצא הזול והתאריכים נמלאים */
+async function resolveFlexDates(fromC,toC,dep){
+  const t=T[currentLang];
+  const box=document.getElementById("results");
+  box.innerHTML=`<div class="results-head"><h2>${t.flexSearching}</h2></div>`;
+  try{
+    const u=`${PROXY_BASE}/price?origin=${fromC.iata}&destination=${toC.iata}&depart=${fmtISO(dep)}`; /* בלי return = דו-כיווני גמיש */
+    const r=await fetch(u); const d=await r.json();
+    if(d&&d.found&&d.returnISO){
+      const fdep=parseISO(d.departISO)||dep, fret=parseISO(d.returnISO);
+      dateOut.value=fmtDMY(fdep); dateReturn.value=fmtDMY(fret);
+      nights.value=Math.max(1,Math.round((fret-fdep)/86400000));
+      lastSearch={fromC,toC,dep:fdep,ret:fret,flex:true};
+      render();
+    }else{
+      box.innerHTML=`<div class="results-head"><h2>${t.priceNone}</h2></div>`;
+    }
+  }catch(e){
+    box.innerHTML=`<div class="results-head"><h2>${t.priceNone}</h2></div>`;
+  }
 }
 
 /* ══════════════════════════════════════════
