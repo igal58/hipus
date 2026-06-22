@@ -151,6 +151,15 @@ a.engine-card:hover{border-color:var(--accent)}
 .card-price{min-width:78px}
 .card-price .usd{font-size:11px}
 .ref-note{font-size:10px;color:var(--muted);opacity:.8;font-style:italic;margin-top:1px;cursor:help}
+.offers-head,.compare-head{font-weight:800;color:var(--accent);font-size:15px;margin:18px 4px 9px}
+.compare-head{color:var(--muted);font-size:14px;margin-top:22px}
+.compare-row{display:flex;flex-wrap:wrap;gap:10px}
+.compare-btn{display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;transition:border-color .15s}
+.compare-btn:hover{border-color:var(--accent)}
+.compare-btn .clogo{width:26px;height:26px;border-radius:6px;color:#fff;display:flex;
+  align-items:center;justify-content:center;font-weight:800;font-size:11px;flex:0 0 auto}
+.compare-btn .cname{font-size:14px;font-weight:600}
 a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;margin-bottom:9px}
 
 /* ── HOT DEALS ── */
@@ -334,6 +343,7 @@ const T={
     routeFor:(o,d,a,b)=>`${o} ← ${d} · ${a} – ${b}`,
     openLive:"פתח חיפוש חי ←",buyLbl:"רכישה ←",
     refLbl:"מחיר ייחוס",refTitle:"המחיר מקורו ב-Aviasales — לייחוס בלבד, ייתכן שונה במנוע זה",
+    offersTitle:"✈️ טיסות אמיתיות — מחיר חי (Aviasales)",compareTitle:"🔎 השוואה וחיפוש באתרים אחרים",
     priceChecking:"בודק מחיר אמיתי…",
     priceFrom:(p,air,date,approx)=>`💰 ${approx?"בערך מ-":"מ-"}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"מחירים חיים יוצגו באתרי החיפוש למטה",
@@ -373,6 +383,7 @@ const T={
     routeFor:(o,d,a,b)=>`${o} → ${d} · ${a} – ${b}`,
     openLive:"Open live search →",buyLbl:"Buy →",
     refLbl:"reference price",refTitle:"Price sourced from Aviasales — reference only, may differ on this engine",
+    offersTitle:"✈️ Real fares — live price (Aviasales)",compareTitle:"🔎 Compare & search on other sites",
     priceChecking:"Checking live price…",
     priceFrom:(p,air,date,approx)=>`💰 ${approx?"approx. ":"from "}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"Live prices shown on the search sites below",
@@ -412,6 +423,7 @@ const T={
     routeFor:(o,d,a,b)=>`${o} → ${d} · ${a} – ${b}`,
     openLive:"Открыть живой поиск →",buyLbl:"Купить →",
     refLbl:"справочная цена",refTitle:"Цена взята с Aviasales — справочно, может отличаться на этом сайте",
+    offersTitle:"✈️ Реальные рейсы — цена (Aviasales)",compareTitle:"🔎 Сравнить и искать на других сайтах",
     priceChecking:"Проверяю реальную цену…",
     priceFrom:(p,air,date,approx)=>`💰 ${approx?"около ":"от "}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"Актуальные цены — на сайтах поиска ниже",
@@ -890,6 +902,9 @@ function buildEngines(fromC,toC,dep,ret){
       url:`https://www.kayak.com/flights/${o}-${d}/${depI}/${retI}/${a}adults${ch?`/${ch}children`:""}` },
     { name:"Momondo", code:"MO", color:"#e6175c",
       url:`https://www.momondo.com/flight-search/${o}-${d}/${depI}/${retI}/${a}adults${ch?`/${ch}children`:""}` },
+    /* El Al — אין מחיר במקור הנתונים (Aviasales לא כולל את אל על); קישור חיפוש ישיר בלבד, בלי מחיר */
+    { name:"El Al", code:"LY", color:"#003399",
+      url:`https://www.elal.com/`, noPrice:true },
   ];
 }
 
@@ -911,22 +926,20 @@ function render(){
     <div class="ss-price" id="ssPrice"></div>
   </div>`;
 
-  const cards=engines.map(e=>`
-    <a class="ticket engine-card best-card" href="${e.url}" target="_blank" rel="noopener">
-      <div class="airline">
-        <div class="logo" style="background:${e.color}">${e.code}</div>
-        <div class="airline-name">${e.name}</div>
-      </div>
-      <div class="route">
-        <div class="cities">${fromC.iata} → ${toC.iata}</div>
-        <div class="meta"><span>${fmtDMY(dep)}</span><span>·</span><span>${fmtDMY(ret)}</span><span class="card-extra"></span></div>
-      </div>
-      <div class="price card-price"></div>
-      <span class="buy">${t.buyLbl}</span>
-    </a>`).join("");
+  /* קישורי השוואה לאתרים אחרים — בלי מחיר (אין לנו מחיר אמיתי מהם), כולל El Al */
+  const compare=`
+    <div class="compare-head">${t.compareTitle}</div>
+    <div class="compare-row">`+engines.map(e=>`
+      <a class="compare-btn" href="${e.url}" target="_blank" rel="noopener">
+        <span class="clogo" style="background:${e.color}">${e.code}</span>
+        <span class="cname">${e.name}</span>
+      </a>`).join("")+`
+    </div>`;
 
-  box.innerHTML=head+'<div id="bestCard"></div>'+cards;
-  fetchRoutePrice(lastSearch);
+  box.innerHTML=head
+    +`<div class="offers-head">${t.offersTitle}</div><div id="offers"></div>`
+    +compare;
+  fetchOffers(lastSearch);
 }
 
 /* ── משיכת מחיר אמיתי מה-proxy המקומי (proxy.js → Travelpayouts) ── */
@@ -940,64 +953,58 @@ function stopsHtml(n){
 }
 function fmtDur(min){ if(!min) return ""; const t=T[currentLang]; return t.dur(Math.floor(min/60),min%60); }
 
-async function fetchRoutePrice(s){
-  const el=document.getElementById("ssPrice");
-  if(!el||!s) return;
+/* כרטיס טיסה אמיתי (מ-Aviasales) — מחיר/חברה/שעות/עצירות אמיתיים, קישור רכישה עם ה-marker */
+function offerCard(of,fromC,toC,isBest,flex){
   const t=T[currentLang];
-  const cards=document.querySelectorAll(".card-price");
-  const extras=document.querySelectorAll(".card-extra");
-  const best=document.getElementById("bestCard");
-  el.textContent=t.priceChecking;
-  cards.forEach(c=>c.innerHTML=`<div class="usd">${t.priceChecking}</div>`);
-  extras.forEach(e=>e.innerHTML="");
-  if(best) best.innerHTML="";
+  const p=Number(of.price).toLocaleString();
+  const showRet=!flex;
+  const durTxt=fmtDur(of.duration);
+  const retDate=of.returnISO?fmtDMY(parseISO(of.returnISO)):"";
+  const times=(of.departTime?`<span>·</span><span>${t.outTime} ${of.departTime}</span>`:"")
+             +((showRet&&of.returnTime)?`<span>·</span><span>${t.retTime} ${of.returnTime}</span>`:"");
+  return `<a class="ticket engine-card best-card" href="${of.link}" target="_blank" rel="noopener">
+    <div class="airline">
+      <div class="logo" style="background:#00a991">✈</div>
+      <div class="airline-name">Aviasales${of.airline?` · ${of.airline}`:""}</div>
+    </div>
+    <div class="route">
+      <div class="cities">${fromC.iata} → ${toC.iata}${stopsHtml(of.transfers)}${isBest?`<span class="badge">${t.cheapest}</span>`:""}</div>
+      <div class="meta"><span>${of.depart}</span>${retDate?`<span>·</span><span>${retDate}</span>`:""}${durTxt?`<span>·</span><span>${durTxt}</span>`:""}${times}<span>·</span><span>${t.noBag}</span></div>
+    </div>
+    <div class="price"><div class="ils">${p} ₪</div><div class="usd">${of.approx?t.approxLbl:t.lowestLbl}</div></div>
+    <span class="buy">${t.aviasalesBuy}</span>
+  </a>`;
+}
+
+/* משיכת כמה טיסות אמיתיות שונות (מ-Aviasales דרך השרת) — מחירים/שעות אמיתיים ומגוונים */
+async function fetchOffers(s){
+  const el=document.getElementById("ssPrice");
+  const box=document.getElementById("offers");
+  if(!s) return;
+  const t=T[currentLang];
+  if(el) el.textContent=t.priceChecking;
+  if(box) box.innerHTML="";
   try{
-    const u=`${PROXY_BASE}/price?origin=${s.fromC.iata}&destination=${s.toC.iata}`+
-            `&depart=${fmtISO(s.dep)}&return=${fmtISO(s.ret)}`;
+    const u=`${PROXY_BASE}/offers?origin=${s.fromC.iata}&destination=${s.toC.iata}`+
+            `&depart=${fmtISO(s.dep)}`+(s.ret?`&return=${fmtISO(s.ret)}`:"");
     const r=await fetch(u);
     const d=await r.json();
-    if(d&&d.found){
-      const p=Number(d.price).toLocaleString();
+    if(d&&Array.isArray(d.offers)&&d.offers.length){
+      const flex=!!s.flex;
+      const c=d.offers[0];                                   /* הזול ביותר — לסיכום העליון */
+      const cp=Number(c.price).toLocaleString();
       const perP=(pax.adults+pax.children+pax.infants)>1?` · ${t.perPerson}`:"";
-      const bagNote=bags.checked>0?` · ${t.bagNote}`:"";
-      /* שעות יציאה/חזרה של הטיסה האמיתית שנמצאה (מקור Aviasales).
-         במצב גמיש (ימי שהייה=0) — לא מציגים זמן חזרה, כי החזרה פתוחה. */
-      const showRet=!s.flex;
-      const timesTxt=(d.departTime?` · ${t.outTime} ${d.departTime}`:"")+((showRet&&d.returnTime)?` · ${t.retTime} ${d.returnTime}`:"");
-      el.innerHTML=t.priceFrom(p,d.airline,d.depart,d.approx)+timesTxt+` · ${t.noBag}`+perP+bagNote;
-      /* שורות המנועים: המחיר מקורו ב-Aviasales (לא נשלף מהמנוע) → מסומן "מחיר ייחוס" ביושר */
-      const cardHtml=`<div class="ils">${p} ₪</div><div class="usd">${d.approx?t.approxLbl:t.lowestLbl}</div><div class="ref-note" title="${t.refTitle}">${t.refLbl}</div>`;
-      cards.forEach(c=>c.innerHTML=cardHtml);
-      /* עצירות + משך + שעות + מזוודה (כמו בכרטיס Aviasales) על כל שורה — מהזול שנמצא */
-      const timesSpans=(d.departTime?`<span>·</span><span>${t.outTime} ${d.departTime}</span>`:"")+((showRet&&d.returnTime)?`<span>·</span><span>${t.retTime} ${d.returnTime}</span>`:"");
-      const extraHtml=stopsHtml(d.transfers)+(d.duration?`<span>·</span><span>${fmtDur(d.duration)}</span>`:"")+timesSpans+`<span>·</span><span>${t.noBag}</span>`;
-      extras.forEach(e=>e.innerHTML=extraHtml);
-      /* כרטיס Aviasales — הטיסה האמיתית: עצירות + משך + קישור רכישה עם ה-marker */
-      if(best && d.link){
-        const durTxt=fmtDur(d.duration);
-        best.innerHTML=`<a class="ticket engine-card best-card" href="${d.link}" target="_blank" rel="noopener">
-          <div class="airline">
-            <div class="logo" style="background:#00a991">✈</div>
-            <div class="airline-name">Aviasales${d.airline?` · ${d.airline}`:""}</div>
-          </div>
-          <div class="route">
-            <div class="cities">${s.fromC.iata} → ${s.toC.iata}${stopsHtml(d.transfers)}<span class="badge">${t.cheapest}</span></div>
-            <div class="meta"><span>${fmtDMY(s.dep)}</span><span>·</span><span>${fmtDMY(s.ret)}</span>${durTxt?`<span>·</span><span>${durTxt}</span>`:""}${d.departTime?`<span>·</span><span>${t.outTime} ${d.departTime}</span>`:""}${(showRet&&d.returnTime)?`<span>·</span><span>${t.retTime} ${d.returnTime}</span>`:""}<span>·</span><span>${t.noBag}</span></div>
-          </div>
-          <div class="price"><div class="ils">${p} ₪</div><div class="usd">${d.approx?t.approxLbl:t.lowestLbl}</div></div>
-          <span class="buy">${t.aviasalesBuy}</span>
-        </a>`;
-      }
+      const showRet=!flex;
+      const timesTxt=(c.departTime?` · ${t.outTime} ${c.departTime}`:"")+((showRet&&c.returnTime)?` · ${t.retTime} ${c.returnTime}`:"");
+      if(el) el.innerHTML=t.priceFrom(cp,c.airline,c.depart,c.approx)+timesTxt+` · ${t.noBag}`+perP;
+      if(box) box.innerHTML=d.offers.map((of,i)=>offerCard(of,s.fromC,s.toC,i===0,flex)).join("");
     }else{
-      el.textContent=t.priceNone;   /* proxy כבוי / אין token / אין נתון → fallback */
-      cards.forEach(c=>c.innerHTML="");
-      extras.forEach(e=>e.innerHTML="");
-      if(best) best.innerHTML="";
+      if(el) el.textContent=t.priceNone;
+      if(box) box.innerHTML="";
     }
   }catch(e){
-    el.textContent=t.priceNone;     /* proxy לא רץ → הדף ממשיך לעבוד עם הקישורים */
-    cards.forEach(c=>c.innerHTML="");
-    if(best) best.innerHTML="";
+    if(el) el.textContent=t.priceNone;     /* השרת לא רץ → הדף ממשיך לעבוד עם קישורי ההשוואה */
+    if(box) box.innerHTML="";
   }
 }
 

@@ -57,13 +57,49 @@ function getJSON(url) {
       r.on("end",()=>{ try{resolve(JSON.parse(b));}catch{resolve(null);} }); }).on("error", reject);
   });
 }
-function tpUrl(o, d, depart, ret, mode) {
+function tpUrl(o, d, depart, ret, mode, limit) {
   const flex = !ret;                                   // no return chosen → flexible round-trip (return open)
   const dep = mode === "month" ? depart.slice(0,7) : depart;
   const params = { origin:o, destination:d, departure_at:dep,
-    currency:CFG.currency, market:CFG.market, sorting:"price", limit:"1", one_way:"false", token:CFG.token };
+    currency:CFG.currency, market:CFG.market, sorting:"price", limit:String(limit||1), one_way:"false", token:CFG.token };
   if (!flex) params.return_at = mode === "month" ? ret.slice(0,7) : ret;
   return "https://api.travelpayouts.com/aviasales/v3/prices_for_dates?" + new URLSearchParams(params).toString();
+}
+function mapFare(it, approx, flex) {
+  const da = (it.departure_at||"").slice(0,10);
+  const ra = (it.return_at||"").slice(0,10);
+  const depDMY = da ? `${da.slice(8,10)}/${da.slice(5,7)}/${da.slice(0,4)}` : "";
+  let link = it.link || "";
+  if (link && CFG.marker) link += (link.includes("?")?"&":"?") + "marker=" + CFG.marker;
+  return { approx, flex, price:Math.round(it.price),
+    currency:(it.currency||CFG.currency).toUpperCase(), airline:it.airline||"",
+    depart:depDMY, departISO:da, returnISO:ra,
+    transfers:(typeof it.transfers==="number"?it.transfers:null), duration:(it.duration||null),
+    departTime:(it.departure_at||"").slice(11,16), returnTime:(it.return_at||"").slice(11,16),
+    link: link ? "https://www.aviasales.com"+link : "" };
+}
+/* several DISTINCT real fares (varied airline / price / times) for one route */
+async function fetchOffers(o, d, depart, ret) {
+  if (!TOKEN_OK) return { offers:[], reason:"no-token" };
+  const flex = !ret;
+  for (const mode of ["exact","month"]) {
+    try {
+      const json = await getJSON(tpUrl(o,d,depart,ret,mode,30));
+      const arr = json && json.success && Array.isArray(json.data) ? json.data : [];
+      if (arr.length) {
+        const seen = new Set(); const offers = [];
+        for (const it of arr) {
+          if (!it || !it.price) continue;
+          const key = `${it.airline}|${it.price}|${(it.departure_at||"").slice(0,16)}|${(it.return_at||"").slice(0,16)}`;
+          if (seen.has(key)) continue; seen.add(key);
+          offers.push(mapFare(it, mode==="month", flex));
+          if (offers.length >= 6) break;
+        }
+        if (offers.length) { offers.sort((a,b)=>a.price-b.price); return { offers, flex }; }
+      }
+    } catch {}
+  }
+  return { offers:[], reason:"no-data" };
 }
 async function fetchPrice(o, d, depart, ret) {
   if (!TOKEN_OK) return { found:false, reason:"no-token" };
@@ -132,6 +168,16 @@ const server = http.createServer(async (req, res) => {
     if (!o||!d||!depart) { res.writeHead(400,{"Content-Type":"application/json"});
       return res.end(JSON.stringify({found:false,reason:"bad-params"})); }
     const out = await fetchPrice(o,d,depart,ret);
+    res.writeHead(200,{"Content-Type":"application/json"});
+    return res.end(JSON.stringify(out));
+  }
+  if (u.pathname === "/offers") {
+    const o=(u.searchParams.get("origin")||"").toUpperCase();
+    const d=(u.searchParams.get("destination")||"").toUpperCase();
+    const depart=u.searchParams.get("depart")||"", ret=u.searchParams.get("return")||"";
+    if (!o||!d||!depart) { res.writeHead(400,{"Content-Type":"application/json"});
+      return res.end(JSON.stringify({offers:[],reason:"bad-params"})); }
+    const out = await fetchOffers(o,d,depart,ret);
     res.writeHead(200,{"Content-Type":"application/json"});
     return res.end(JSON.stringify(out));
   }
