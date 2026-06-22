@@ -956,14 +956,16 @@ async function fetchRoutePrice(s){
       const p=Number(d.price).toLocaleString();
       const perP=(pax.adults+pax.children+pax.infants)>1?` · ${t.perPerson}`:"";
       const bagNote=bags.checked>0?` · ${t.bagNote}`:"";
-      /* שעות יציאה/חזרה של הטיסה האמיתית שנמצאה (מקור Aviasales) */
-      const timesTxt=(d.departTime?` · ${t.outTime} ${d.departTime}`:"")+(d.returnTime?` · ${t.retTime} ${d.returnTime}`:"");
+      /* שעות יציאה/חזרה של הטיסה האמיתית שנמצאה (מקור Aviasales).
+         במצב גמיש (ימי שהייה=0) — לא מציגים זמן חזרה, כי החזרה פתוחה. */
+      const showRet=!s.flex;
+      const timesTxt=(d.departTime?` · ${t.outTime} ${d.departTime}`:"")+((showRet&&d.returnTime)?` · ${t.retTime} ${d.returnTime}`:"");
       el.innerHTML=t.priceFrom(p,d.airline,d.depart,d.approx)+timesTxt+` · ${t.noBag}`+perP+bagNote;
       /* אותו מחיר אמיתי (הזול שנמצא, מקור Aviasales) על כל כרטיס */
       const cardHtml=`<div class="ils">${p} ₪</div><div class="usd">${d.approx?t.approxLbl:t.lowestLbl}</div>`;
       cards.forEach(c=>c.innerHTML=cardHtml);
       /* עצירות + משך + שעות + מזוודה (כמו בכרטיס Aviasales) על כל שורה — מהזול שנמצא */
-      const timesSpans=(d.departTime?`<span>·</span><span>${t.outTime} ${d.departTime}</span>`:"")+(d.returnTime?`<span>·</span><span>${t.retTime} ${d.returnTime}</span>`:"");
+      const timesSpans=(d.departTime?`<span>·</span><span>${t.outTime} ${d.departTime}</span>`:"")+((showRet&&d.returnTime)?`<span>·</span><span>${t.retTime} ${d.returnTime}</span>`:"");
       const extraHtml=stopsHtml(d.transfers)+(d.duration?`<span>·</span><span>${fmtDur(d.duration)}</span>`:"")+timesSpans+`<span>·</span><span>${t.noBag}</span>`;
       extras.forEach(e=>e.innerHTML=extraHtml);
       /* כרטיס Aviasales — הטיסה האמיתית: עצירות + משך + קישור רכישה עם ה-marker */
@@ -976,7 +978,7 @@ async function fetchRoutePrice(s){
           </div>
           <div class="route">
             <div class="cities">${s.fromC.iata} → ${s.toC.iata}${stopsHtml(d.transfers)}<span class="badge">${t.cheapest}</span></div>
-            <div class="meta"><span>${fmtDMY(s.dep)}</span><span>·</span><span>${fmtDMY(s.ret)}</span>${durTxt?`<span>·</span><span>${durTxt}</span>`:""}${d.departTime?`<span>·</span><span>${t.outTime} ${d.departTime}</span>`:""}${d.returnTime?`<span>·</span><span>${t.retTime} ${d.returnTime}</span>`:""}<span>·</span><span>${t.noBag}</span></div>
+            <div class="meta"><span>${fmtDMY(s.dep)}</span><span>·</span><span>${fmtDMY(s.ret)}</span>${durTxt?`<span>·</span><span>${durTxt}</span>`:""}${d.departTime?`<span>·</span><span>${t.outTime} ${d.departTime}</span>`:""}${(showRet&&d.returnTime)?`<span>·</span><span>${t.retTime} ${d.returnTime}</span>`:""}<span>·</span><span>${t.noBag}</span></div>
           </div>
           <div class="price"><div class="ils">${p} ₪</div><div class="usd">${d.approx?t.approxLbl:t.lowestLbl}</div></div>
           <span class="buy">${t.aviasalesBuy}</span>
@@ -1011,7 +1013,8 @@ function doSearch(){
   render();
 }
 
-/* חיפוש דו-כיווני גמיש: יציאה קבועה, חזרה פתוחה — נמצא הזול והתאריכים נמלאים */
+/* חיפוש דו-כיווני גמיש: יציאה קבועה, חזרה פתוחה — מציאת המחיר הטוב מהתאריך הזה.
+   חשוב: לא נוגעים בטופס (ימי שהייה נשאר 0, תאריך חזרה נשאר ריק כפי שהוקש). */
 async function resolveFlexDates(fromC,toC,dep){
   const t=T[currentLang];
   const box=document.getElementById("results");
@@ -1020,10 +1023,8 @@ async function resolveFlexDates(fromC,toC,dep){
     const u=`${PROXY_BASE}/price?origin=${fromC.iata}&destination=${toC.iata}&depart=${fmtISO(dep)}`; /* בלי return = דו-כיווני גמיש */
     const r=await fetch(u); const d=await r.json();
     if(d&&d.found&&d.returnISO){
-      const fdep=parseISO(d.departISO)||dep, fret=parseISO(d.returnISO);
-      dateOut.value=fmtDMY(fdep); dateReturn.value=fmtDMY(fret);
-      nights.value=Math.max(1,Math.round((fret-fdep)/86400000));
-      lastSearch={fromC,toC,dep:fdep,ret:fret,flex:true};
+      const fret=parseISO(d.returnISO);    /* תאריך החזרה שנמצא — לשימוש פנימי בלבד (קישורים+מחיר), בלי למלא בטופס */
+      lastSearch={fromC,toC,dep,ret:fret,flex:true};
       render();
     }else{
       box.innerHTML=`<div class="results-head"><h2>${t.priceNone}</h2></div>`;
