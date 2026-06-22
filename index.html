@@ -331,7 +331,7 @@ const T={
     resTitle:"חיפושים חיים אמיתיים",
     resSub:"בחר אתר כדי לראות מחירים אמיתיים בזמן אמת ולרכוש",
     routeFor:(o,d,a,b)=>`${o} ← ${d} · ${a} – ${b}`,
-    openLive:"פתח חיפוש חי ←",
+    openLive:"פתח חיפוש חי ←",buyLbl:"רכישה ←",
     priceChecking:"בודק מחיר אמיתי…",
     priceFrom:(p,air,date,approx)=>`💰 ${approx?"בערך מ-":"מ-"}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"מחירים חיים יוצגו באתרי החיפוש למטה",
@@ -369,7 +369,7 @@ const T={
     resTitle:"Real live searches",
     resSub:"Pick a site to see real-time prices and book",
     routeFor:(o,d,a,b)=>`${o} → ${d} · ${a} – ${b}`,
-    openLive:"Open live search →",
+    openLive:"Open live search →",buyLbl:"Buy →",
     priceChecking:"Checking live price…",
     priceFrom:(p,air,date,approx)=>`💰 ${approx?"approx. ":"from "}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"Live prices shown on the search sites below",
@@ -407,7 +407,7 @@ const T={
     resTitle:"Реальный живой поиск",
     resSub:"Выберите сайт, чтобы увидеть актуальные цены и купить",
     routeFor:(o,d,a,b)=>`${o} → ${d} · ${a} – ${b}`,
-    openLive:"Открыть живой поиск →",
+    openLive:"Открыть живой поиск →",buyLbl:"Купить →",
     priceChecking:"Проверяю реальную цену…",
     priceFrom:(p,air,date,approx)=>`💰 ${approx?"около ":"от "}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"Актуальные цены — на сайтах поиска ниже",
@@ -908,7 +908,7 @@ function render(){
   </div>`;
 
   const cards=engines.map(e=>`
-    <a class="ticket engine-card" href="${e.url}" target="_blank" rel="noopener">
+    <a class="ticket engine-card best-card" href="${e.url}" target="_blank" rel="noopener">
       <div class="airline">
         <div class="logo" style="background:${e.color}">${e.code}</div>
         <div class="airline-name">${e.name}</div>
@@ -918,7 +918,7 @@ function render(){
         <div class="meta"><span>${fmtDMY(dep)}</span><span>·</span><span>${fmtDMY(ret)}</span><span class="card-extra"></span></div>
       </div>
       <div class="price card-price"></div>
-      <span class="buy">${t.openLive}</span>
+      <span class="buy">${t.buyLbl}</span>
     </a>`).join("");
 
   box.innerHTML=head+'<div id="bestCard"></div>'+cards;
