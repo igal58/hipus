@@ -255,7 +255,15 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
 
 /* ── AUTOCOMPLETE ── */
 .ac-wrap{position:relative}
-.ac-wrap input{width:100%}
+.ac-wrap input{width:100%;padding-inline-start:40px}
+/* select + input flag adornments */
+.sel-wrap{position:relative;display:flex;align-items:center}
+.sel-wrap select{width:100%;padding-inline-start:40px;padding-inline-end:34px;-webkit-appearance:none;appearance:none}
+.sel-flag{position:absolute;inset-inline-start:12px;width:22px;height:16px;border-radius:3px;
+  box-shadow:0 0 0 1px rgba(0,0,0,.1);z-index:2;pointer-events:none}
+.sel-caret{position:absolute;inset-inline-end:13px;color:var(--muted);font-size:12px;pointer-events:none;z-index:2}
+.ac-pin{display:none}
+.ac-flag{width:24px;height:18px;border-radius:3px;flex-shrink:0;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
 .ac-drop{position:absolute;top:calc(100% + 4px);inset-inline-start:0;inset-inline-end:0;
   z-index:999;background:var(--panel2);border:1px solid var(--accent);
   border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.45);
@@ -264,9 +272,9 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
 .ac-item{padding:8px 12px;cursor:pointer;font-size:14px;
   display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
 .ac-item:last-child{border-bottom:none}
-.ac-item:hover{background:var(--accent);color:#04293f;font-weight:600}
-.ac-item:hover .ac-city{color:#04293f}
-.ac-iata{font-size:11px;background:rgba(0,0,0,.18);padding:2px 6px;
+.ac-item:hover{background:var(--accent);color:#fff;font-weight:600}
+.ac-item:hover .ac-city,.ac-item:hover .ac-iata{color:#fff;background:rgba(255,255,255,.2)}
+.ac-iata{font-size:11px;background:var(--panel);color:var(--muted);padding:2px 6px;
   border-radius:6px;font-weight:700;min-width:32px;text-align:center;flex-shrink:0}
 .ac-names{flex:1;display:flex;flex-direction:column;gap:1px}
 .ac-country{font-size:13px;font-weight:600}
@@ -315,11 +323,17 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
   <div class="grid">
     <div class="field">
       <label id="lFrom">ארץ יציאה</label>
-      <select id="from"></select>
+      <div class="sel-wrap">
+        <span class="fi sel-flag" id="fromFlag" aria-hidden="true"></span>
+        <select id="from"></select>
+        <i class="fa-solid fa-chevron-down sel-caret" aria-hidden="true"></i>
+      </div>
     </div>
     <div class="field">
       <label id="lTo">ארץ / עיר יעד</label>
       <div class="ac-wrap">
+        <span class="fi sel-flag" id="toFlag" aria-hidden="true"></span>
+        <i class="fa-solid fa-location-dot ac-pin" aria-hidden="true"></i>
         <input id="to" autocomplete="off">
         <div class="ac-drop" id="acDrop"></div>
       </div>
@@ -911,6 +925,8 @@ function applyLang(lang){
   /* עדכון שדה יעד נוכחי */
   const tc=COUNTRIES.find(c=>c.code===selectedToCode);
   if(tc){ const n=cLng(tc); document.getElementById("to").value=`${n.c} — ${n.ct}`; }
+  if(typeof setToFlag==="function") setToFlag(selectedToCode);
+  if(typeof setFromFlag==="function") setFromFlag();
   /* עדכון תוצאות */
   applyView();
 }
@@ -967,15 +983,33 @@ const toInput=document.getElementById("to");
 const acDrop =document.getElementById("acDrop");
 (()=>{ const n=cLng(COUNTRIES.find(c=>c.code==="GR")); toInput.value=`${n.c} — ${n.ct}`; })();
 
+/* קוד מדינה ISO-3166 alpha-2 לדגל (flag-icons) — מסיר ספרה נגררת מקודים כמו US7/GE3 */
+function isoOf(c){ return (c.code||"").replace(/[0-9]+$/,"").toLowerCase(); }
+function flagSpan(c,extra){ return `<span class="fi fi-${isoOf(c)} ${extra||""}"></span>`; }
+/* מציג דגל היעד הנבחר ליד שדה היעד */
+function setToFlag(code){
+  const el=document.getElementById("toFlag"); if(!el) return;
+  const c=COUNTRIES.find(x=>x.code===code);
+  el.className="fi sel-flag fi-"+(c?isoOf(c):"");
+  el.style.visibility=c?"visible":"hidden";
+}
+function setFromFlag(){
+  const el=document.getElementById("fromFlag"); if(!el) return;
+  const c=COUNTRIES.find(x=>x.code===fromSel.value);
+  el.className="fi sel-flag fi-"+(c?isoOf(c):"");
+  el.style.visibility=c?"visible":"hidden";
+}
+
 function renderDrop(list){
   acDrop.innerHTML=list.length
     ? list.map(c=>{ const n=cLng(c); return `<div class="ac-item" data-code="${c.code}">
+        ${flagSpan(c,"ac-flag")}
         <span class="ac-iata">${c.iata}</span>
         <div class="ac-names">
           <span class="ac-country">${n.c}</span>
           <span class="ac-city">${n.ct}</span>
         </div></div>`; }).join("")
-    : `<div class="ac-empty">${T[currentLang].noRes}</div>`;
+    : `<div class="ac-empty"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> ${T[currentLang].noRes}</div>`;
   acDrop.classList.add("open");
 }
 function closeDrop(){ acDrop.classList.remove("open"); }
@@ -997,6 +1031,7 @@ acDrop.addEventListener("mousedown",e=>{
   selectedToCode=item.dataset.code;
   const n=cLng(COUNTRIES.find(c=>c.code===selectedToCode));
   toInput.value=`${n.c} — ${n.ct}`;
+  setToFlag(selectedToCode);
   closeDrop();
 });
 document.addEventListener("click",e=>{ if(!e.target.closest(".ac-wrap")) closeDrop(); });
@@ -1407,7 +1442,7 @@ document.addEventListener("click",e=>{
   const c=findByIata(row.dataset.dest);
   if(c){
     selectedToCode=c.code;
-    const n=cLng(c); toInput.value=`${n.c} — ${n.ct}`;
+    const n=cLng(c); toInput.value=`${n.c} — ${n.ct}`; setToFlag(selectedToCode);
     const dp=parseISO(row.dataset.depart); if(dp) dateOut.value=fmtDMY(dp);
     const rt=parseISO(row.dataset.ret); if(rt){ dateReturn.value=fmtDMY(rt); syncNts(); } else { syncRet(); }
     doSearch();
@@ -1456,6 +1491,7 @@ document.addEventListener("click",e=>{ if(!e.target.closest(".pax-wrap")) paxPan
 updatePaxBtn();
 
 document.getElementById("searchBtn").addEventListener("click",doSearch);
+fromSel.addEventListener("change",()=>{ setFromFlag(); if(lastSearch) render(); });
 applyLang("he");          /* קובע תוויות + אייקונים (מחליף את ה-HTML הסטטי) בטעינה */
 doSearch();
 loadRate();
