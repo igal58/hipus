@@ -116,6 +116,10 @@ button.cal-btn .fa-solid{color:var(--accent)}
 
 /* ── RESULTS ── */
 .results{max-width:1020px;margin:4px auto 60px;padding:0 8px}
+.results-toolbar{max-width:1020px;margin:16px auto 0;padding:0 8px;display:flex;
+  align-items:center;justify-content:flex-end;gap:10px}
+.rt-lbl{color:var(--muted);font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.rt-lbl .fa-solid{color:var(--accent)}
 .results-head{display:flex;justify-content:space-between;align-items:center;
   margin:12px 4px 0;flex-wrap:wrap;gap:8px}
 .results-head h2{margin:0;font-size:18px}
@@ -362,12 +366,6 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
     </div>
     <!-- מצב בהיר/כהה -->
     <button class="theme-toggle" id="lightToggle"></button>
-    <!-- בחירת מטבע -->
-    <div class="lang-bar cur-bar" role="group" aria-label="currency">
-      <button class="lang-btn active" data-cur="ils" aria-label="ILS">₪</button>
-      <button class="lang-btn"        data-cur="usd" aria-label="USD">$</button>
-      <button class="lang-btn"        data-cur="eur" aria-label="EUR">€</button>
-    </div>
   </div>
   <div class="toolbar-right">
     <div class="palette">
@@ -458,6 +456,15 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
   <div id="map"></div>
 </section>
 
+<div class="results-toolbar">
+  <span class="rt-lbl"><i class="fa-solid fa-coins" aria-hidden="true"></i> <span id="curLabel"></span></span>
+  <div class="lang-bar cur-bar" role="group" aria-label="currency">
+    <button class="lang-btn active" data-cur="ils" aria-label="ILS">₪</button>
+    <button class="lang-btn"        data-cur="usd" aria-label="USD">$</button>
+    <button class="lang-btn"        data-cur="eur" aria-label="EUR">€</button>
+  </div>
+</div>
+
 <section class="results" id="results"></section>
 
 <!-- בורר טווח תאריכים -->
@@ -491,7 +498,7 @@ const T={
     toPlh:"הקלד ארץ, עיר או קוד…",
     dateOutLbl:"תאריך יציאה",nightsLbl:"ימי שהייה",dateRetLbl:"תאריך חזרה",
     nightsHint:"0 = חיפוש גמיש מתאריך היציאה והלאה",nightsHintActive:"חיפוש גמיש — הזול ביותר מתאריך היציאה והלאה",
-    dpTitle:"בחירת תאריכים",dpApply:"אישור",dpClear:"נקה",dpNights:(n)=>`${n} לילות`,mapHead:"היעד על המפה",
+    dpTitle:"בחירת תאריכים",dpApply:"אישור",dpClear:"נקה",dpNights:(n)=>`${n} לילות`,mapHead:"היעד על המפה",curLabel:"מטבע",
     searchBtn:"חפש כרטיסים",
     sortLbl:"מיון:",sortPrice:"מחיר",sortStops:"עצירות+מחיר",
     filtLbl:"עצירות:",filtAll:"הכל",filtDirect:"ישיר",filt1:"עצירה 1",filt2:"2+ עצירות",
@@ -543,7 +550,7 @@ const T={
     toPlh:"Type country, city or code…",
     dateOutLbl:"Departure date",nightsLbl:"Nights",dateRetLbl:"Return date",
     nightsHint:"0 = flexible search from the departure date onward",nightsHintActive:"Flexible search — cheapest from the departure date onward",
-    dpTitle:"Select dates",dpApply:"Apply",dpClear:"Clear",dpNights:(n)=>`${n} night${n===1?"":"s"}`,mapHead:"Destination on the map",
+    dpTitle:"Select dates",dpApply:"Apply",dpClear:"Clear",dpNights:(n)=>`${n} night${n===1?"":"s"}`,mapHead:"Destination on the map",curLabel:"Currency",
     searchBtn:"Search flights",
     sortLbl:"Sort:",sortPrice:"Price",sortStops:"Stops+price",
     filtLbl:"Stops:",filtAll:"All",filtDirect:"Direct",filt1:"1 stop",filt2:"2+ stops",
@@ -595,7 +602,7 @@ const T={
     toPlh:"Введите страну, город или код…",
     dateOutLbl:"Дата вылета",nightsLbl:"Ночей",dateRetLbl:"Дата возврата",
     nightsHint:"0 = гибкий поиск от даты вылета и далее",nightsHintActive:"Гибкий поиск — самое дешёвое от даты вылета и далее",
-    dpTitle:"Выбор дат",dpApply:"Применить",dpClear:"Сбросить",dpNights:(n)=>`${n} ноч.`,mapHead:"Направление на карте",
+    dpTitle:"Выбор дат",dpApply:"Применить",dpClear:"Сбросить",dpNights:(n)=>`${n} ноч.`,mapHead:"Направление на карте",curLabel:"Валюта",
     searchBtn:"Найти рейсы",
     sortLbl:"Сортировка:",sortPrice:"Цена",sortStops:"Пересадки+цена",
     filtLbl:"Пересадки:",filtAll:"Все",filtDirect:"Прямой",filt1:"1 пересадка",filt2:"2+ пересадки",
@@ -1017,6 +1024,7 @@ function applyLang(lang){
   if(typeof setToFlag==="function") setToFlag(selectedToCode);
   if(typeof setFromFlag==="function") setFromFlag();
   const mh=document.getElementById("mapHead"); if(mh) mh.textContent=t.mapHead;
+  const cl=document.getElementById("curLabel"); if(cl) cl.textContent=t.curLabel;
   /* עדכון תוצאות */
   applyView();
 }
