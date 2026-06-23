@@ -179,6 +179,18 @@ button.cal-btn:hover{filter:brightness(1.1)}
 .cal-cell .cal-p{font-size:17px;font-weight:700;margin-top:4px}
 .cal-cell.cal-min{border-color:var(--good);box-shadow:0 0 0 1px var(--good)}
 .cal-cell .cal-tag{font-size:11px;color:var(--good);font-weight:700;margin-top:3px}
+.alert-box{margin-top:18px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.alert-head{font-size:17px;font-weight:700}
+.alert-sub{color:var(--muted);font-size:13px;margin:4px 0 12px}
+.alert-form{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.alert-in{padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:15px}
+#alertEmail{flex:1;min-width:180px}
+#alertTarget{width:130px}
+.alert-btn{background:linear-gradient(90deg,#f59e0b,#f97316);color:#fff;border:0;font-weight:700;font-size:15px;padding:11px 20px;border-radius:10px;cursor:pointer}
+.alert-btn:hover{filter:brightness(1.1)}
+.alert-msg{margin-top:10px;font-size:14px;font-weight:600;min-height:18px}
+.alert-msg.ok{color:var(--good)}
+.alert-msg.err{color:#f87171}
 .deal-row{cursor:pointer}
 .deal-row .logo{font-size:12px}
 
@@ -372,6 +384,10 @@ const T={
     calBtn:"📅 החודש הזול",calTitle:"📅 לוח מחירים — היום הזול בחודש",
     calLoading:"בונה לוח מחירים…",calNone:"אין נתוני לוח למסלול/חודש הזה — נסה חודש אחר או יעד אחר",
     calCheapest:"הכי זול",calHint:"לחץ על יום כדי לחפש טיסות בתאריך הזה",
+    alertTitle:"🔔 התראת מחיר",alertSub:"נשלח לך מייל כשהמחיר למסלול הזה יירד לסכום שתבחר",
+    alertEmailPh:"המייל שלך",alertTargetPh:"מחיר יעד ₪",alertBtn:"צור התראה",alertSending:"יוצר התראה…",
+    alertOk:"✅ ההתראה נוצרה! נשלח לך מייל כשהמחיר יירד ליעד.",alertErr:"אירעה שגיאה — נסה שוב",
+    alertBadEmail:"אנא הזן כתובת מייל תקינה",alertBadTarget:"אנא הזן מחיר יעד",
     dealsLoading:"מחפש מבצעים…",dealsNone:"אין מבצעים כרגע — נסה שוב מאוחר יותר",
     paxLbl:"נוסעים",adultsLbl:"מבוגרים",adultsSub:"מעל 12",childrenLbl:"ילדים",childrenSub:"2–11",
     infantsLbl:"תינוקות",infantsSub:"עד שנתיים",paxSummary:(n)=>`${n} 👤`,perPerson:"לנוסע",
@@ -417,6 +433,10 @@ const T={
     calBtn:"📅 Cheapest month",calTitle:"📅 Price calendar — cheapest day of the month",
     calLoading:"Building price calendar…",calNone:"No calendar data for this route/month — try another month or destination",
     calCheapest:"Cheapest",calHint:"Tap a day to search flights on that date",
+    alertTitle:"🔔 Price alert",alertSub:"We'll email you when this route drops to your target price",
+    alertEmailPh:"Your email",alertTargetPh:"Target price ₪",alertBtn:"Create alert",alertSending:"Creating alert…",
+    alertOk:"✅ Alert created! We'll email you when the price drops to your target.",alertErr:"Something went wrong — try again",
+    alertBadEmail:"Please enter a valid email",alertBadTarget:"Please enter a target price",
     dealsLoading:"Finding deals…",dealsNone:"No deals right now — try again later",
     paxLbl:"Passengers",adultsLbl:"Adults",adultsSub:"12+",childrenLbl:"Children",childrenSub:"2–11",
     infantsLbl:"Infants",infantsSub:"under 2",paxSummary:(n)=>`${n} 👤`,perPerson:"per person",
@@ -462,6 +482,10 @@ const T={
     calBtn:"📅 Дешёвый месяц",calTitle:"📅 Календарь цен — самый дешёвый день месяца",
     calLoading:"Строю календарь цен…",calNone:"Нет данных календаря для этого маршрута/месяца — попробуйте другой месяц или направление",
     calCheapest:"Дешевле всего",calHint:"Нажмите на день, чтобы найти рейсы на эту дату",
+    alertTitle:"🔔 Оповещение о цене",alertSub:"Пришлём письмо, когда цена на этот маршрут упадёт до вашей цели",
+    alertEmailPh:"Ваш email",alertTargetPh:"Целевая цена ₪",alertBtn:"Создать оповещение",alertSending:"Создаю оповещение…",
+    alertOk:"✅ Оповещение создано! Пришлём письмо при снижении цены.",alertErr:"Произошла ошибка — попробуйте снова",
+    alertBadEmail:"Введите корректный email",alertBadTarget:"Введите целевую цену",
     dealsLoading:"Ищу акции…",dealsNone:"Сейчас нет акций — попробуйте позже",
     paxLbl:"Пассажиры",adultsLbl:"Взрослые",adultsSub:"12+",childrenLbl:"Дети",childrenSub:"2–11",
     infantsLbl:"Младенцы",infantsSub:"до 2 лет",paxSummary:(n)=>`${n} 👤`,perPerson:"за человека",
@@ -1033,10 +1057,47 @@ function render(){
       </a>`).join("")+`
     </div>`;
 
+  /* 🔔 התראת מחיר — נשלח מייל כשהמחיר למסלול הזה יירד ליעד */
+  const savedEmail=(()=>{ try{return localStorage.getItem("hipusEmail")||"";}catch{return "";} })();
+  const alertUI=`
+    <div class="alert-box">
+      <div class="alert-head">${t.alertTitle}</div>
+      <div class="alert-sub">${t.alertSub}</div>
+      <div class="alert-form">
+        <input type="email" id="alertEmail" class="alert-in" placeholder="${t.alertEmailPh}" value="${savedEmail}">
+        <input type="number" id="alertTarget" class="alert-in" min="0" step="50" placeholder="${t.alertTargetPh}">
+        <button class="alert-btn" id="alertBtn">${t.alertBtn}</button>
+      </div>
+      <div class="alert-msg" id="alertMsg"></div>
+    </div>`;
+
   box.innerHTML=head
     +`<div class="offers-head">${t.offersTitle}</div><div id="offers"></div>`
-    +compare;
+    +compare
+    +alertUI;
+  document.getElementById("alertBtn").addEventListener("click",submitAlert);
   fetchOffers(lastSearch);
+}
+
+/* שליחת בקשה ליצירת התראת מחיר עבור המסלול הנוכחי */
+async function submitAlert(){
+  const t=T[currentLang];
+  const msg=document.getElementById("alertMsg");
+  const email=(document.getElementById("alertEmail").value||"").trim();
+  const target=Math.round(Number(document.getElementById("alertTarget").value)||0);
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ msg.textContent=t.alertBadEmail; msg.className="alert-msg err"; return; }
+  if(target<=0){ msg.textContent=t.alertBadTarget; msg.className="alert-msg err"; return; }
+  if(!lastSearch) return;
+  const {fromC,toC,dep,ret}=lastSearch;
+  const retISO=(lastSearch.flex||!ret)?"":fmtISO(ret);
+  msg.textContent=t.alertSending; msg.className="alert-msg";
+  try{
+    const r=await fetch(`${PROXY_BASE}/alerts`,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({email,origin:fromC.iata,destination:toC.iata,depart:fmtISO(dep),ret:retISO,target})});
+    const d=await r.json();
+    if(d&&d.ok){ try{localStorage.setItem("hipusEmail",email);}catch{} msg.textContent=t.alertOk; msg.className="alert-msg ok"; }
+    else { msg.textContent=t.alertErr; msg.className="alert-msg err"; }
+  }catch(e){ msg.textContent=t.alertErr; msg.className="alert-msg err"; }
 }
 
 /* ── משיכת מחיר אמיתי מה-proxy המקומי (proxy.js → Travelpayouts) ── */

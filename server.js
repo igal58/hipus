@@ -181,6 +181,76 @@ async function fetchCalendar(o, d, month) {
   return { days:[], reason:"no-data" };
 }
 
+/* ════════════════════════════════════════════════════════════
+   🔔 התראות מחיר (MVP) — אחסון בקובץ + שליחת מייל דרך Resend
+   ────────────────────────────────────────────────────────────
+   הגדרות סביבה (env) הנדרשות בענן:
+     RESEND_API_KEY  ← מפתח Resend (חינמי). בלעדיו → מצב "dry-run" (לא שולח, רק מדווח מה היה נשלח)
+     ALERT_FROM      ← כתובת השולח המאומתת ב-Resend (ברירת מחדל: onboarding@resend.dev)
+     CRON_KEY        ← סוד שמגן על /check-alerts (ה-cron החיצוני חייב לשלוח ?key=...)
+   ⚠️ אחסון בקובץ alerts.json הוא ארעי ב-Render חינמי (נמחק בכל deploy/קור-סטארט).
+      לפרודקשן יציב: לעבור לאחסון חיצוני (Upstash/DB). ראה _המשך_מכאן.md.
+   ════════════════════════════════════════════════════════════ */
+const ALERTS_FILE = path.join(__dirname, "alerts.json");
+const RESEND_KEY  = process.env.RESEND_API_KEY || "";
+const ALERT_FROM  = process.env.ALERT_FROM     || "Hipus <onboarding@resend.dev>";
+const CRON_KEY    = process.env.CRON_KEY        || "";
+const EMAIL_RE    = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function loadAlerts() { try { return JSON.parse(fs.readFileSync(ALERTS_FILE, "utf8")); } catch { return []; } }
+function saveAlerts(arr) { try { fs.writeFileSync(ALERTS_FILE, JSON.stringify(arr, null, 2)); return true; } catch { return false; } }
+function genId() { return "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function readBody(req) { return new Promise(resolve => { let b=""; req.on("data",c=>b+=c);
+  req.on("end",()=>{ try{resolve(JSON.parse(b||"{}"));}catch{resolve({});} }); req.on("error",()=>resolve({})); }); }
+
+function httpsPostJSON(urlStr, headers, bodyObj) {
+  return new Promise(resolve => {
+    const data = JSON.stringify(bodyObj);
+    const u = new URL(urlStr);
+    const r = https.request({ hostname:u.hostname, path:u.pathname+u.search, method:"POST",
+      headers: Object.assign({ "Content-Type":"application/json", "Content-Length":Buffer.byteLength(data) }, headers) },
+      resp => { let b=""; resp.on("data",c=>b+=c); resp.on("end",()=>{ let j=null; try{j=JSON.parse(b);}catch{}
+        resolve({ status:resp.statusCode, json:j }); }); });
+    r.on("error", e => resolve({ status:0, error:String(e) }));
+    r.write(data); r.end();
+  });
+}
+async function sendEmail(to, subject, html) {
+  if (!RESEND_KEY) return { sent:false, dryRun:true, to, subject };       // בלי מפתח → לא שולחים, רק מדווחים
+  const r = await httpsPostJSON("https://api.resend.com/emails",
+    { "Authorization":"Bearer " + RESEND_KEY }, { from:ALERT_FROM, to:[to], subject, html });
+  return { sent: r.status>=200 && r.status<300, status:r.status, id:(r.json&&r.json.id)||null };
+}
+/* בודק את כל ההתראות הפעילות מול מחיר חי; אם מחיר ≤ יעד → שולח מייל וכבה את ההתראה (one-shot, בלי ספאם) */
+async function runAlertCheck() {
+  const alerts = loadAlerts();
+  const results = []; let changed = false;
+  for (const a of alerts) {
+    if (!a || a.active === false) { continue; }
+    const out = await fetchPrice(a.origin, a.destination, a.depart, a.ret || "");
+    const price = (out && out.found) ? out.price : null;
+    if (price != null && price <= a.target) {
+      const dates = `${a.depart}${a.ret?` – ${a.ret}`:""}`;
+      const subject = `✈️ ${a.origin}→${a.destination} — ${price} ₪ (יעד ${a.target} ₪)`;
+      const html = `<div dir="auto" style="font-family:Arial,sans-serif;max-width:520px">
+        <h2 style="margin:0 0 8px">🎉 נמצא מחיר מתחת ליעד שלך!</h2>
+        <p style="margin:4px 0">מסלול: <b>${a.origin} → ${a.destination}</b></p>
+        <p style="margin:4px 0">תאריכים: ${dates}</p>
+        <p style="margin:4px 0;font-size:20px"><b>${price} ${out.currency||"ILS"}</b>
+           <span style="color:#888;font-size:14px"> (היעד שלך: ${a.target} ₪)</span>${out.airline?` · ${out.airline}`:""}</p>
+        ${out.link?`<p style="margin:12px 0"><a href="${out.link}" style="background:#0ea5e9;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">לרכישה ב-Aviasales ←</a></p>`:""}
+        <p style="color:#999;font-size:12px;margin-top:16px">Hipus — התראת מחיר</p></div>`;
+      const mail = await sendEmail(a.email, subject, html);
+      results.push({ id:a.id, email:a.email, price, target:a.target, triggered:true, mail });
+      if (mail.sent) { a.active=false; a.notifiedAt=new Date().toISOString(); a.lastPrice=price; changed=true; }  // dry-run נשאר פעיל לבדיקות
+    } else {
+      results.push({ id:a.id, triggered:false, price, target:a.target });
+    }
+  }
+  if (changed) saveAlerts(alerts);
+  return { checked: alerts.length, dryRun: !RESEND_KEY, results };
+}
+
 /* ── HTTP server ── */
 const server = http.createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");   // harmless; same-origin anyway
@@ -217,6 +287,50 @@ const server = http.createServer(async (req, res) => {
     if (!o||!d||!month) { res.writeHead(400,{"Content-Type":"application/json"});
       return res.end(JSON.stringify({days:[],reason:"bad-params"})); }
     const out = await fetchCalendar(o,d,month);
+    res.writeHead(200,{"Content-Type":"application/json"});
+    return res.end(JSON.stringify(out));
+  }
+  /* 🔔 יצירת התראת מחיר */
+  if (u.pathname === "/alerts" && req.method === "POST") {
+    const b = await readBody(req);
+    const email=(b.email||"").trim();
+    const origin=(b.origin||"").toUpperCase(), destination=(b.destination||"").toUpperCase();
+    const depart=(b.depart||"").trim(), ret=(b.ret||"").trim();
+    const target=Math.round(Number(b.target)||0);
+    if (!EMAIL_RE.test(email)||!origin||!destination||!depart||target<=0) {
+      res.writeHead(400,{"Content-Type":"application/json"});
+      return res.end(JSON.stringify({ok:false,reason:"bad-params"})); }
+    const alerts = loadAlerts();
+    const alert = { id:genId(), email, origin, destination, depart, ret, target,
+      currency:"ILS", active:true, created:new Date().toISOString() };
+    alerts.push(alert); saveAlerts(alerts);
+    res.writeHead(200,{"Content-Type":"application/json"});
+    return res.end(JSON.stringify({ok:true,id:alert.id}));
+  }
+  /* רשימת ההתראות של מייל מסוים (לניהול) */
+  if (u.pathname === "/alerts" && req.method === "GET") {
+    const email=(u.searchParams.get("email")||"").trim();
+    if (!EMAIL_RE.test(email)) { res.writeHead(400,{"Content-Type":"application/json"});
+      return res.end(JSON.stringify({alerts:[],reason:"bad-email"})); }
+    const mine = loadAlerts().filter(a=>a.email===email)
+      .map(a=>({id:a.id,origin:a.origin,destination:a.destination,depart:a.depart,ret:a.ret,target:a.target,active:a.active}));
+    res.writeHead(200,{"Content-Type":"application/json"});
+    return res.end(JSON.stringify({alerts:mine}));
+  }
+  /* מחיקת התראה (לפי id + אימות מייל) */
+  if (u.pathname === "/alerts/delete") {
+    const id=(u.searchParams.get("id")||"").trim(), email=(u.searchParams.get("email")||"").trim();
+    let alerts=loadAlerts(); const before=alerts.length;
+    alerts=alerts.filter(a=>!(a.id===id && a.email===email));
+    saveAlerts(alerts);
+    res.writeHead(200,{"Content-Type":"application/json"});
+    return res.end(JSON.stringify({ok:true,removed:before-alerts.length}));
+  }
+  /* בדיקת כל ההתראות (מופעל ע"י cron חיצוני) — מוגן ב-CRON_KEY אם מוגדר */
+  if (u.pathname === "/check-alerts") {
+    if (CRON_KEY && u.searchParams.get("key")!==CRON_KEY) { res.writeHead(403,{"Content-Type":"application/json"});
+      return res.end(JSON.stringify({ok:false,reason:"forbidden"})); }
+    const out = await runAlertCheck();
     res.writeHead(200,{"Content-Type":"application/json"});
     return res.end(JSON.stringify(out));
   }
