@@ -96,9 +96,14 @@ body:not(.light) .lang-btn.active{background:var(--accent);color:#fff}
   border:1px solid var(--line);background:var(--panel2);color:var(--text);
   font-size:15px;outline:none}
 .field input:focus,.field select:focus{border-color:var(--accent)}
-.class-row{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap}
-.class-lbl{color:var(--muted);font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.filters-row{display:flex;align-items:flex-start;gap:26px;margin-top:14px;flex-wrap:wrap}
+.fr-group{display:flex;flex-direction:column;gap:6px}
+.fr-group>label,.class-lbl{color:var(--muted);font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;margin:0}
 .class-lbl .fa-solid{color:var(--accent)}
+.fr-stops input{width:120px;padding:11px 12px;border-radius:12px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--text);font-size:15px;outline:none}
+.fr-stops input:focus{border-color:var(--accent)}
+.fr-stops .field-hint{margin-top:0}
 .class-bar{flex-wrap:wrap}
 .actions{display:flex;gap:10px;align-items:flex-end;margin-top:14px;flex-wrap:wrap}
 .pax-field{margin:0;flex:0 0 160px}
@@ -419,19 +424,21 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
       <label id="lDateRet">תאריך חזרה</label>
       <input type="text" id="dateReturn" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10">
     </div>
-    <div class="field">
+  </div>
+  <div class="filters-row">
+    <div class="fr-group fr-stops">
       <label id="lMaxStops">מקס׳ עצירות</label>
       <input type="number" id="maxStops" min="0" max="9" value="9">
       <small class="field-hint" id="maxStopsHint"></small>
     </div>
-  </div>
-  <div class="class-row">
-    <span class="class-lbl"><i class="fa-solid fa-couch" aria-hidden="true"></i> <span id="lClass">מחלקה</span></span>
-    <div class="lang-bar class-bar" role="group" aria-label="cabin class">
-      <button class="lang-btn active" data-class="economy"  data-cls-key="clsEconomy">Economy</button>
-      <button class="lang-btn"        data-class="comfort"  data-cls-key="clsComfort">Comfort</button>
-      <button class="lang-btn"        data-class="business" data-cls-key="clsBusiness">Business</button>
-      <button class="lang-btn"        data-class="first"    data-cls-key="clsFirst">First</button>
+    <div class="fr-group">
+      <span class="class-lbl"><i class="fa-solid fa-couch" aria-hidden="true"></i> <span id="lClass">מחלקה</span></span>
+      <div class="lang-bar class-bar" role="group" aria-label="cabin class">
+        <button class="lang-btn active" data-class="economy"  data-cls-key="clsEconomy">Economy</button>
+        <button class="lang-btn"        data-class="comfort"  data-cls-key="clsComfort">Comfort</button>
+        <button class="lang-btn"        data-class="business" data-cls-key="clsBusiness">Business</button>
+        <button class="lang-btn"        data-class="first"    data-cls-key="clsFirst">First</button>
+      </div>
     </div>
   </div>
   <div class="actions">
