@@ -998,9 +998,10 @@ function buildEngines(fromC,toC,dep,ret){
       url:`https://www.kayak.com/flights/${o}-${d}/${depI}/${retI}/${a}adults${ch?`/${ch}children`:""}` },
     { name:"Momondo", code:"MO", color:"#e6175c",
       url:`https://www.momondo.com/flight-search/${o}-${d}/${depI}/${retI}/${a}adults${ch?`/${ch}children`:""}` },
-    /* El Al — אין מחיר במקור הנתונים (Aviasales לא כולל את אל על); קישור חיפוש ישיר בלבד, בלי מחיר */
+    /* El Al — אין מחיר במקור הנתונים (Aviasales לא כולל את אל על); קישור לדף הטיסות מישראל לפי שפה
+       (אין deep-link ציבורי יציב עם מסלול/תאריכים → מפנים לדף הזמנות אמיתי, בלי להמציא פרמטרים) */
     { name:"El Al", code:"LY", color:"#003399",
-      url:`https://www.elal.com/`, noPrice:true },
+      url:`https://www.elal.com/${currentLang==="he"?"heb":"eng"}/israel`, noPrice:true },
   ];
 }
 
