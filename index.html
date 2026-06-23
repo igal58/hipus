@@ -966,6 +966,32 @@ let currentCur    = "ils";   /* מטבע נבחר: ils / usd / eur */
 function curSym(){ return {ils:"₪",usd:"$",eur:"€"}[currentCur]||"₪"; }
 function curBarHtml(){ return '<div class="lang-bar cur-bar" role="group" aria-label="currency">'
   +["ils","usd","eur"].map(c=>'<button class="lang-btn'+(c===currentCur?" active":"")+'" data-cur="'+c+'" aria-label="'+c.toUpperCase()+'">'+({ils:"₪",usd:"$",eur:"€"}[c])+'</button>').join("")+'</div>'; }
+
+/* ── שמירת/שחזור בחירות המסך ב-localStorage (נשמר ב-F5) ── */
+const STATE_KEY="hipusState"; let _stateReady=false;
+function saveState(){
+  if(!_stateReady) return;
+  try{ localStorage.setItem(STATE_KEY, JSON.stringify({
+    from:fromSel.value, to:selectedToCode,
+    dateOut:dateOut.value, dateReturn:dateReturn.value, nights:nights.value,
+    pax, bags, lang:currentLang, cur:currentCur, theme:currentTheme, light:isLight
+  })); }catch(e){}
+}
+function loadState(){ try{ return JSON.parse(localStorage.getItem(STATE_KEY)||"null"); }catch{ return null; } }
+function restoreState(){
+  const st=loadState(); if(!st) return;
+  if(st.lang && T[st.lang]) currentLang=st.lang;
+  if(["ils","usd","eur"].includes(st.cur)) currentCur=st.cur;
+  if(st.theme) currentTheme=st.theme;
+  if(typeof st.light==="boolean") isLight=st.light;
+  if(st.pax && typeof st.pax==="object") pax=Object.assign({adults:1,children:0,infants:0},st.pax);
+  if(st.bags && typeof st.bags==="object") bags=Object.assign({cabin:0,checked:0},st.bags);
+  if(st.to && COUNTRIES.some(c=>c.code===st.to)) selectedToCode=st.to;
+  if(st.from && [...fromSel.options].some(o=>o.value===st.from)) fromSel.value=st.from;
+  if(st.dateOut) dateOut.value=st.dateOut;
+  if(st.dateReturn!=null) dateReturn.value=st.dateReturn;
+  if(st.nights!=null && st.nights!=="") nights.value=st.nights;
+}
 let currentTheme  = "dark";
 let isLight       = true;   /* ברירת מחדל: מצב בהיר פרימיום (ניתן להחלפה) */
 let lastSearch    = null;
@@ -1023,6 +1049,7 @@ function applyLang(lang){
   const cl=document.getElementById("curLabel"); if(cl) cl.textContent=t.curLabel;
   /* עדכון תוצאות */
   applyView();
+  saveState();
 }
 
 document.querySelectorAll(".lang-bar:not(.cur-bar) .lang-btn").forEach(b=>
@@ -1034,6 +1061,7 @@ document.addEventListener("click",e=>{
   currentCur=b.dataset.cur;
   document.querySelectorAll(".cur-bar .lang-btn").forEach(x=>x.classList.toggle("active",x.dataset.cur===currentCur));
   document.getElementById("budget").placeholder=T[currentLang].budgetPh.replace("₪",curSym());
+  saveState();
   if(lastSearch) render();
 });
 
@@ -1059,6 +1087,7 @@ function applyTheme(){
   document.body.classList.toggle("light",isLight);
   setThemeToggleLabel();
   document.querySelectorAll(".swatch").forEach(sw=>sw.classList.toggle("active",sw.dataset.theme===currentTheme));
+  saveState();
 }
 applyTheme();
 
@@ -1135,6 +1164,7 @@ acDrop.addEventListener("mousedown",e=>{
   toInput.value=`${n.c} — ${n.ct}`;
   setToFlag(selectedToCode);
   if(typeof focusMap==="function") focusMap(selectedToCode);
+  saveState();
   closeDrop();
 });
 document.addEventListener("click",e=>{ if(!e.target.closest(".ac-wrap")) closeDrop(); });
@@ -1240,6 +1270,7 @@ updateNightsHint();
       if(vEnd){ dateReturn.value=fmtDMY(vEnd); const n=Math.round((vEnd-vStart)/864e5); nights.value=n>0?n:0; }
       else { dateReturn.value=""; nights.value=0; }       /* רק יציאה → חיפוש גמיש */
       updateNightsHint();
+      saveState();
     }
     close();
   }
@@ -1565,6 +1596,7 @@ function doSearch(){
   const dep=parseDMY(dateOut.value);
   if(!dep){alert(t.errDate);return}
   const n=Number(nights.value);
+  saveState();   /* שומר את בחירות המסך (מוצא/יעד/תאריכים/נוסעים…) */
   if(n===0){ resolveFlexDates(fromC,toC,dep); return; }   /* ימי שהייה=0 → דו-כיווני, התאריכים עוד לא נבחרו: חפש מהתאריך והלאה את הזול */
   let ret=parseDMY(dateReturn.value);
   if(!ret){ ret=new Date(dep); ret.setDate(ret.getDate()+(n||7)); }
@@ -1736,16 +1768,20 @@ paxPanel.addEventListener("click",e=>{
     bags[k]=Math.max(0,Math.min(9,bags[k]+Number(bb.dataset.dir)));
   } else return;
   updatePaxBtn();
+  saveState();
   if(lastSearch) render();                                /* רענון קישורים עם הבחירה החדשה */
 });
 document.addEventListener("click",e=>{ if(!e.target.closest(".pax-wrap")) paxPanel.classList.remove("open"); });
 updatePaxBtn();
 
 document.getElementById("searchBtn").addEventListener("click",doSearch);
-fromSel.addEventListener("change",()=>{ setFromFlag(); if(lastSearch) render(); });
-applyLang("he");          /* קובע תוויות + אייקונים (מחליף את ה-HTML הסטטי) בטעינה */
+fromSel.addEventListener("change",()=>{ setFromFlag(); saveState(); if(lastSearch) render(); });
+restoreState();           /* משחזר בחירות קודמות (F5) — דורס את ברירות המחדל לפני התצוגה */
+_stateReady=true;
+applyTheme();             /* מחיל ערכה/מצב בהיר שנשמרו */
+applyLang(currentLang);   /* קובע תוויות + אייקונים + שדה היעד לפי השפה שנשמרה */
 initMap();
-focusMap(selectedToCode); /* ממקד את המפה על יעד ברירת המחדל */
+focusMap(selectedToCode); /* ממקד את המפה על היעד הנבחר */
 doSearch();
 loadRate();
 </script>
