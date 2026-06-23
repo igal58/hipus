@@ -168,6 +168,8 @@ button.deals-btn{background:linear-gradient(90deg,#f59e0b,#f97316);color:#fff;bo
 button.deals-btn:hover{filter:brightness(1.1)}
 .budget-in{align-self:flex-end;width:120px;padding:11px 12px;border-radius:10px;
   border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:15px}
+.field-hint{display:block;margin-top:5px;font-size:11.5px;line-height:1.4;color:var(--muted)}
+.field-hint.active{color:var(--accent);font-weight:600}
 button.cal-btn{align-self:flex-end;background:linear-gradient(90deg,#0ea5e9,#6366f1);color:#fff;border:0;
   font-weight:700;font-size:15px;padding:11px 20px;border-radius:10px;cursor:pointer}
 button.cal-btn:hover{filter:brightness(1.1)}
@@ -293,6 +295,7 @@ button.cal-btn:hover{filter:brightness(1.1)}
     <div class="field">
       <label id="lNights">ימי שהייה</label>
       <input type="number" id="nights" min="0" max="180" value="7">
+      <small class="field-hint" id="nightsHint">💡 0 = חיפוש גמיש מתאריך היציאה והלאה</small>
     </div>
     <div class="field">
       <label id="lDateRet">תאריך חזרה</label>
@@ -353,6 +356,7 @@ const T={
     fromLbl:"ארץ יציאה",toLbl:"ארץ / עיר יעד",
     toPlh:"🔍 הקלד ארץ, עיר או קוד…",
     dateOutLbl:"תאריך יציאה",nightsLbl:"ימי שהייה",dateRetLbl:"תאריך חזרה",
+    nightsHint:"💡 0 = חיפוש גמיש מתאריך היציאה והלאה",nightsHintActive:"✈️ חיפוש גמיש — הזול ביותר מתאריך היציאה והלאה",
     searchBtn:"🔍 חפש כרטיסים",
     sortLbl:"מיון:",sortPrice:"💰 מחיר",sortStops:"🛑 עצירות+מחיר",
     filtLbl:"עצירות:",filtAll:"הכל",filtDirect:"ישיר",filt1:"עצירה 1",filt2:"2+ עצירות",
@@ -402,6 +406,7 @@ const T={
     fromLbl:"Departure",toLbl:"Destination",
     toPlh:"🔍 Type country, city or code…",
     dateOutLbl:"Departure date",nightsLbl:"Nights",dateRetLbl:"Return date",
+    nightsHint:"💡 0 = flexible search from the departure date onward",nightsHintActive:"✈️ Flexible search — cheapest from the departure date onward",
     searchBtn:"🔍 Search flights",
     sortLbl:"Sort:",sortPrice:"💰 Price",sortStops:"🛑 Stops+price",
     filtLbl:"Stops:",filtAll:"All",filtDirect:"Direct",filt1:"1 stop",filt2:"2+ stops",
@@ -451,6 +456,7 @@ const T={
     fromLbl:"Откуда",toLbl:"Куда",
     toPlh:"🔍 Введите страну, город или код…",
     dateOutLbl:"Дата вылета",nightsLbl:"Ночей",dateRetLbl:"Дата возврата",
+    nightsHint:"💡 0 = гибкий поиск от даты вылета и далее",nightsHintActive:"✈️ Гибкий поиск — самое дешёвое от даты вылета и далее",
     searchBtn:"🔍 Найти рейсы",
     sortLbl:"Сортировка:",sortPrice:"💰 Цена",sortStops:"🛑 Пересадки+цена",
     filtLbl:"Пересадки:",filtAll:"Все",filtDirect:"Прямой",filt1:"1 пересадка",filt2:"2+ пересадки",
@@ -847,6 +853,7 @@ function applyLang(lang){
   document.getElementById("to").placeholder=t.toPlh;
   document.getElementById("lDateOut").textContent=t.dateOutLbl;
   document.getElementById("lNights").textContent=t.nightsLbl;
+  updateNightsHint();
   document.getElementById("lDateRet").textContent=t.dateRetLbl;
   document.getElementById("searchBtn").textContent=t.searchBtn;
   document.getElementById("dealsBtn").textContent=t.dealsBtn;
@@ -972,11 +979,20 @@ const nights    =document.getElementById("nights");
 [dateOut,dateReturn].forEach(el=>el.addEventListener("input",maskDate));
 function syncRet(){ const dep=parseDMY(dateOut.value),n=Number(nights.value); if(n===0){dateReturn.value="";return;} if(dep&&n>0){const r=new Date(dep);r.setDate(r.getDate()+n);dateReturn.value=fmtDMY(r);} }
 function syncNts(){ const dep=parseDMY(dateOut.value),ret=parseDMY(dateReturn.value); if(dep&&ret){const d=Math.round((ret-dep)/86400000);if(d>0)nights.value=d;} }
+/* הערת "ימי שהייה" — מסבירה שהפונקציה קיימת, ומדגישה כשהערך 0 (חיפוש גמיש) */
+function updateNightsHint(){
+  const el=document.getElementById("nightsHint");
+  if(!el) return;
+  const t=T[currentLang];
+  if(Number(nights.value)===0){ el.textContent=t.nightsHintActive; el.classList.add("active"); }
+  else { el.textContent=t.nightsHint; el.classList.remove("active"); }
+}
 dateOut.addEventListener("change",syncRet);
-nights.addEventListener("input",syncRet);
+nights.addEventListener("input",()=>{ syncRet(); updateNightsHint(); });
 dateReturn.addEventListener("change",syncNts);
 dateOut.value=fmtDMY(new Date());
 syncRet();
+updateNightsHint();
 
 /* ══════════════════════════════════════════
    שער המרה חי
