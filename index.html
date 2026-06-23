@@ -603,11 +603,11 @@ const COUNTRIES=[
   {code:"PK2",iata:"KHI",he:{c:"פקיסטן",ct:"קראצ׳י"},en:{c:"Pakistan",ct:"Karachi"},ru:{c:"Пакистан",ct:"Карачи"}},
   {code:"BD",iata:"DAC",he:{c:"בנגלדש",ct:"דאקה"},en:{c:"Bangladesh",ct:"Dhaka"},ru:{c:"Бангладеш",ct:"Дакка"}},
   {code:"MM",iata:"RGN",he:{c:"מיאנמר",ct:"יאנגון"},en:{c:"Myanmar",ct:"Yangon"},ru:{c:"Мьянма",ct:"Янгон"}},
-  {code:"KH",iata:"PNH",he:{c:"קמבודיה",ct:"פנום פן"},en:{c:"Cambodia",ct:"Phnom Penh"},ru:{c:"Камбоджа",ct:"Пномпень"}},
+  {code:"KH",iata:"KTI",he:{c:"קמבודיה",ct:"פנום פן"},en:{c:"Cambodia",ct:"Phnom Penh"},ru:{c:"Камбоджа",ct:"Пномпень"}},
   {code:"LA",iata:"VTE",he:{c:"לאוס",ct:"ויינטיאן"},en:{c:"Laos",ct:"Vientiane"},ru:{c:"Лаос",ct:"Вьентьян"}},
   {code:"TW",iata:"TPE",he:{c:"טייוואן",ct:"טאיפיי"},en:{c:"Taiwan",ct:"Taipei"},ru:{c:"Тайвань",ct:"Тайбэй"}},
   {code:"MN",iata:"UBN",he:{c:"מונגוליה",ct:"אולן באטור"},en:{c:"Mongolia",ct:"Ulaanbaatar"},ru:{c:"Монголия",ct:"Улан-Батор"}},
-  {code:"KG",iata:"FRU",he:{c:"קירגיזסטן",ct:"בישקק"},en:{c:"Kyrgyzstan",ct:"Bishkek"},ru:{c:"Киргизия",ct:"Бишкек"}},
+  {code:"KG",iata:"BSZ",he:{c:"קירגיזסטן",ct:"בישקק"},en:{c:"Kyrgyzstan",ct:"Bishkek"},ru:{c:"Киргизия",ct:"Бишкек"}},
   {code:"TJ",iata:"DYU",he:{c:"טג׳יקיסטן",ct:"דושנבה"},en:{c:"Tajikistan",ct:"Dushanbe"},ru:{c:"Таджикистан",ct:"Душанбе"}},
   {code:"TM",iata:"ASB",he:{c:"טורקמניסטן",ct:"אשגבט"},en:{c:"Turkmenistan",ct:"Ashgabat"},ru:{c:"Туркменистан",ct:"Ашхабад"}},
   {code:"BN",iata:"BWN",he:{c:"ברוניי",ct:"בנדר סרי בגוואן"},en:{c:"Brunei",ct:"Bandar Seri Begawan"},ru:{c:"Бруней",ct:"Бандар-Сери-Бегаван"}},
@@ -683,15 +683,79 @@ const COUNTRIES=[
   {code:"PH2",iata:"CEB",he:{c:"פיליפינים",ct:"סבו"},en:{c:"Philippines",ct:"Cebu"},ru:{c:"Филиппины",ct:"Себу"}},
 ];
 
-const AIRLINES=[
-  {name:"אל על",     code:"LY",color:"#1d6fa4",site:"https://www.elal.com"},
-  {name:"Wizz Air",  code:"W6",color:"#8b00c9",site:"https://wizzair.com"},
-  {name:"Ryanair",   code:"FR",color:"#0050a0",site:"https://www.ryanair.com"},
-  {name:"Lufthansa", code:"LH",color:"#05164d",site:"https://www.lufthansa.com"},
-  {name:"Turkish",   code:"TK",color:"#c8102e",site:"https://www.turkishairlines.com"},
-  {name:"Emirates",  code:"EK",color:"#c00",   site:"https://www.emirates.com"},
-  {name:"Air France",code:"AF",color:"#002157",site:"https://www.airfrance.com"},
-];
+/* ── מיפוי קוד חברת תעופה (IATA) → שם מלא, 3 שפות ──
+   מתמקד בחברות שטסות מ/אל ישראל + חברות-קישור (transfer) נפוצות במסלולי TLV.
+   קוד שלא במפה → מוצג כפי שהוא (יושר: לא ממציאים שם). */
+const AIRLINE_NAMES={
+  /* ישראליות */
+  LY:{he:"אל על",en:"El Al",ru:"Эль Аль"},
+  IZ:{he:"ארקיע",en:"Arkia",ru:"Аркиа"},
+  "6H":{he:"ישראייר",en:"Israir",ru:"Исраэйр"},
+  /* לואו-קוסט שטסות לישראל */
+  W6:{he:"ויז אייר",en:"Wizz Air",ru:"Wizz Air"},
+  FR:{he:"ריינאייר",en:"Ryanair",ru:"Ryanair"},
+  U2:{he:"איזיג'ט",en:"easyJet",ru:"easyJet"},
+  PC:{he:"פגסוס",en:"Pegasus",ru:"Pegasus"},
+  XQ:{he:"סאן אקספרס",en:"SunExpress",ru:"SunExpress"},
+  GQ:{he:"סקיי אקספרס",en:"Sky Express",ru:"Sky Express"},
+  /* אירופה */
+  TK:{he:"טורקיש איירליינס",en:"Turkish Airlines",ru:"Turkish Airlines"},
+  A3:{he:"אגאן",en:"Aegean",ru:"Aegean"},
+  LH:{he:"לופטהנזה",en:"Lufthansa",ru:"Lufthansa"},
+  LX:{he:"סוויס",en:"Swiss",ru:"Swiss"},
+  OS:{he:"אוסטריאן",en:"Austrian",ru:"Austrian"},
+  AF:{he:"אייר פראנס",en:"Air France",ru:"Air France"},
+  KL:{he:"KLM",en:"KLM",ru:"KLM"},
+  BA:{he:"בריטיש איירווייז",en:"British Airways",ru:"British Airways"},
+  IB:{he:"איבריה",en:"Iberia",ru:"Iberia"},
+  VY:{he:"ווילינג",en:"Vueling",ru:"Vueling"},
+  TP:{he:"TAP פורטוגל",en:"TAP Air Portugal",ru:"TAP Portugal"},
+  AZ:{he:"ITA איירווייז",en:"ITA Airways",ru:"ITA Airways"},
+  SN:{he:"בריסל איירליינס",en:"Brussels Airlines",ru:"Brussels Airlines"},
+  AY:{he:"פינאייר",en:"Finnair",ru:"Finnair"},
+  SK:{he:"SAS",en:"SAS",ru:"SAS"},
+  LO:{he:"LOT פולין",en:"LOT Polish",ru:"LOT"},
+  OK:{he:"צ'כיה איירליינס",en:"Czech Airlines",ru:"Czech Airlines"},
+  BT:{he:"אייר בלטיק",en:"airBaltic",ru:"airBaltic"},
+  RO:{he:"טארום",en:"Tarom",ru:"Tarom"},
+  JU:{he:"אייר סרביה",en:"Air Serbia",ru:"Air Serbia"},
+  KM:{he:"KM מלטה",en:"KM Malta",ru:"KM Malta"},
+  HV:{he:"טרנסאוויה",en:"Transavia",ru:"Transavia"},
+  /* קווקז / מרכז אסיה */
+  A9:{he:"ג'ורג'יאן איירווייז",en:"Georgian Airways",ru:"Georgian Airways"},
+  J2:{he:"אזרבייג'ן איירליינס",en:"Azerbaijan Airlines",ru:"AZAL"},
+  HY:{he:"אוזבקיסטן איירווייז",en:"Uzbekistan Airways",ru:"Uzbekistan Airways"},
+  KC:{he:"אייר אסטנה",en:"Air Astana",ru:"Air Astana"},
+  /* מפרץ / מזרח תיכון */
+  EK:{he:"אמירייטס",en:"Emirates",ru:"Emirates"},
+  EY:{he:"אתיחאד",en:"Etihad",ru:"Etihad"},
+  FZ:{he:"פליי דובאי",en:"flydubai",ru:"flydubai"},
+  QR:{he:"קטאר איירווייז",en:"Qatar Airways",ru:"Qatar Airways"},
+  WY:{he:"עומאן אייר",en:"Oman Air",ru:"Oman Air"},
+  GF:{he:"גאלף אייר",en:"Gulf Air",ru:"Gulf Air"},
+  RJ:{he:"רויאל ג'ורדניאן",en:"Royal Jordanian",ru:"Royal Jordanian"},
+  MS:{he:"איג'יפט אייר",en:"EgyptAir",ru:"EgyptAir"},
+  /* אפריקה */
+  ET:{he:"את'יופיאן",en:"Ethiopian",ru:"Ethiopian"},
+  /* אסיה */
+  AI:{he:"אייר אינדיה",en:"Air India",ru:"Air India"},
+  "6E":{he:"אינדיגו",en:"IndiGo",ru:"IndiGo"},
+  UL:{he:"סרילנקן",en:"SriLankan",ru:"SriLankan"},
+  TG:{he:"תאי איירווייז",en:"Thai Airways",ru:"Thai Airways"},
+  SQ:{he:"סינגפור איירליינס",en:"Singapore Airlines",ru:"Singapore Airlines"},
+  CX:{he:"קת'אי פסיפיק",en:"Cathay Pacific",ru:"Cathay Pacific"},
+  KE:{he:"קוריאן אייר",en:"Korean Air",ru:"Korean Air"},
+  /* צפון אמריקה */
+  DL:{he:"דלתא",en:"Delta",ru:"Delta"},
+  UA:{he:"יונייטד",en:"United",ru:"United"},
+  AA:{he:"אמריקן איירליינס",en:"American Airlines",ru:"American Airlines"},
+  AC:{he:"אייר קנדה",en:"Air Canada",ru:"Air Canada"},
+};
+/* שם חברה בשפה הנוכחית; אם הקוד לא מוכר — מחזיר את הקוד כמות שהוא (בלי להמציא) */
+function airlineName(code){
+  const a=AIRLINE_NAMES[(code||"").toUpperCase()];
+  return a ? (a[currentLang]||a.en) : (code||"");
+}
 
 /* ══════════════════════════════════════════
    מצב גלובלי
@@ -965,7 +1029,7 @@ function offerCard(of,fromC,toC,isBest,flex){
   return `<a class="ticket engine-card best-card" href="${of.link}" target="_blank" rel="noopener">
     <div class="airline">
       <div class="logo" style="background:#00a991">✈</div>
-      <div class="airline-name">Aviasales${of.airline?` · ${of.airline}`:""}</div>
+      <div class="airline-name">Aviasales${of.airline?` · ${airlineName(of.airline)}`:""}</div>
     </div>
     <div class="route">
       <div class="cities">${fromC.iata} → ${toC.iata}${stopsHtml(of.transfers)}${isBest?`<span class="badge">${t.cheapest}</span>`:""}</div>
@@ -996,7 +1060,7 @@ async function fetchOffers(s){
       const perP=(pax.adults+pax.children+pax.infants)>1?` · ${t.perPerson}`:"";
       const showRet=!flex;
       const timesTxt=(c.departTime?` · ${t.outTime} ${c.departTime}`:"")+((showRet&&c.returnTime)?` · ${t.retTime} ${c.returnTime}`:"");
-      if(el) el.innerHTML=t.priceFrom(cp,c.airline,c.depart,c.approx)+timesTxt+` · ${t.noBag}`+perP;
+      if(el) el.innerHTML=t.priceFrom(cp,airlineName(c.airline),c.depart,c.approx)+timesTxt+` · ${t.noBag}`+perP;
       if(box) box.innerHTML=d.offers.map((of,i)=>offerCard(of,s.fromC,s.toC,i===0,flex)).join("");
     }else{
       if(el) el.textContent=t.priceNone;
