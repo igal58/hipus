@@ -50,12 +50,29 @@ function serveStatic(req, res) {
   });
 }
 
-/* ── price API (Travelpayouts / Aviasales) ── */
-function getJSON(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, r => { let b=""; r.on("data",c=>b+=c);
-      r.on("end",()=>{ try{resolve(JSON.parse(b));}catch{resolve(null);} }); }).on("error", reject);
+/* ── price API (Travelpayouts / Aviasales) ──
+   robust fetch: never hangs (timeout), never rejects (resolves null), and
+   retries transient failures — this is why a search used to need several
+   Enter/F5 presses before it returned. */
+function fetchOnce(url, timeoutMs) {
+  return new Promise(resolve => {
+    let done = false;
+    const finish = v => { if (!done) { done = true; resolve(v); } };
+    const req = https.get(url, r => {
+      let b = ""; r.on("data", c => b += c);
+      r.on("end", () => { try { finish(JSON.parse(b)); } catch { finish(null); } });
+    });
+    req.on("error", () => finish(null));
+    req.setTimeout(timeoutMs, () => { req.destroy(); finish(null); });
   });
+}
+async function getJSON(url, tries = 3) {
+  for (let i = 0; i < tries; i++) {
+    const r = await fetchOnce(url, 12000);
+    if (r && r.success !== false) return r;                 // good response (incl. legit empty data)
+    if (i < tries - 1) await new Promise(s => setTimeout(s, 350 * (i + 1)));  // brief backoff, then retry
+  }
+  return null;                                              // gave up after retries — caller falls back gracefully
 }
 function tpUrl(o, d, depart, ret, mode, limit) {
   const flex = !ret;                                   // no return chosen → flexible round-trip (return open)
