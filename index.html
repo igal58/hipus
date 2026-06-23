@@ -362,6 +362,12 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
     </div>
     <!-- מצב בהיר/כהה -->
     <button class="theme-toggle" id="lightToggle"></button>
+    <!-- בחירת מטבע -->
+    <div class="lang-bar cur-bar" role="group" aria-label="currency">
+      <button class="lang-btn active" data-cur="ils" aria-label="ILS">₪</button>
+      <button class="lang-btn"        data-cur="usd" aria-label="USD">$</button>
+      <button class="lang-btn"        data-cur="eur" aria-label="EUR">€</button>
+    </div>
   </div>
   <div class="toolbar-right">
     <div class="palette">
@@ -505,15 +511,15 @@ const T={
     refLbl:"מחיר ייחוס",refTitle:"המחיר מקורו ב-Aviasales — לייחוס בלבד, ייתכן שונה במנוע זה",
     offersTitle:"טיסות אמיתיות — מחיר חי (Aviasales)",compareTitle:"השוואה וחיפוש באתרים אחרים",
     priceChecking:"בודק מחיר אמיתי…",
-    priceFrom:(p,air,date,approx)=>`${approx?"בערך מ-":"מ-"}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
+    priceFrom:(p,air,date,approx)=>`${approx?"בערך מ-":"מ-"}${p} ${curSym()}${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"מחירים חיים יוצגו באתרי החיפוש למטה",
     lowestLbl:"מחיר משתלם",approxLbl:"בערך · החודש",
     dur:(h,m)=>`${h}ש ${m}ד`,aviasalesBuy:"רכישה ב-Aviasales",
     outTime:"יציאה",retTime:"חזרה",noBag:"ללא כבודה רשומה",
     flexLbl:"תאריכים גמישים",flexSearching:"מחפש את הזול ביותר מהתאריך והלאה…",
     dealsBtn:"מבצעים חמים",dealsTitle:"טיסות סודיות — הזול ביותר מתל אביב",
-    dealsTitleBudget:(b)=>`לאן שבא לי — עד ${b} ₪ מתל אביב`,budgetPh:"תקציב מקס׳ ₪",
-    dealsBudgetNone:(b)=>`אין יעדים עד ${b} ₪ כרגע — נסה תקציב גבוה יותר`,
+    dealsTitleBudget:(b)=>`לאן שבא לי — עד ${b} ${curSym()} מתל אביב`,budgetPh:"תקציב מקס׳ ₪",
+    dealsBudgetNone:(b)=>`אין יעדים עד ${b} ${curSym()} כרגע — נסה תקציב גבוה יותר`,
     calBtn:"החודש הזול",calTitle:"לוח מחירים — היום הזול בחודש",
     calLoading:"בונה לוח מחירים…",calNone:"אין נתוני לוח למסלול/חודש הזה — נסה חודש אחר או יעד אחר",
     calCheapest:"הכי זול",calHint:"לחץ על יום כדי לחפש טיסות בתאריך הזה",
@@ -557,15 +563,15 @@ const T={
     refLbl:"reference price",refTitle:"Price sourced from Aviasales — reference only, may differ on this engine",
     offersTitle:"Real fares — live price (Aviasales)",compareTitle:"Compare & search on other sites",
     priceChecking:"Checking live price…",
-    priceFrom:(p,air,date,approx)=>`${approx?"approx. ":"from "}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
+    priceFrom:(p,air,date,approx)=>`${approx?"approx. ":"from "}${p} ${curSym()}${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"Live prices shown on the search sites below",
     lowestLbl:"good value",approxLbl:"approx · month",
     dur:(h,m)=>`${h}h ${m}m`,aviasalesBuy:"Book on Aviasales",
     outTime:"Out",retTime:"Back",noBag:"No checked bag",
     flexLbl:"flexible dates",flexSearching:"Finding the cheapest from this date onward…",
     dealsBtn:"Hot deals",dealsTitle:"Secret flights — cheapest from Tel Aviv",
-    dealsTitleBudget:(b)=>`Where can I go — up to ${b} ₪ from Tel Aviv`,budgetPh:"Max budget ₪",
-    dealsBudgetNone:(b)=>`No destinations up to ${b} ₪ right now — try a higher budget`,
+    dealsTitleBudget:(b)=>`Where can I go — up to ${b} ${curSym()} from Tel Aviv`,budgetPh:"Max budget ₪",
+    dealsBudgetNone:(b)=>`No destinations up to ${b} ${curSym()} right now — try a higher budget`,
     calBtn:"Cheapest month",calTitle:"Price calendar — cheapest day of the month",
     calLoading:"Building price calendar…",calNone:"No calendar data for this route/month — try another month or destination",
     calCheapest:"Cheapest",calHint:"Tap a day to search flights on that date",
@@ -609,15 +615,15 @@ const T={
     refLbl:"справочная цена",refTitle:"Цена взята с Aviasales — справочно, может отличаться на этом сайте",
     offersTitle:"Реальные рейсы — цена (Aviasales)",compareTitle:"Сравнить и искать на других сайтах",
     priceChecking:"Проверяю реальную цену…",
-    priceFrom:(p,air,date,approx)=>`${approx?"около ":"от "}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
+    priceFrom:(p,air,date,approx)=>`${approx?"около ":"от "}${p} ${curSym()}${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"Актуальные цены — на сайтах поиска ниже",
     lowestLbl:"выгодная цена",approxLbl:"около · месяц",
     dur:(h,m)=>`${h}ч ${m}м`,aviasalesBuy:"Купить на Aviasales",
     outTime:"Вылет",retTime:"Обратно",noBag:"Без багажа",
     flexLbl:"гибкие даты",flexSearching:"Ищем самый дешёвый с этой даты…",
     dealsBtn:"Горящие",dealsTitle:"Секретные рейсы — дешевле всего из Тель-Авива",
-    dealsTitleBudget:(b)=>`Куда улететь — до ${b} ₪ из Тель-Авива`,budgetPh:"Макс. бюджет ₪",
-    dealsBudgetNone:(b)=>`Нет направлений до ${b} ₪ сейчас — попробуйте больший бюджет`,
+    dealsTitleBudget:(b)=>`Куда улететь — до ${b} ${curSym()} из Тель-Авива`,budgetPh:"Макс. бюджет ₪",
+    dealsBudgetNone:(b)=>`Нет направлений до ${b} ${curSym()} сейчас — попробуйте больший бюджет`,
     calBtn:"Дешёвый месяц",calTitle:"Календарь цен — самый дешёвый день месяца",
     calLoading:"Строю календарь цен…",calNone:"Нет данных календаря для этого маршрута/месяца — попробуйте другой месяц или направление",
     calCheapest:"Дешевле всего",calHint:"Нажмите на день, чтобы найти рейсы на эту дату",
@@ -955,6 +961,8 @@ function airlineName(code){
    מצב גלובלי
 ══════════════════════════════════════════ */
 let currentLang   = "he";
+let currentCur    = "ils";   /* מטבע נבחר: ils / usd / eur */
+function curSym(){ return {ils:"₪",usd:"$",eur:"€"}[currentCur]||"₪"; }
 let currentTheme  = "dark";
 let isLight       = true;   /* ברירת מחדל: מצב בהיר פרימיום (ניתן להחלפה) */
 let lastSearch    = null;
@@ -992,7 +1000,7 @@ function applyLang(lang){
   document.getElementById("searchBtn").innerHTML='<i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><span>'+t.searchBtn+'</span>';
   document.getElementById("dealsBtn").innerHTML='<i class="fa-solid fa-fire" aria-hidden="true"></i><span>'+t.dealsBtn+'</span>';
   document.getElementById("calBtn").innerHTML='<i class="fa-solid fa-calendar-days" aria-hidden="true"></i><span>'+t.calBtn+'</span>';
-  document.getElementById("budget").placeholder=t.budgetPh;
+  document.getElementById("budget").placeholder=t.budgetPh.replace("₪",curSym());
   document.getElementById("lPax").textContent=t.paxLbl;
   document.getElementById("lAdults").textContent=t.adultsLbl;   document.getElementById("sAdults").textContent=t.adultsSub;
   document.getElementById("lChildren").textContent=t.childrenLbl; document.getElementById("sChildren").textContent=t.childrenSub;
@@ -1000,7 +1008,7 @@ function applyLang(lang){
   document.getElementById("lBagsGroup").textContent=t.bagsGroup;
   document.getElementById("lCabin").textContent=t.cabinBag;  document.getElementById("lChecked").textContent=t.checkedBag;
   if(typeof updatePaxBtn==="function") updatePaxBtn();
-  document.querySelectorAll(".lang-btn").forEach(b=>b.classList.toggle("active",b.dataset.lang===lang));
+  document.querySelectorAll(".lang-bar:not(.cur-bar) .lang-btn").forEach(b=>b.classList.toggle("active",b.dataset.lang===lang));
   /* עדכון תפריט יציאה */
   rebuildFromSel();
   /* עדכון שדה יעד נוכחי */
@@ -1013,8 +1021,17 @@ function applyLang(lang){
   applyView();
 }
 
-document.querySelectorAll(".lang-btn").forEach(b=>
+document.querySelectorAll(".lang-bar:not(.cur-bar) .lang-btn").forEach(b=>
   b.addEventListener("click",()=>applyLang(b.dataset.lang))
+);
+/* בורר מטבע — משנה את הסמל ואת פרמטר ה-cur בקריאות, ומרענן את התצוגה */
+document.querySelectorAll(".cur-bar .lang-btn").forEach(b=>
+  b.addEventListener("click",()=>{
+    currentCur=b.dataset.cur;
+    document.querySelectorAll(".cur-bar .lang-btn").forEach(x=>x.classList.toggle("active",x.dataset.cur===currentCur));
+    document.getElementById("budget").placeholder=T[currentLang].budgetPh.replace("₪",curSym());
+    if(lastSearch) render();
+  })
 );
 
 /* ══════════════════════════════════════════
@@ -1360,7 +1377,7 @@ function render(){
       <div class="alert-sub">${t.alertSub}</div>
       <div class="alert-form">
         <input type="email" id="alertEmail" class="alert-in" placeholder="${t.alertEmailPh}" value="${savedEmail}">
-        <input type="number" id="alertTarget" class="alert-in" min="0" step="50" placeholder="${t.alertTargetPh}">
+        <input type="number" id="alertTarget" class="alert-in" min="0" step="50" placeholder="${t.alertTargetPh.replace('₪',curSym())}">
         <button class="alert-btn" id="alertBtn">${t.alertBtn}</button>
       </div>
       <div class="alert-msg" id="alertMsg"></div>
@@ -1395,7 +1412,7 @@ async function fetchFlexMonths(s){
   if(!box||!s) return;
   const t=T[currentLang];
   try{
-    const u=`${PROXY_BASE}/flexmonths?origin=${s.fromC.iata}&destination=${s.toC.iata}&from=${fmtISO(s.dep)}&months=4`;
+    const u=`${PROXY_BASE}/flexmonths?origin=${s.fromC.iata}&destination=${s.toC.iata}&from=${fmtISO(s.dep)}&months=4&cur=${currentCur}`;
     const r=await fetch(u); const d=await r.json();
     if(d&&Array.isArray(d.months)&&d.months.length){
       const cheapest=d.cheapest;
@@ -1404,7 +1421,7 @@ async function fetchFlexMonths(s){
         const dt=parseISO(m.date);
         return `<button class="cal-cell${isMin?" cal-min":""}" data-cal-date="${m.date}">
           <div class="cal-d">${monthLabel(m.month)}</div>
-          <div class="cal-p">${Number(m.price).toLocaleString()} ₪</div>
+          <div class="cal-p">${Number(m.price).toLocaleString()} ${curSym()}</div>
           <div class="cal-d">${dt?fmtDMY(dt):m.date}</div>
           ${isMin?`<div class="cal-tag">${t.calCheapest}</div>`:""}
         </button>`;
@@ -1429,7 +1446,7 @@ async function submitAlert(){
   msg.textContent=t.alertSending; msg.className="alert-msg";
   try{
     const r=await fetch(`${PROXY_BASE}/alerts`,{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({email,origin:fromC.iata,destination:toC.iata,depart:fmtISO(dep),ret:retISO,target})});
+      body:JSON.stringify({email,origin:fromC.iata,destination:toC.iata,depart:fmtISO(dep),ret:retISO,target,cur:currentCur})});
     const d=await r.json();
     if(d&&d.ok){ try{localStorage.setItem("hipusEmail",email);}catch{} msg.textContent=t.alertOk; msg.className="alert-msg ok"; }
     else { msg.textContent=t.alertErr; msg.className="alert-msg err"; }
@@ -1465,7 +1482,7 @@ function offerCard(of,fromC,toC,isBest,flex){
       <div class="cities">${fromC.iata} <i class="fa-solid fa-arrow-right-long dir-ic" aria-hidden="true"></i> ${toC.iata}${stopsHtml(of.transfers)}${isBest?`<span class="badge"><i class="fa-solid fa-star" aria-hidden="true"></i> ${t.cheapest}</span>`:""}</div>
       <div class="meta"><span><i class="fa-regular fa-calendar" aria-hidden="true"></i> ${of.depart}</span>${retDate?`<span class="dot">·</span><span>${retDate}</span>`:""}${durTxt?`<span class="dot">·</span><span><i class="fa-regular fa-clock" aria-hidden="true"></i> ${durTxt}</span>`:""}${times}<span class="dot">·</span><span><i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i> ${t.noBag}</span></div>
     </div>
-    <div class="price"><div class="ils">${p} ₪</div><div class="usd">${of.approx?t.approxLbl:t.lowestLbl}</div></div>
+    <div class="price"><div class="ils">${p} ${curSym()}</div><div class="usd">${of.approx?t.approxLbl:t.lowestLbl}</div></div>
     <span class="buy"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> ${t.aviasalesBuy}</span>
   </a>`;
 }
@@ -1480,7 +1497,7 @@ async function fetchOffers(s){
   if(box) box.innerHTML="";
   try{
     const u=`${PROXY_BASE}/offers?origin=${s.fromC.iata}&destination=${s.toC.iata}`+
-            `&depart=${fmtISO(s.dep)}`+(s.ret?`&return=${fmtISO(s.ret)}`:"");
+            `&depart=${fmtISO(s.dep)}`+(s.ret?`&return=${fmtISO(s.ret)}`:"")+`&cur=${currentCur}`;
     const r=await fetch(u);
     const d=await r.json();
     if(d&&Array.isArray(d.offers)&&d.offers.length){
@@ -1525,7 +1542,7 @@ async function resolveFlexDates(fromC,toC,dep){
   const box=document.getElementById("results");
   box.innerHTML=`<div class="results-head"><h2>${t.flexSearching}</h2></div>`;
   try{
-    const u=`${PROXY_BASE}/price?origin=${fromC.iata}&destination=${toC.iata}&depart=${fmtISO(dep)}`; /* בלי return = דו-כיווני גמיש */
+    const u=`${PROXY_BASE}/price?origin=${fromC.iata}&destination=${toC.iata}&depart=${fmtISO(dep)}&cur=${currentCur}`; /* בלי return = דו-כיווני גמיש */
     const r=await fetch(u); const d=await r.json();
     if(d&&d.found&&d.returnISO){
       const fret=parseISO(d.returnISO);    /* תאריך החזרה שנמצא — לשימוש פנימי בלבד (קישורים+מחיר), בלי למלא בטופס */
@@ -1556,7 +1573,7 @@ async function showDeals(){
   const title='<i class="fa-solid fa-fire" aria-hidden="true"></i> '+(budget>0?t.dealsTitleBudget(budget.toLocaleString()):t.dealsTitle);
   box.innerHTML=`<div class="results-head"><h2>${title}</h2></div><div class="empty">${t.dealsLoading}</div>`;
   try{
-    const r=await fetch(`${PROXY_BASE}/deals?origin=${origin}`);
+    const r=await fetch(`${PROXY_BASE}/deals?origin=${origin}&cur=${currentCur}`);
     const d=await r.json();
     let deals=(d&&Array.isArray(d.deals))?d.deals:[];
     if(budget>0) deals=deals.filter(dl=>Number(dl.price)<=budget);   /* "לאן שבא לי": רק מה שנכנס בתקציב */
@@ -1572,7 +1589,7 @@ async function showDeals(){
             <div class="cities">${origin} <i class="fa-solid fa-arrow-right-long dir-ic" aria-hidden="true"></i> ${dl.dest}</div>
             <div class="meta"><span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> ${name}</span>${dep?`<span class="dot">·</span><span>${dep}</span>`:""}</div>
           </div>
-          <div class="price"><div class="ils">${Number(dl.price).toLocaleString()} ₪</div></div>
+          <div class="price"><div class="ils">${Number(dl.price).toLocaleString()} ${curSym()}</div></div>
           <span class="buy"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> ${t.openLive}</span>
         </div>`;
       });
@@ -1600,7 +1617,7 @@ async function showCalendar(){
   const fromN=cLng(fromC), toN=cLng(toC);
   box.innerHTML=`<div class="results-head"><h2><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> ${t.calTitle}</h2></div><div class="empty">${t.calLoading}</div>`;
   try{
-    const r=await fetch(`${PROXY_BASE}/calendar?origin=${fromC.iata}&destination=${toC.iata}&month=${month}`);
+    const r=await fetch(`${PROXY_BASE}/calendar?origin=${fromC.iata}&destination=${toC.iata}&month=${month}&cur=${currentCur}`);
     const d=await r.json();
     if(d&&Array.isArray(d.days)&&d.days.length){
       const cheapest=d.cheapest;
@@ -1609,7 +1626,7 @@ async function showCalendar(){
         const isMin=day.price===cheapest;
         return `<button class="cal-cell${isMin?" cal-min":""}" data-cal-date="${day.date}">
           <div class="cal-d">${dt?fmtDMY(dt):day.date}</div>
-          <div class="cal-p">${Number(day.price).toLocaleString()} ₪</div>
+          <div class="cal-p">${Number(day.price).toLocaleString()} ${curSym()}</div>
           ${isMin?`<div class="cal-tag">${t.calCheapest}</div>`:""}
         </button>`;
       }).join("");

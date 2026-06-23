@@ -74,11 +74,13 @@ async function getJSON(url, tries = 3) {
   }
   return null;                                              // gave up after retries — caller falls back gracefully
 }
-function tpUrl(o, d, depart, ret, mode, limit) {
+const ALLOWED_CUR = ["ils","usd","eur"];
+function curOf(v){ v=(v||"").toLowerCase(); return ALLOWED_CUR.includes(v) ? v : CFG.currency; }
+function tpUrl(o, d, depart, ret, mode, limit, cur) {
   const flex = !ret;                                   // no return chosen → flexible round-trip (return open)
   const dep = mode === "month" ? depart.slice(0,7) : depart;
   const params = { origin:o, destination:d, departure_at:dep,
-    currency:CFG.currency, market:CFG.market, sorting:"price", limit:String(limit||1), one_way:"false", token:CFG.token };
+    currency:(cur||CFG.currency), market:CFG.market, sorting:"price", limit:String(limit||1), one_way:"false", token:CFG.token };
   if (!flex) params.return_at = mode === "month" ? ret.slice(0,7) : ret;
   return "https://api.travelpayouts.com/aviasales/v3/prices_for_dates?" + new URLSearchParams(params).toString();
 }
@@ -96,12 +98,12 @@ function mapFare(it, approx, flex) {
     link: link ? "https://www.aviasales.com"+link : "" };
 }
 /* several DISTINCT real fares (varied airline / price / times) for one route */
-async function fetchOffers(o, d, depart, ret) {
+async function fetchOffers(o, d, depart, ret, cur) {
   if (!TOKEN_OK) return { offers:[], reason:"no-token" };
   const flex = !ret;
   for (const mode of ["exact","month"]) {
     try {
-      const json = await getJSON(tpUrl(o,d,depart,ret,mode,30));
+      const json = await getJSON(tpUrl(o,d,depart,ret,mode,30,cur));
       const arr = json && json.success && Array.isArray(json.data) ? json.data : [];
       if (arr.length) {
         const seen = new Set(); const offers = [];
@@ -119,11 +121,11 @@ async function fetchOffers(o, d, depart, ret) {
   }
   return { offers:[], reason:"no-data" };
 }
-async function fetchPrice(o, d, depart, ret) {
+async function fetchPrice(o, d, depart, ret, cur) {
   if (!TOKEN_OK) return { found:false, reason:"no-token" };
   for (const mode of ["exact","month"]) {
     try {
-      const json = await getJSON(tpUrl(o,d,depart,ret,mode,30));   // fetch many (sorted by price) so we can pick the cheapest on/after the date
+      const json = await getJSON(tpUrl(o,d,depart,ret,mode,30,cur));   // fetch many (sorted by price) so we can pick the cheapest on/after the date
       const arr = json && json.success && Array.isArray(json.data) ? json.data : [];
       const it = arr.find(x => x && x.price && (x.departure_at||"").slice(0,10) >= depart);  // cheapest fare on/after the chosen departure date
       if (it && it.price) {
@@ -147,15 +149,15 @@ async function fetchPrice(o, d, depart, ret) {
 }
 
 /* ── "secret flights" — cheapest fares from an origin to anywhere ── */
-function tpLatestUrl(origin) {
-  const p = new URLSearchParams({ origin, currency:CFG.currency, market:CFG.market,
+function tpLatestUrl(origin, cur) {
+  const p = new URLSearchParams({ origin, currency:(cur||CFG.currency), market:CFG.market,
     sorting:"price", limit:"60", one_way:"false", token:CFG.token });
   return "https://api.travelpayouts.com/v2/prices/latest?" + p.toString();
 }
-async function fetchDeals(origin) {
+async function fetchDeals(origin, cur) {
   if (!TOKEN_OK) return { deals:[], reason:"no-token" };
   try {
-    const json = await getJSON(tpLatestUrl(origin));
+    const json = await getJSON(tpLatestUrl(origin, cur));
     if (json && json.success && Array.isArray(json.data)) {
       const seen = new Set(); const out = [];
       for (const it of json.data) {
@@ -172,15 +174,16 @@ async function fetchDeals(origin) {
 }
 
 /* ── price calendar — cheapest fare per departure day in a month ── */
-function tpCalendarUrl(o, d, month) {
+function tpCalendarUrl(o, d, month, cur) {
   const p = new URLSearchParams({ origin:o, destination:d, departure_at:month,
-    currency:CFG.currency, market:CFG.market, group_by:"departure_at", token:CFG.token });
+    currency:(cur||CFG.currency), market:CFG.market, group_by:"departure_at",
+    one_way:"false", token:CFG.token });   // round-trip — matches the main search (was one-way → mismatched prices)
   return "https://api.travelpayouts.com/aviasales/v3/grouped_prices?" + p.toString();
 }
-async function fetchCalendar(o, d, month) {
+async function fetchCalendar(o, d, month, cur) {
   if (!TOKEN_OK) return { days:[], reason:"no-token" };
   try {
-    const json = await getJSON(tpCalendarUrl(o, d, month));
+    const json = await getJSON(tpCalendarUrl(o, d, month, cur));
     const data = json && json.success && json.data && typeof json.data === "object" ? json.data : null;
     if (data) {
       const days = [];
@@ -201,7 +204,7 @@ async function fetchCalendar(o, d, month) {
 }
 
 /* ── חיפוש גמיש רב-חודשי — הזול ביותר בכל אחד מהחודשים הקרובים (לימי שהייה=0) ── */
-async function fetchFlexMonths(o, d, fromDate, monthsCount) {
+async function fetchFlexMonths(o, d, fromDate, monthsCount, cur) {
   if (!TOKEN_OK) return { months:[], reason:"no-token" };
   const n = Math.min(Math.max(monthsCount||4, 1), 6);          // 1–6 חודשים
   const baseY = Number(fromDate.slice(0,4)), baseM = Number(fromDate.slice(5,7));
@@ -211,7 +214,7 @@ async function fetchFlexMonths(o, d, fromDate, monthsCount) {
     const month = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}`;
     const minDate = i === 0 ? fromDate : month + "-01";         // החודש הראשון: רק מתאריך היציאה והלאה
     try {
-      const json = await getJSON(tpCalendarUrl(o, d, month));
+      const json = await getJSON(tpCalendarUrl(o, d, month, cur));
       const data = json && json.success && json.data && typeof json.data === "object" ? json.data : null;
       let best = null;
       if (data) for (const date of Object.keys(data)) {
@@ -280,17 +283,18 @@ async function runAlertCheck() {
   const results = []; let changed = false;
   for (const a of alerts) {
     if (!a || a.active === false) { continue; }
-    const out = await fetchPrice(a.origin, a.destination, a.depart, a.ret || "");
+    const out = await fetchPrice(a.origin, a.destination, a.depart, a.ret || "", a.cur || "ils");
     const price = (out && out.found) ? out.price : null;
+    const sym = out && out.currency ? out.currency : (a.cur||"ILS").toUpperCase();
     if (price != null && price <= a.target) {
       const dates = `${a.depart}${a.ret?` – ${a.ret}`:""}`;
-      const subject = `✈️ ${a.origin}→${a.destination} — ${price} ₪ (יעד ${a.target} ₪)`;
+      const subject = `${a.origin}->${a.destination} — ${price} ${sym} (target ${a.target} ${sym})`;
       const html = `<div dir="auto" style="font-family:Arial,sans-serif;max-width:520px">
         <h2 style="margin:0 0 8px">🎉 נמצא מחיר מתחת ליעד שלך!</h2>
         <p style="margin:4px 0">מסלול: <b>${a.origin} → ${a.destination}</b></p>
         <p style="margin:4px 0">תאריכים: ${dates}</p>
         <p style="margin:4px 0;font-size:20px"><b>${price} ${out.currency||"ILS"}</b>
-           <span style="color:#888;font-size:14px"> (היעד שלך: ${a.target} ₪)</span>${out.airline?` · ${out.airline}`:""}</p>
+           <span style="color:#888;font-size:14px"> (היעד שלך: ${a.target} ${sym})</span>${out.airline?` · ${out.airline}`:""}</p>
         ${out.link?`<p style="margin:12px 0"><a href="${out.link}" style="background:#0ea5e9;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">לרכישה ב-Aviasales ←</a></p>`:""}
         <p style="color:#999;font-size:12px;margin-top:16px">Hipus — התראת מחיר</p></div>`;
       const mail = await sendEmail(a.email, subject, html);
@@ -319,7 +323,7 @@ const server = http.createServer(async (req, res) => {
     const depart=u.searchParams.get("depart")||"", ret=u.searchParams.get("return")||"";
     if (!o||!d||!depart) { res.writeHead(400,{"Content-Type":"application/json"});
       return res.end(JSON.stringify({found:false,reason:"bad-params"})); }
-    const out = await fetchPrice(o,d,depart,ret);
+    const out = await fetchPrice(o,d,depart,ret,curOf(u.searchParams.get("cur")));
     res.writeHead(200,{"Content-Type":"application/json"});
     return res.end(JSON.stringify(out));
   }
@@ -329,7 +333,7 @@ const server = http.createServer(async (req, res) => {
     const depart=u.searchParams.get("depart")||"", ret=u.searchParams.get("return")||"";
     if (!o||!d||!depart) { res.writeHead(400,{"Content-Type":"application/json"});
       return res.end(JSON.stringify({offers:[],reason:"bad-params"})); }
-    const out = await fetchOffers(o,d,depart,ret);
+    const out = await fetchOffers(o,d,depart,ret,curOf(u.searchParams.get("cur")));
     res.writeHead(200,{"Content-Type":"application/json"});
     return res.end(JSON.stringify(out));
   }
@@ -339,7 +343,7 @@ const server = http.createServer(async (req, res) => {
     const month=u.searchParams.get("month")||"";
     if (!o||!d||!month) { res.writeHead(400,{"Content-Type":"application/json"});
       return res.end(JSON.stringify({days:[],reason:"bad-params"})); }
-    const out = await fetchCalendar(o,d,month);
+    const out = await fetchCalendar(o,d,month,curOf(u.searchParams.get("cur")));
     res.writeHead(200,{"Content-Type":"application/json"});
     return res.end(JSON.stringify(out));
   }
@@ -350,12 +354,13 @@ const server = http.createServer(async (req, res) => {
     const origin=(b.origin||"").toUpperCase(), destination=(b.destination||"").toUpperCase();
     const depart=(b.depart||"").trim(), ret=(b.ret||"").trim();
     const target=Math.round(Number(b.target)||0);
+    const cur=curOf(b.cur);
     if (!EMAIL_RE.test(email)||!origin||!destination||!depart||target<=0) {
       res.writeHead(400,{"Content-Type":"application/json"});
       return res.end(JSON.stringify({ok:false,reason:"bad-params"})); }
     const alerts = loadAlerts();
     const alert = { id:genId(), email, origin, destination, depart, ret, target,
-      currency:"ILS", active:true, created:new Date().toISOString() };
+      cur, currency:cur.toUpperCase(), active:true, created:new Date().toISOString() };
     alerts.push(alert); saveAlerts(alerts);
     res.writeHead(200,{"Content-Type":"application/json"});
     return res.end(JSON.stringify({ok:true,id:alert.id}));
@@ -394,13 +399,13 @@ const server = http.createServer(async (req, res) => {
     const months=Number(u.searchParams.get("months"))||4;
     if (!o||!d||!from) { res.writeHead(400,{"Content-Type":"application/json"});
       return res.end(JSON.stringify({months:[],reason:"bad-params"})); }
-    const out = await fetchFlexMonths(o,d,from,months);
+    const out = await fetchFlexMonths(o,d,from,months,curOf(u.searchParams.get("cur")));
     res.writeHead(200,{"Content-Type":"application/json"});
     return res.end(JSON.stringify(out));
   }
   if (u.pathname === "/deals") {
     const o = (u.searchParams.get("origin") || "TLV").toUpperCase();
-    const out = await fetchDeals(o);
+    const out = await fetchDeals(o,curOf(u.searchParams.get("cur")));
     res.writeHead(200, {"Content-Type":"application/json"});
     return res.end(JSON.stringify(out));
   }
