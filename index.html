@@ -4,12 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title id="pageTitle">חיפוש כרטיסי טיסה</title>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icons/7.2.3/css/flag-icons.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Heebo:wght@400;500;600;700;800&display=swap">
 <style>
 /* ── ערכות צבעים (dark variants) ── */
 :root{
-  --bg-a:#0f172a;--bg-b:#1e293b;--panel:#1e293b;--panel2:#273449;
-  --accent:#38bdf8;--accent2:#0ea5e9;--text:#e2e8f0;--muted:#94a3b8;
-  --good:#22c55e;--line:#334155;--gold:#fbbf24;
+  --bg-a:#0b1120;--bg-b:#111a2e;--panel:#161f33;--panel2:#1e2940;
+  --accent:#2563eb;--accent2:#3b82f6;--text:#e8edf6;--muted:#9aa7bd;
+  --good:#16a34a;--line:#27324a;--gold:#f59e0b;
+  --shadow:0 1px 2px rgba(0,0,0,.30),0 8px 28px rgba(0,0,0,.28);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.30);
+  --radius:16px;--radius-sm:12px;
+  --accent-ink:#fff;
 }
 body.theme-ocean  {--bg-a:#042f2e;--bg-b:#064e3b;--panel:#065f46;--panel2:#047857;--accent:#34d399;--accent2:#10b981;--text:#ecfdf5;--muted:#6ee7b7;--good:#4ade80;--line:#065f46}
 body.theme-sunset {--bg-a:#1c0a00;--bg-b:#3b1204;--panel:#431407;--panel2:#5c1a0a;--accent:#fb923c;--accent2:#f97316;--text:#fff7ed;--muted:#fed7aa;--good:#86efac;--line:#7c2d12}
@@ -17,20 +27,27 @@ body.theme-purple {--bg-a:#1e1b4b;--bg-b:#312e81;--panel:#3730a3;--panel2:#4338c
 body.theme-slate  {--bg-a:#1e293b;--bg-b:#334155;--panel:#334155;--panel2:#475569;--accent:#94a3b8;--accent2:#64748b;--text:#f8fafc;--muted:#cbd5e1;--good:#4ade80;--line:#475569}
 body.theme-rose   {--bg-a:#1a0010;--bg-b:#3b0024;--panel:#4c0030;--panel2:#6b003f;--accent:#f472b6;--accent2:#ec4899;--text:#fdf2f8;--muted:#fbcfe8;--good:#86efac;--line:#6b003f}
 
-/* ── מצב בהיר: דורס רק bg/panel/text, שומר על צבע ה-accent מהערכה ── */
+/* ── מצב בהיר (פרימיום, ברירת מחדל) ── */
 body.light{
-  --bg-a:#f0f4f8;--bg-b:#e2eaf4;--panel:#ffffff;--panel2:#f1f5fb;
-  --text:#0f172a;--muted:#475569;--line:#dde3ee;
+  --bg-a:#f6f8fb;--bg-b:#eef2f7;--panel:#ffffff;--panel2:#f4f7fb;
+  --text:#0f1b2d;--muted:#5b6b85;--line:#e6ebf2;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 10px 30px rgba(16,24,40,.07);
+  --shadow-sm:0 1px 3px rgba(16,24,40,.08);
+  --accent-ink:#fff;
 }
 
 *{box-sizing:border-box;transition:background-color .22s,color .22s,border-color .22s}
-body{margin:0;font-family:"Segoe UI",Tahoma,Arial,sans-serif;
-  background:linear-gradient(160deg,var(--bg-a),var(--bg-b));
-  color:var(--text);min-height:100vh}
+body{margin:0;font-family:"Inter","Heebo","Segoe UI",Tahoma,Arial,sans-serif;
+  background:var(--bg-a);
+  color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+.fa-fw{width:1.1em;text-align:center}
 
-header{text-align:center;padding:18px 16px 4px}
-header h1{margin:0;font-size:25px}
-header p{color:var(--muted);margin:4px 0 0;font-size:13px}
+header{text-align:center;padding:26px 16px 6px}
+header h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em;
+  display:flex;align-items:center;justify-content:center;gap:10px}
+header h1 .fa-solid{color:var(--accent);font-size:22px}
+header p{color:var(--muted);margin:6px 0 0;font-size:14px}
 
 /* ── TOOLBAR ── */
 .toolbar{max-width:1020px;margin:8px auto 0;display:flex;align-items:center;
@@ -38,19 +55,21 @@ header p{color:var(--muted);margin:4px 0 0;font-size:13px}
   direction:ltr}  /* קבוע — לא זז בין עברית לאנגלית */
 .toolbar-left,.toolbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
-/* בחירת שפה */
-.lang-bar{display:flex;gap:3px;background:var(--panel);
-  border:1px solid var(--line);border-radius:20px;padding:3px}
+/* בחירת שפה — segmented control */
+.lang-bar{display:flex;gap:2px;background:var(--panel2);
+  border:1px solid var(--line);border-radius:12px;padding:3px}
 .lang-btn{background:transparent;border:none;color:var(--muted);
-  border-radius:16px;padding:4px 11px;cursor:pointer;font-size:13px;font-weight:700}
-.lang-btn.active{background:var(--accent);color:#04293f}
+  border-radius:9px;padding:6px 13px;cursor:pointer;font-size:13px;font-weight:600;min-width:42px}
+.lang-btn.active{background:var(--panel);color:var(--accent);box-shadow:var(--shadow-sm)}
+body:not(.light) .lang-btn.active{background:var(--accent);color:#fff}
 .lang-btn:hover:not(.active){color:var(--text)}
 
 /* מצב כהה/בהיר */
-.theme-toggle{background:var(--panel);border:1px solid var(--line);
-  color:var(--text);border-radius:20px;padding:6px 13px;
+.theme-toggle{display:inline-flex;align-items:center;gap:7px;background:var(--panel);
+  border:1px solid var(--line);color:var(--text);border-radius:12px;padding:7px 13px;
   cursor:pointer;font-size:13px;font-weight:600}
-.theme-toggle:hover{border-color:var(--accent)}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.theme-toggle .fa-solid{font-size:14px}
 
 /* ערכת צבעים */
 .palette{display:flex;align-items:center;gap:6px}
@@ -66,25 +85,32 @@ header p{color:var(--muted);margin:4px 0 0;font-size:13px}
 .sw-rose  {background:linear-gradient(135deg,#1a0010,#f472b6)}
 
 /* ── SEARCH CARD ── */
-.search-card{max-width:1020px;margin:10px auto;background:var(--panel);
-  border:1px solid var(--line);border-radius:16px;padding:18px 20px;
-  box-shadow:0 8px 32px rgba(0,0,0,.22)}
+.search-card{max-width:1020px;margin:14px auto;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;
+  box-shadow:var(--shadow)}
 .grid{display:grid;gap:13px;grid-template-columns:repeat(auto-fit,minmax(168px,1fr))}
 .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
 .field input,.field select{width:100%;padding:10px 12px;border-radius:10px;
   border:1px solid var(--line);background:var(--panel2);color:var(--text);
   font-size:15px;outline:none}
 .field input:focus,.field select:focus{border-color:var(--accent)}
-.actions{display:flex;gap:12px;align-items:flex-end;margin-top:13px;flex-wrap:wrap}
+.actions{display:flex;gap:10px;align-items:flex-end;margin-top:14px;flex-wrap:wrap}
 .pax-field{margin:0;flex:0 0 160px}
 .pax-field label{margin-bottom:5px}
 .actions button.search,.actions button.deals-btn{align-self:flex-end}
-button.search{background:linear-gradient(90deg,var(--accent),var(--accent2));
+/* primary CTA — solid accent, clean */
+button.search{display:inline-flex;align-items:center;gap:9px;background:var(--accent);
   color:#fff;border:0;font-weight:700;font-size:15px;
-  padding:11px 26px;border-radius:10px;cursor:pointer}
-body.light button.search{color:#04293f}
-button.search:hover{filter:brightness(1.1)}
+  padding:12px 28px;border-radius:12px;cursor:pointer;box-shadow:var(--shadow-sm)}
+button.search:hover{background:var(--accent2)}
 .rate{color:var(--muted);font-size:13px}
+/* secondary buttons — subtle, less dominant than the CTA */
+button.deals-btn,button.cal-btn{display:inline-flex;align-items:center;gap:8px;background:var(--panel2);
+  color:var(--text);border:1px solid var(--line);font-weight:600;font-size:14px;
+  padding:12px 18px;border-radius:12px;cursor:pointer;box-shadow:none}
+button.deals-btn:hover,button.cal-btn:hover{border-color:var(--accent);color:var(--accent);filter:none}
+button.deals-btn .fa-solid{color:#f97316}
+button.cal-btn .fa-solid{color:var(--accent)}
 
 /* ── RESULTS ── */
 .results{max-width:1020px;margin:4px auto 60px;padding:0 8px}
@@ -164,17 +190,12 @@ a.engine-card:hover{border-color:var(--accent)}
 .compare-btn .cname{font-size:14px;font-weight:600}
 a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;margin-bottom:9px}
 
-/* ── HOT DEALS ── */
-button.deals-btn{background:linear-gradient(90deg,#f59e0b,#f97316);color:#fff;border:0;
-  font-weight:700;font-size:15px;padding:11px 20px;border-radius:10px;cursor:pointer}
-button.deals-btn:hover{filter:brightness(1.1)}
-.budget-in{align-self:flex-end;width:120px;padding:11px 12px;border-radius:10px;
+/* ── HOT DEALS / budget (deals-btn styled in the primary/secondary block above) ── */
+.budget-in{align-self:flex-end;width:130px;padding:12px 12px;border-radius:12px;
   border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:15px}
 .field-hint{display:block;margin-top:5px;font-size:11.5px;line-height:1.4;color:var(--muted)}
 .field-hint.active{color:var(--accent);font-weight:600}
-button.cal-btn{align-self:flex-end;background:linear-gradient(90deg,#0ea5e9,#6366f1);color:#fff;border:0;
-  font-weight:700;font-size:15px;padding:11px 20px;border-radius:10px;cursor:pointer}
-button.cal-btn:hover{filter:brightness(1.1)}
+.cal-btn{align-self:flex-end}
 .cal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:14px}
 .cal-cell{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:12px;
   padding:12px 8px;cursor:pointer;text-align:center;transition:transform .1s,border-color .1s;font-family:inherit}
@@ -190,8 +211,8 @@ button.cal-btn:hover{filter:brightness(1.1)}
 .alert-in{padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:15px}
 #alertEmail{flex:1;min-width:180px}
 #alertTarget{width:130px}
-.alert-btn{background:linear-gradient(90deg,#f59e0b,#f97316);color:#fff;border:0;font-weight:700;font-size:15px;padding:11px 20px;border-radius:10px;cursor:pointer}
-.alert-btn:hover{filter:brightness(1.1)}
+.alert-btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;border:0;font-weight:700;font-size:15px;padding:11px 20px;border-radius:12px;cursor:pointer}
+.alert-btn:hover{background:var(--accent2)}
 .alert-msg{margin-top:10px;font-size:14px;font-weight:600;min-height:18px}
 .alert-msg.ok{color:var(--good)}
 .alert-msg.err{color:#f87171}
@@ -200,8 +221,11 @@ button.cal-btn:hover{filter:brightness(1.1)}
 
 /* ── PASSENGERS ── */
 .pax-wrap{position:relative}
-.pax-btn{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);
-  background:var(--panel2);color:var(--text);font-size:15px;cursor:pointer;text-align:start}
+.pax-btn{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--text);font-size:15px;cursor:pointer;text-align:start;
+  display:flex;align-items:center;gap:8px}
+.pax-btn .fa-solid{color:var(--muted)}
+.pax-sep{color:var(--muted);margin:0 2px}
 .pax-btn:hover{border-color:var(--accent)}
 .pax-panel{position:absolute;top:calc(100% + 4px);inset-inline-start:0;inset-inline-end:0;z-index:999;
   background:var(--panel2);border:1px solid var(--accent);border-radius:10px;
@@ -249,7 +273,7 @@ button.cal-btn:hover{filter:brightness(1.1)}
 <body>
 
 <header>
-  <h1 id="hTitle">✈️ חיפוש כרטיסי טיסה</h1>
+  <h1><i class="fa-solid fa-plane-up" aria-hidden="true"></i><span id="hTitle">חיפוש כרטיסי טיסה</span></h1>
   <p id="hSub">השוואת מחירים בשקלים ובדולרים — מיון וסינון בזמן אמת</p>
 </header>
 
@@ -308,7 +332,7 @@ button.cal-btn:hover{filter:brightness(1.1)}
     <div class="field pax-field">
       <label id="lPax">נוסעים</label>
       <div class="pax-wrap">
-        <button type="button" class="pax-btn" id="paxBtn">1 👤</button>
+        <button type="button" class="pax-btn" id="paxBtn"><i class="fa-solid fa-user" aria-hidden="true"></i><span>1</span></button>
         <div class="pax-panel" id="paxPanel">
           <div class="pax-row">
             <div class="pax-info"><span id="lAdults">מבוגרים</span><small id="sAdults">מעל 12</small></div>
@@ -354,12 +378,12 @@ const T={
     title:"חיפוש כרטיסי טיסה",
     sub:"השוואת מחירים בשקלים ובדולרים — מיון וסינון בזמן אמת",
     palette:"ערכה:",
-    lightBtn:"☀️ מצב בהיר",darkBtn:"🌙 מצב כהה",
+    lightBtn:"מצב בהיר",darkBtn:"מצב כהה",
     fromLbl:"ארץ יציאה",toLbl:"ארץ / עיר יעד",
     toPlh:"🔍 הקלד ארץ, עיר או קוד…",
     dateOutLbl:"תאריך יציאה",nightsLbl:"ימי שהייה",dateRetLbl:"תאריך חזרה",
-    nightsHint:"💡 0 = חיפוש גמיש מתאריך היציאה והלאה",nightsHintActive:"✈️ חיפוש גמיש — הזול ביותר מתאריך היציאה והלאה",
-    searchBtn:"🔍 חפש כרטיסים",
+    nightsHint:"0 = חיפוש גמיש מתאריך היציאה והלאה",nightsHintActive:"חיפוש גמיש — הזול ביותר מתאריך היציאה והלאה",
+    searchBtn:"חפש כרטיסים",
     sortLbl:"מיון:",sortPrice:"💰 מחיר",sortStops:"🛑 עצירות+מחיר",
     filtLbl:"עצירות:",filtAll:"הכל",filtDirect:"ישיר",filt1:"עצירה 1",filt2:"2+ עצירות",
     showing:(n,t)=>`מציג ${n} מתוך ${t} כרטיסים`,
@@ -384,10 +408,10 @@ const T={
     dur:(h,m)=>`${h}ש ${m}ד`,aviasalesBuy:"רכישה ב-Aviasales ←",
     outTime:"🛫 יציאה",retTime:"🛬 חזרה",noBag:"🧳 ללא כבודה רשומה",
     flexLbl:"תאריכים גמישים",flexSearching:"מחפש את הזול ביותר מהתאריך והלאה…",
-    dealsBtn:"🔥 מבצעים חמים",dealsTitle:"🔥 טיסות סודיות — הזול ביותר מתל אביב",
+    dealsBtn:"מבצעים חמים",dealsTitle:"🔥 טיסות סודיות — הזול ביותר מתל אביב",
     dealsTitleBudget:(b)=>`🔥 לאן שבא לי — עד ${b} ₪ מתל אביב`,budgetPh:"תקציב מקס׳ ₪",
     dealsBudgetNone:(b)=>`אין יעדים עד ${b} ₪ כרגע — נסה תקציב גבוה יותר`,
-    calBtn:"📅 החודש הזול",calTitle:"📅 לוח מחירים — היום הזול בחודש",
+    calBtn:"החודש הזול",calTitle:"📅 לוח מחירים — היום הזול בחודש",
     calLoading:"בונה לוח מחירים…",calNone:"אין נתוני לוח למסלול/חודש הזה — נסה חודש אחר או יעד אחר",
     calCheapest:"הכי זול",calHint:"לחץ על יום כדי לחפש טיסות בתאריך הזה",
     flexMonthsTitle:"🗓️ כמה חודשים קדימה — הזול בכל חודש",flexMonthsHint:"חיפוש גמיש: לחץ על חודש כדי לראות את הטיסות בתאריך הזול שלו",flexMonthsNone:"אין נתונים לחודשים הקרובים",
@@ -405,12 +429,12 @@ const T={
     title:"Flight Search",
     sub:"Compare prices in ILS and USD — real-time sort & filter",
     palette:"Theme:",
-    lightBtn:"☀️ Light",darkBtn:"🌙 Dark",
+    lightBtn:"Light",darkBtn:"Dark",
     fromLbl:"Departure",toLbl:"Destination",
     toPlh:"🔍 Type country, city or code…",
     dateOutLbl:"Departure date",nightsLbl:"Nights",dateRetLbl:"Return date",
-    nightsHint:"💡 0 = flexible search from the departure date onward",nightsHintActive:"✈️ Flexible search — cheapest from the departure date onward",
-    searchBtn:"🔍 Search flights",
+    nightsHint:"0 = flexible search from the departure date onward",nightsHintActive:"Flexible search — cheapest from the departure date onward",
+    searchBtn:"Search flights",
     sortLbl:"Sort:",sortPrice:"💰 Price",sortStops:"🛑 Stops+price",
     filtLbl:"Stops:",filtAll:"All",filtDirect:"Direct",filt1:"1 stop",filt2:"2+ stops",
     showing:(n,t)=>`Showing ${n} of ${t} tickets`,
@@ -435,10 +459,10 @@ const T={
     dur:(h,m)=>`${h}h ${m}m`,aviasalesBuy:"Book on Aviasales →",
     outTime:"🛫 Out",retTime:"🛬 Back",noBag:"🧳 No checked bag",
     flexLbl:"flexible dates",flexSearching:"Finding the cheapest from this date onward…",
-    dealsBtn:"🔥 Hot deals",dealsTitle:"🔥 Secret flights — cheapest from Tel Aviv",
+    dealsBtn:"Hot deals",dealsTitle:"🔥 Secret flights — cheapest from Tel Aviv",
     dealsTitleBudget:(b)=>`🔥 Where can I go — up to ${b} ₪ from Tel Aviv`,budgetPh:"Max budget ₪",
     dealsBudgetNone:(b)=>`No destinations up to ${b} ₪ right now — try a higher budget`,
-    calBtn:"📅 Cheapest month",calTitle:"📅 Price calendar — cheapest day of the month",
+    calBtn:"Cheapest month",calTitle:"📅 Price calendar — cheapest day of the month",
     calLoading:"Building price calendar…",calNone:"No calendar data for this route/month — try another month or destination",
     calCheapest:"Cheapest",calHint:"Tap a day to search flights on that date",
     flexMonthsTitle:"🗓️ Next few months — cheapest each month",flexMonthsHint:"Flexible search: tap a month to see flights on its cheapest date",flexMonthsNone:"No data for the coming months",
@@ -456,12 +480,12 @@ const T={
     title:"Поиск авиабилетов",
     sub:"Сравнение цен в шекелях и долларах — сортировка и фильтрация",
     palette:"Тема:",
-    lightBtn:"☀️ Светлая",darkBtn:"🌙 Тёмная",
+    lightBtn:"Светлая",darkBtn:"Тёмная",
     fromLbl:"Откуда",toLbl:"Куда",
     toPlh:"🔍 Введите страну, город или код…",
     dateOutLbl:"Дата вылета",nightsLbl:"Ночей",dateRetLbl:"Дата возврата",
-    nightsHint:"💡 0 = гибкий поиск от даты вылета и далее",nightsHintActive:"✈️ Гибкий поиск — самое дешёвое от даты вылета и далее",
-    searchBtn:"🔍 Найти рейсы",
+    nightsHint:"0 = гибкий поиск от даты вылета и далее",nightsHintActive:"Гибкий поиск — самое дешёвое от даты вылета и далее",
+    searchBtn:"Найти рейсы",
     sortLbl:"Сортировка:",sortPrice:"💰 Цена",sortStops:"🛑 Пересадки+цена",
     filtLbl:"Пересадки:",filtAll:"Все",filtDirect:"Прямой",filt1:"1 пересадка",filt2:"2+ пересадки",
     showing:(n,t)=>`Показано ${n} из ${t} билетов`,
@@ -486,10 +510,10 @@ const T={
     dur:(h,m)=>`${h}ч ${m}м`,aviasalesBuy:"Купить на Aviasales →",
     outTime:"🛫 Вылет",retTime:"🛬 Обратно",noBag:"🧳 Без багажа",
     flexLbl:"гибкие даты",flexSearching:"Ищем самый дешёвый с этой даты…",
-    dealsBtn:"🔥 Горящие",dealsTitle:"🔥 Секретные рейсы — дешевле всего из Тель-Авива",
+    dealsBtn:"Горящие",dealsTitle:"🔥 Секретные рейсы — дешевле всего из Тель-Авива",
     dealsTitleBudget:(b)=>`🔥 Куда улететь — до ${b} ₪ из Тель-Авива`,budgetPh:"Макс. бюджет ₪",
     dealsBudgetNone:(b)=>`Нет направлений до ${b} ₪ сейчас — попробуйте больший бюджет`,
-    calBtn:"📅 Дешёвый месяц",calTitle:"📅 Календарь цен — самый дешёвый день месяца",
+    calBtn:"Дешёвый месяц",calTitle:"📅 Календарь цен — самый дешёвый день месяца",
     calLoading:"Строю календарь цен…",calNone:"Нет данных календаря для этого маршрута/месяца — попробуйте другой месяц или направление",
     calCheapest:"Дешевле всего",calHint:"Нажмите на день, чтобы найти рейсы на эту дату",
     flexMonthsTitle:"🗓️ Ближайшие месяцы — самый дешёвый в каждом",flexMonthsHint:"Гибкий поиск: нажмите на месяц, чтобы увидеть рейсы на его дешёвую дату",flexMonthsNone:"Нет данных за ближайшие месяцы",
@@ -827,7 +851,7 @@ function airlineName(code){
 ══════════════════════════════════════════ */
 let currentLang   = "he";
 let currentTheme  = "dark";
-let isLight       = false;
+let isLight       = true;   /* ברירת מחדל: מצב בהיר פרימיום (ניתן להחלפה) */
 let lastSearch    = null;
 let pax           = {adults:1, children:0, infants:0};
 let bags          = {cabin:0, checked:0};
@@ -849,10 +873,10 @@ function applyLang(lang){
   document.documentElement.lang=t.lang;
   document.documentElement.dir =t.dir;
   document.getElementById("pageTitle").textContent=t.title;
-  document.getElementById("hTitle").textContent="✈️ "+t.title;
+  document.getElementById("hTitle").textContent=t.title;
   document.getElementById("hSub").textContent=t.sub;
   document.getElementById("paletteLabel").textContent=t.palette;
-  document.getElementById("lightToggle").textContent=isLight?t.darkBtn:t.lightBtn;
+  setThemeToggleLabel();
   document.getElementById("lFrom").textContent=t.fromLbl;
   document.getElementById("lTo").textContent=t.toLbl;
   document.getElementById("to").placeholder=t.toPlh;
@@ -860,9 +884,9 @@ function applyLang(lang){
   document.getElementById("lNights").textContent=t.nightsLbl;
   updateNightsHint();
   document.getElementById("lDateRet").textContent=t.dateRetLbl;
-  document.getElementById("searchBtn").textContent=t.searchBtn;
-  document.getElementById("dealsBtn").textContent=t.dealsBtn;
-  document.getElementById("calBtn").textContent=t.calBtn;
+  document.getElementById("searchBtn").innerHTML='<i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><span>'+t.searchBtn+'</span>';
+  document.getElementById("dealsBtn").innerHTML='<i class="fa-solid fa-fire" aria-hidden="true"></i><span>'+t.dealsBtn+'</span>';
+  document.getElementById("calBtn").innerHTML='<i class="fa-solid fa-calendar-days" aria-hidden="true"></i><span>'+t.calBtn+'</span>';
   document.getElementById("budget").placeholder=t.budgetPh;
   document.getElementById("lPax").textContent=t.paxLbl;
   document.getElementById("lAdults").textContent=t.adultsLbl;   document.getElementById("sAdults").textContent=t.adultsSub;
@@ -894,11 +918,18 @@ document.querySelectorAll(".swatch").forEach(sw=>
 );
 document.getElementById("lightToggle").addEventListener("click",()=>{ isLight=!isLight; applyTheme(); });
 
+/* כפתור מצב בהיר/כהה — אייקון שמש/ירח + טקסט, בלי אמוג'י */
+function setThemeToggleLabel(){
+  const t=T[currentLang];
+  document.getElementById("lightToggle").innerHTML=
+    '<i class="fa-solid fa-'+(isLight?"moon":"sun")+'" aria-hidden="true"></i><span>'+(isLight?t.darkBtn:t.lightBtn)+'</span>';
+}
+
 function applyTheme(){
   THEMES.forEach(t=>document.body.classList.remove("theme-"+t));
   document.body.classList.add("theme-"+currentTheme);
   document.body.classList.toggle("light",isLight);
-  document.getElementById("lightToggle").textContent=isLight?T[currentLang].darkBtn:T[currentLang].lightBtn;
+  setThemeToggleLabel();
   document.querySelectorAll(".swatch").forEach(sw=>sw.classList.toggle("active",sw.dataset.theme===currentTheme));
 }
 applyTheme();
@@ -989,8 +1020,8 @@ function updateNightsHint(){
   const el=document.getElementById("nightsHint");
   if(!el) return;
   const t=T[currentLang];
-  if(Number(nights.value)===0){ el.textContent=t.nightsHintActive; el.classList.add("active"); }
-  else { el.textContent=t.nightsHint; el.classList.remove("active"); }
+  if(Number(nights.value)===0){ el.innerHTML='<i class="fa-solid fa-plane-departure" aria-hidden="true"></i> '+t.nightsHintActive; el.classList.add("active"); }
+  else { el.innerHTML='<i class="fa-regular fa-lightbulb" aria-hidden="true"></i> '+t.nightsHint; el.classList.remove("active"); }
 }
 dateOut.addEventListener("change",syncRet);
 nights.addEventListener("input",()=>{ syncRet(); updateNightsHint(); });
@@ -1387,7 +1418,8 @@ const paxPanel=document.getElementById("paxPanel");
 function updatePaxBtn(){
   const total=pax.adults+pax.children+pax.infants;
   const bagN=bags.cabin+bags.checked;
-  paxBtn.textContent=T[currentLang].paxSummary(total)+(bagN>0?` · ${bagN}🧳`:"");
+  paxBtn.innerHTML='<i class="fa-solid fa-user" aria-hidden="true"></i><span>'+total+'</span>'
+    +(bagN>0?' <span class="pax-sep">·</span><i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i><span>'+bagN+'</span>':'');
   document.getElementById("nAdults").textContent=pax.adults;
   document.getElementById("nChildren").textContent=pax.children;
   document.getElementById("nInfants").textContent=pax.infants;
@@ -1413,6 +1445,7 @@ document.addEventListener("click",e=>{ if(!e.target.closest(".pax-wrap")) paxPan
 updatePaxBtn();
 
 document.getElementById("searchBtn").addEventListener("click",doSearch);
+applyLang("he");          /* קובע תוויות + אייקונים (מחליף את ה-HTML הסטטי) בטעינה */
 doSearch();
 loadRate();
 </script>
