@@ -440,10 +440,8 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
         <button class="lang-btn"        data-class="first"    data-cls-key="clsFirst">First</button>
       </div>
     </div>
-  </div>
-  <div class="actions">
-    <div class="field pax-field">
-      <label id="lPax">נוסעים</label>
+    <div class="fr-group">
+      <span class="class-lbl"><i class="fa-solid fa-user" aria-hidden="true"></i> <span id="lPax">נוסעים</span></span>
       <div class="pax-wrap">
         <button type="button" class="pax-btn" id="paxBtn"><i class="fa-solid fa-user" aria-hidden="true"></i><span>1</span></button>
         <div class="pax-panel" id="paxPanel">
@@ -471,6 +469,8 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
         </div>
       </div>
     </div>
+  </div>
+  <div class="actions">
     <button class="search" id="searchBtn"></button>
     <button class="deals-btn" id="dealsBtn"></button>
     <button class="cal-btn" id="calBtn"></button>
@@ -991,6 +991,7 @@ let currentCur    = "ils";   /* מטבע נבחר: ils / usd / eur */
 let currentClass  = "economy";  /* מחלקה: economy / comfort / business / first */
 function curSym(){ return {ils:"₪",usd:"$",eur:"€"}[currentCur]||"₪"; }
 function maxStopsVal(){ const v=parseInt((document.getElementById("maxStops")||{}).value,10); return (v>=0&&v<=9)?v:9; }
+function paxCount(){ return Math.max(1, pax.adults+pax.children+pax.infants); }  /* סה"כ נוסעים — להכפלת המחיר */
 function curBarHtml(){ return '<div class="lang-bar cur-bar" role="group" aria-label="currency">'
   +["ils","usd","eur"].map(c=>'<button class="lang-btn'+(c===currentCur?" active":"")+'" data-cur="'+c+'" aria-label="'+c.toUpperCase()+'">'+({ils:"₪",usd:"$",eur:"€"}[c])+'</button>').join("")+'</div>'; }
 
@@ -1581,7 +1582,9 @@ function fmtDur(min){ if(!min) return ""; const t=T[currentLang]; return t.dur(M
 /* כרטיס טיסה אמיתי (מ-Aviasales) — מחיר/חברה/שעות/עצירות אמיתיים, קישור רכישה עם ה-marker */
 function offerCard(of,fromC,toC,isBest,flex){
   const t=T[currentLang];
-  const p=Number(of.price).toLocaleString();
+  const pc=paxCount();
+  const per=Number(of.price).toLocaleString();
+  const p=Number(of.price*pc).toLocaleString();   /* מחיר כולל לכל הנוסעים */
   const showRet=!flex;
   const durTxt=fmtDur(of.duration);
   const retDate=of.returnISO?fmtDMY(parseISO(of.returnISO)):"";
@@ -1596,7 +1599,7 @@ function offerCard(of,fromC,toC,isBest,flex){
       <div class="cities">${fromC.iata} <i class="fa-solid fa-arrow-right-long dir-ic" aria-hidden="true"></i> ${toC.iata}${stopsHtml(of.transfers)}${isBest?`<span class="badge"><i class="fa-solid fa-star" aria-hidden="true"></i> ${t.cheapest}</span>`:""}</div>
       <div class="meta"><span><i class="fa-regular fa-calendar" aria-hidden="true"></i> ${of.depart}</span>${retDate?`<span class="dot">·</span><span>${retDate}</span>`:""}${durTxt?`<span class="dot">·</span><span><i class="fa-regular fa-clock" aria-hidden="true"></i> ${durTxt}</span>`:""}${times}<span class="dot">·</span><span><i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i> ${t.noBag}</span></div>
     </div>
-    <div class="price"><div class="ils">${p} ${curSym()}</div><div class="usd">${of.approx?t.approxLbl:t.lowestLbl}</div></div>
+    <div class="price"><div class="ils">${p} ${curSym()}</div><div class="usd">${pc>1?`${pc} × ${per} ${curSym()} ${t.perPerson}`:(of.approx?t.approxLbl:t.lowestLbl)}</div></div>
     <span class="buy"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> ${t.aviasalesBuy}</span>
   </a>`;
 }
@@ -1617,8 +1620,9 @@ async function fetchOffers(s){
     if(d&&Array.isArray(d.offers)&&d.offers.length){
       const flex=!!s.flex;
       const c=d.offers[0];                                   /* הזול ביותר — לסיכום העליון */
-      const cp=Number(c.price).toLocaleString();
-      const perP=(pax.adults+pax.children+pax.infants)>1?` · ${t.perPerson}`:"";
+      const pc=paxCount();
+      const cp=Number(c.price*pc).toLocaleString();          /* מחיר כולל לכל הנוסעים */
+      const perP=pc>1?` · ${pc} × ${Number(c.price).toLocaleString()} ${curSym()} ${t.perPerson}`:"";
       const showRet=!flex;
       const timesTxt=(c.departTime?` · ${t.outTime} ${c.departTime}`:"")+((showRet&&c.returnTime)?` · ${t.retTime} ${c.returnTime}`:"");
       if(el) el.innerHTML=t.priceFrom(cp,airlineName(c.airline),c.depart,c.approx)+timesTxt+` · ${t.noBag}`+perP;
