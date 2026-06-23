@@ -889,7 +889,7 @@ const COUNTRIES=[
    קוד שלא במפה → מוצג כפי שהוא (יושר: לא ממציאים שם). */
 const AIRLINE_NAMES={
   /* ישראליות */
-  LY:{he:"אל על",en:"El Al",ru:"Эль Аль"},
+  LY:{he:"אל על",en:"EL AL",ru:"Эль Аль"},
   IZ:{he:"ארקיע",en:"Arkia",ru:"Аркиа"},
   "6H":{he:"ישראייר",en:"Israir",ru:"Исраэйр"},
   /* לואו-קוסט שטסות לישראל */
@@ -1369,7 +1369,7 @@ function buildEngines(fromC,toC,dep,ret){
       url:`https://www.momondo.com/flight-search/${o}-${d}/${depI}/${retI}/${a}adults${ch?`/${ch}children`:""}` },
     /* El Al — אין מחיר במקור הנתונים (Aviasales לא כולל את אל על); קישור לדף הטיסות מישראל לפי שפה
        (אין deep-link ציבורי יציב עם מסלול/תאריכים → מפנים לדף הזמנות אמיתי, בלי להמציא פרמטרים) */
-    { name:"El Al", code:"LY", color:"#003399",
+    { name:"EL AL", code:"LY", color:"#003399",
       url:`https://www.elal.com/${currentLang==="he"?"heb":"eng"}/israel`, noPrice:true },
   ];
 }
