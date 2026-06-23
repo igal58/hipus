@@ -1219,7 +1219,8 @@ function applyCustomize(){
 const _custDrawer=document.getElementById("custDrawer"), _custOverlay=document.getElementById("custOverlay");
 function openCustomize(){ _custDrawer.classList.add("open"); _custOverlay.classList.add("open"); }
 function closeCustomize(){ _custDrawer.classList.remove("open"); _custOverlay.classList.remove("open"); }
-document.getElementById("customizeBtn").addEventListener("click",openCustomize);
+function toggleCustomize(){ _custDrawer.classList.contains("open")?closeCustomize():openCustomize(); }
+document.getElementById("customizeBtn").addEventListener("click",toggleCustomize);
 document.getElementById("custClose").addEventListener("click",closeCustomize);
 _custOverlay.addEventListener("click",closeCustomize);
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&_custDrawer.classList.contains("open")) closeCustomize(); });
