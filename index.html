@@ -194,6 +194,9 @@ a.engine-card:hover{border-color:var(--accent)}
 .card-price .usd{font-size:11px}
 .ref-note{font-size:10px;color:var(--muted);opacity:.8;font-style:italic;margin-top:1px;cursor:help}
 .offers-head,.compare-head,.flexmonths-head{font-weight:800;color:var(--accent);font-size:15px;margin:18px 4px 9px}
+.offers-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.offers-head .oh-title{display:inline-flex;align-items:center;gap:7px}
+.offers-head .cur-bar{flex:0 0 auto}
 .compare-head{color:var(--muted);font-size:14px;margin-top:22px}
 .flexmonths-head{margin-top:22px}
 .flexmonths-sub{color:var(--muted);font-size:13px;margin:0 4px 10px}
@@ -455,15 +458,6 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
   <div class="map-head"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> <span id="mapHead"></span></div>
   <div id="map"></div>
 </section>
-
-<div class="results-toolbar">
-  <span class="rt-lbl"><i class="fa-solid fa-coins" aria-hidden="true"></i> <span id="curLabel"></span></span>
-  <div class="lang-bar cur-bar" role="group" aria-label="currency">
-    <button class="lang-btn active" data-cur="ils" aria-label="ILS">₪</button>
-    <button class="lang-btn"        data-cur="usd" aria-label="USD">$</button>
-    <button class="lang-btn"        data-cur="eur" aria-label="EUR">€</button>
-  </div>
-</div>
 
 <section class="results" id="results"></section>
 
@@ -970,6 +964,8 @@ function airlineName(code){
 let currentLang   = "he";
 let currentCur    = "ils";   /* מטבע נבחר: ils / usd / eur */
 function curSym(){ return {ils:"₪",usd:"$",eur:"€"}[currentCur]||"₪"; }
+function curBarHtml(){ return '<div class="lang-bar cur-bar" role="group" aria-label="currency">'
+  +["ils","usd","eur"].map(c=>'<button class="lang-btn'+(c===currentCur?" active":"")+'" data-cur="'+c+'" aria-label="'+c.toUpperCase()+'">'+({ils:"₪",usd:"$",eur:"€"}[c])+'</button>').join("")+'</div>'; }
 let currentTheme  = "dark";
 let isLight       = true;   /* ברירת מחדל: מצב בהיר פרימיום (ניתן להחלפה) */
 let lastSearch    = null;
@@ -1032,15 +1028,14 @@ function applyLang(lang){
 document.querySelectorAll(".lang-bar:not(.cur-bar) .lang-btn").forEach(b=>
   b.addEventListener("click",()=>applyLang(b.dataset.lang))
 );
-/* בורר מטבע — משנה את הסמל ואת פרמטר ה-cur בקריאות, ומרענן את התצוגה */
-document.querySelectorAll(".cur-bar .lang-btn").forEach(b=>
-  b.addEventListener("click",()=>{
-    currentCur=b.dataset.cur;
-    document.querySelectorAll(".cur-bar .lang-btn").forEach(x=>x.classList.toggle("active",x.dataset.cur===currentCur));
-    document.getElementById("budget").placeholder=T[currentLang].budgetPh.replace("₪",curSym());
-    if(lastSearch) render();
-  })
-);
+/* בורר מטבע — האזנה מואצלת (הבקרה מצוירת מחדש בתוך כותרת התוצאות) */
+document.addEventListener("click",e=>{
+  const b=e.target.closest(".cur-bar .lang-btn"); if(!b) return;
+  currentCur=b.dataset.cur;
+  document.querySelectorAll(".cur-bar .lang-btn").forEach(x=>x.classList.toggle("active",x.dataset.cur===currentCur));
+  document.getElementById("budget").placeholder=T[currentLang].budgetPh.replace("₪",curSym());
+  if(lastSearch) render();
+});
 
 /* ══════════════════════════════════════════
    ערכות צבעים
@@ -1398,7 +1393,7 @@ function render(){
     : "";
 
   box.innerHTML=head
-    +`<div class="offers-head"><i class="fa-solid fa-plane-up" aria-hidden="true"></i> ${t.offersTitle}</div><div id="offers"></div>`
+    +`<div class="offers-head"><span class="oh-title"><i class="fa-solid fa-plane-up" aria-hidden="true"></i> ${t.offersTitle}</span>${curBarHtml()}</div><div id="offers"></div>`
     +flexPanel
     +compare
     +alertUI;
