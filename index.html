@@ -286,6 +286,48 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
   .buy{grid-column:1/-1;text-align:center}
   .toolbar{justify-content:flex-start}
 }
+/* ── DATE RANGE PICKER ── */
+.dp-modal{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;
+  background:rgba(15,24,40,.45);backdrop-filter:blur(2px)}
+.dp-modal.open{display:flex}
+.dp-panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:16px;width:min(680px,94vw);max-height:92vh;overflow:auto}
+.dp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px}
+.dp-title{font-weight:700;font-size:15px}
+.dp-nights{color:var(--muted);font-size:13px;font-weight:600}
+.dp-close{background:var(--panel2);border:1px solid var(--line);color:var(--text);width:34px;height:34px;
+  border-radius:10px;cursor:pointer;font-size:14px}
+.dp-close:hover{border-color:var(--accent);color:var(--accent)}
+.dp-months{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+.dp-month{flex:1;min-width:240px}
+.dp-mhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.dp-mname{font-weight:700;font-size:14px}
+.dp-nav{background:var(--panel2);border:1px solid var(--line);color:var(--text);width:32px;height:32px;
+  border-radius:9px;cursor:pointer;display:grid;place-items:center}
+.dp-nav:hover{border-color:var(--accent);color:var(--accent)}
+.dp-nav[disabled]{opacity:.35;cursor:not-allowed}
+.dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.dp-wd{text-align:center;font-size:11px;color:var(--muted);padding:4px 0;font-weight:600}
+.dp-day{aspect-ratio:1;border:0;background:transparent;color:var(--text);border-radius:9px;
+  cursor:pointer;font-size:13px;font-family:inherit;display:grid;place-items:center;position:relative}
+.dp-day:hover:not([disabled]):not(.dp-sel){background:var(--panel2)}
+.dp-day[disabled]{color:var(--muted);opacity:.35;cursor:not-allowed}
+.dp-day.dp-empty{visibility:hidden}
+.dp-day.dp-in{background:color-mix(in srgb,var(--accent) 16%,transparent);border-radius:0}
+.dp-day.dp-sel{background:var(--accent);color:#fff;font-weight:700}
+.dp-day.dp-start{border-radius:9px 0 0 9px}
+.dp-day.dp-end{border-radius:0 9px 9px 0}
+[dir=rtl] .dp-day.dp-start{border-radius:0 9px 9px 0}
+[dir=rtl] .dp-day.dp-end{border-radius:9px 0 0 9px}
+.dp-day.dp-today{box-shadow:inset 0 0 0 1px var(--accent)}
+.dp-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
+.dp-apply{background:var(--accent);color:#fff;border:0;font-weight:700;padding:10px 22px;border-radius:12px;cursor:pointer}
+.dp-apply:hover{background:var(--accent2)}
+.dp-clear{background:transparent;border:1px solid var(--line);color:var(--muted);padding:10px 18px;border-radius:12px;cursor:pointer}
+@media(max-width:640px){
+  .dp-modal{align-items:flex-end}
+  .dp-panel{width:100%;max-width:100%;border-radius:18px 18px 0 0;max-height:88vh}
+}
 </style>
 </head>
 <body>
@@ -392,6 +434,22 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
 
 <section class="results" id="results"></section>
 
+<!-- בורר טווח תאריכים -->
+<div class="dp-modal" id="dpModal" role="dialog" aria-modal="true" aria-labelledby="dpTitle">
+  <div class="dp-panel">
+    <div class="dp-head">
+      <span class="dp-title" id="dpTitle"></span>
+      <span class="dp-nights" id="dpNights"></span>
+      <button class="dp-close" id="dpClose" type="button" aria-label="close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="dp-months" id="dpMonths"></div>
+    <div class="dp-foot">
+      <button class="dp-clear" id="dpClear" type="button"></button>
+      <button class="dp-apply" id="dpApply" type="button"></button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ══════════════════════════════════════════
    תרגומים
@@ -407,6 +465,7 @@ const T={
     toPlh:"הקלד ארץ, עיר או קוד…",
     dateOutLbl:"תאריך יציאה",nightsLbl:"ימי שהייה",dateRetLbl:"תאריך חזרה",
     nightsHint:"0 = חיפוש גמיש מתאריך היציאה והלאה",nightsHintActive:"חיפוש גמיש — הזול ביותר מתאריך היציאה והלאה",
+    dpTitle:"בחירת תאריכים",dpApply:"אישור",dpClear:"נקה",dpNights:(n)=>`${n} לילות`,
     searchBtn:"חפש כרטיסים",
     sortLbl:"מיון:",sortPrice:"מחיר",sortStops:"עצירות+מחיר",
     filtLbl:"עצירות:",filtAll:"הכל",filtDirect:"ישיר",filt1:"עצירה 1",filt2:"2+ עצירות",
@@ -458,6 +517,7 @@ const T={
     toPlh:"Type country, city or code…",
     dateOutLbl:"Departure date",nightsLbl:"Nights",dateRetLbl:"Return date",
     nightsHint:"0 = flexible search from the departure date onward",nightsHintActive:"Flexible search — cheapest from the departure date onward",
+    dpTitle:"Select dates",dpApply:"Apply",dpClear:"Clear",dpNights:(n)=>`${n} night${n===1?"":"s"}`,
     searchBtn:"Search flights",
     sortLbl:"Sort:",sortPrice:"Price",sortStops:"Stops+price",
     filtLbl:"Stops:",filtAll:"All",filtDirect:"Direct",filt1:"1 stop",filt2:"2+ stops",
@@ -509,6 +569,7 @@ const T={
     toPlh:"Введите страну, город или код…",
     dateOutLbl:"Дата вылета",nightsLbl:"Ночей",dateRetLbl:"Дата возврата",
     nightsHint:"0 = гибкий поиск от даты вылета и далее",nightsHintActive:"Гибкий поиск — самое дешёвое от даты вылета и далее",
+    dpTitle:"Выбор дат",dpApply:"Применить",dpClear:"Сбросить",dpNights:(n)=>`${n} ноч.`,
     searchBtn:"Найти рейсы",
     sortLbl:"Сортировка:",sortPrice:"Цена",sortStops:"Пересадки+цена",
     filtLbl:"Пересадки:",filtAll:"Все",filtDirect:"Прямой",filt1:"1 пересадка",filt2:"2+ пересадки",
@@ -1074,6 +1135,84 @@ dateReturn.addEventListener("change",syncNts);
 dateOut.value=fmtDMY(new Date());
 syncRet();
 updateNightsHint();
+
+/* ══════════════════════════════════════════
+   בורר טווח תאריכים (לוח שנה) — כותב לשדות הקיימים dateOut/dateReturn/nights
+══════════════════════════════════════════ */
+(function(){
+  const modal=document.getElementById("dpModal"), monthsBox=document.getElementById("dpMonths");
+  let vStart=null,vEnd=null,view=null;
+  const today=(()=>{const d=new Date();d.setHours(0,0,0,0);return d;})();
+  const ymd=d=>d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();
+  const loc=()=>currentLang==="he"?"he-IL":currentLang==="ru"?"ru-RU":"en-US";
+  function open(){
+    vStart=parseDMY(dateOut.value)||null;       if(vStart)vStart.setHours(0,0,0,0);
+    vEnd  =parseDMY(dateReturn.value)||null;     if(vEnd)vEnd.setHours(0,0,0,0);
+    view=new Date((vStart||today).getFullYear(),(vStart||today).getMonth(),1);
+    document.getElementById("dpTitle").textContent=T[currentLang].dpTitle;
+    document.getElementById("dpApply").textContent=T[currentLang].dpApply;
+    document.getElementById("dpClear").textContent=T[currentLang].dpClear;
+    render(); modal.classList.add("open");
+  }
+  function close(){ modal.classList.remove("open"); }
+  function monthHtml(base){
+    const y=base.getFullYear(),m=base.getMonth();
+    const start=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate();
+    let wd="";for(let i=0;i<7;i++){wd+='<div class="dp-wd">'+new Date(2023,0,1+i).toLocaleDateString(loc(),{weekday:"short"})+'</div>';}
+    let cells="";for(let i=0;i<start;i++)cells+='<button class="dp-day dp-empty" tabindex="-1" aria-hidden="true"></button>';
+    for(let dd=1;dd<=days;dd++){
+      const d=new Date(y,m,dd),k=ymd(d); let cls="dp-day";
+      if(k===ymd(today))cls+=" dp-today";
+      if(vStart&&k===ymd(vStart))cls+=" dp-sel dp-start";
+      if(vEnd&&k===ymd(vEnd))cls+=" dp-sel dp-end";
+      if(vStart&&vEnd&&k>ymd(vStart)&&k<ymd(vEnd))cls+=" dp-in";
+      cells+='<button class="'+cls+'"'+(k<ymd(today)?' disabled':'')+' data-d="'+y+'-'+(m+1)+'-'+dd+'">'+dd+'</button>';
+    }
+    return '<div class="dp-month"><div class="dp-mhead"><span class="dp-mname">'
+      +base.toLocaleDateString(loc(),{month:"long",year:"numeric"})+'</span></div>'
+      +'<div class="dp-grid">'+wd+cells+'</div></div>';
+  }
+  function render(){
+    const m2=new Date(view.getFullYear(),view.getMonth()+1,1);
+    const prevOff=(view.getFullYear()===today.getFullYear()&&view.getMonth()<=today.getMonth());
+    const rtl=currentLang==="he";
+    monthsBox.innerHTML=
+      '<button class="dp-nav" id="dpPrev" type="button" aria-label="previous month"'+(prevOff?' disabled':'')+'><i class="fa-solid fa-chevron-'+(rtl?"right":"left")+'"></i></button>'
+      +monthHtml(view)+monthHtml(m2)
+      +'<button class="dp-nav" id="dpNext" type="button" aria-label="next month"><i class="fa-solid fa-chevron-'+(rtl?"left":"right")+'"></i></button>';
+    const el=document.getElementById("dpNights");
+    if(vStart&&vEnd){const n=Math.round((vEnd-vStart)/864e5);el.textContent=n>0?T[currentLang].dpNights(n):"";}else el.textContent="";
+  }
+  monthsBox.addEventListener("click",e=>{
+    const nav=e.target.closest(".dp-nav");
+    if(nav){ view=new Date(view.getFullYear(),view.getMonth()+(nav.id==="dpPrev"?-1:1),1); render(); return; }
+    const day=e.target.closest(".dp-day"); if(!day||day.disabled||day.classList.contains("dp-empty"))return;
+    const p=day.dataset.d.split("-").map(Number), d=new Date(p[0],p[1]-1,p[2]);
+    if(!vStart||(vStart&&vEnd)||d<vStart){ vStart=d; vEnd=null; }   /* התחלה חדשה / לפני ההתחלה → איפוס חכם */
+    else { vEnd=d; }
+    render();
+  });
+  function apply(){
+    if(vStart){
+      dateOut.value=fmtDMY(vStart);
+      if(vEnd){ dateReturn.value=fmtDMY(vEnd); const n=Math.round((vEnd-vStart)/864e5); nights.value=n>0?n:0; }
+      else { dateReturn.value=""; nights.value=0; }       /* רק יציאה → חיפוש גמיש */
+      updateNightsHint();
+    }
+    close();
+  }
+  document.getElementById("dpApply").addEventListener("click",apply);
+  document.getElementById("dpClear").addEventListener("click",()=>{ vStart=vEnd=null; render(); });
+  document.getElementById("dpClose").addEventListener("click",close);
+  modal.addEventListener("mousedown",e=>{ if(e.target===modal)close(); });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&modal.classList.contains("open"))close(); });
+  [dateOut,dateReturn].forEach(inp=>{
+    inp.readOnly=true; inp.style.cursor="pointer";
+    inp.addEventListener("click",open);
+    inp.addEventListener("focus",open);
+    inp.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();open();} });
+  });
+})();
 
 /* ══════════════════════════════════════════
    שער המרה חי
