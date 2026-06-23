@@ -152,6 +152,35 @@ async function fetchDeals(origin) {
   return { deals:[], reason:"no-data" };
 }
 
+/* ── price calendar — cheapest fare per departure day in a month ── */
+function tpCalendarUrl(o, d, month) {
+  const p = new URLSearchParams({ origin:o, destination:d, departure_at:month,
+    currency:CFG.currency, market:CFG.market, group_by:"departure_at", token:CFG.token });
+  return "https://api.travelpayouts.com/aviasales/v3/grouped_prices?" + p.toString();
+}
+async function fetchCalendar(o, d, month) {
+  if (!TOKEN_OK) return { days:[], reason:"no-token" };
+  try {
+    const json = await getJSON(tpCalendarUrl(o, d, month));
+    const data = json && json.success && json.data && typeof json.data === "object" ? json.data : null;
+    if (data) {
+      const days = [];
+      for (const date of Object.keys(data)) {
+        const it = data[date];
+        if (!it || !it.price) continue;
+        let link = it.link || "";
+        if (link && CFG.marker) link += (link.includes("?")?"&":"?") + "marker=" + CFG.marker;
+        days.push({ date, price:Math.round(it.price), airline:it.airline||"",
+          transfers:(typeof it.transfers==="number"?it.transfers:null),
+          link: link ? "https://www.aviasales.com"+link : "" });
+      }
+      days.sort((a,b)=> a.date < b.date ? -1 : 1);
+      if (days.length) return { days, cheapest: Math.min(...days.map(x=>x.price)) };
+    }
+  } catch {}
+  return { days:[], reason:"no-data" };
+}
+
 /* ── HTTP server ── */
 const server = http.createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");   // harmless; same-origin anyway
@@ -178,6 +207,16 @@ const server = http.createServer(async (req, res) => {
     if (!o||!d||!depart) { res.writeHead(400,{"Content-Type":"application/json"});
       return res.end(JSON.stringify({offers:[],reason:"bad-params"})); }
     const out = await fetchOffers(o,d,depart,ret);
+    res.writeHead(200,{"Content-Type":"application/json"});
+    return res.end(JSON.stringify(out));
+  }
+  if (u.pathname === "/calendar") {
+    const o=(u.searchParams.get("origin")||"").toUpperCase();
+    const d=(u.searchParams.get("destination")||"").toUpperCase();
+    const month=u.searchParams.get("month")||"";
+    if (!o||!d||!month) { res.writeHead(400,{"Content-Type":"application/json"});
+      return res.end(JSON.stringify({days:[],reason:"bad-params"})); }
+    const out = await fetchCalendar(o,d,month);
     res.writeHead(200,{"Content-Type":"application/json"});
     return res.end(JSON.stringify(out));
   }

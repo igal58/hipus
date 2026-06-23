@@ -168,6 +168,17 @@ button.deals-btn{background:linear-gradient(90deg,#f59e0b,#f97316);color:#fff;bo
 button.deals-btn:hover{filter:brightness(1.1)}
 .budget-in{align-self:flex-end;width:120px;padding:11px 12px;border-radius:10px;
   border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:15px}
+button.cal-btn{align-self:flex-end;background:linear-gradient(90deg,#0ea5e9,#6366f1);color:#fff;border:0;
+  font-weight:700;font-size:15px;padding:11px 20px;border-radius:10px;cursor:pointer}
+button.cal-btn:hover{filter:brightness(1.1)}
+.cal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:14px}
+.cal-cell{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:12px;
+  padding:12px 8px;cursor:pointer;text-align:center;transition:transform .1s,border-color .1s;font-family:inherit}
+.cal-cell:hover{transform:translateY(-2px);border-color:var(--accent)}
+.cal-cell .cal-d{font-size:13px;color:var(--muted)}
+.cal-cell .cal-p{font-size:17px;font-weight:700;margin-top:4px}
+.cal-cell.cal-min{border-color:var(--good);box-shadow:0 0 0 1px var(--good)}
+.cal-cell .cal-tag{font-size:11px;color:var(--good);font-weight:700;margin-top:3px}
 .deal-row{cursor:pointer}
 .deal-row .logo{font-size:12px}
 
@@ -308,6 +319,7 @@ button.deals-btn:hover{filter:brightness(1.1)}
     </div>
     <button class="search" id="searchBtn">🔍 חפש כרטיסים</button>
     <button class="deals-btn" id="dealsBtn">🔥 מבצעים חמים</button>
+    <button class="cal-btn" id="calBtn">📅 החודש הזול</button>
     <input type="number" id="budget" class="budget-in" min="0" step="100" placeholder="תקציב מקס׳ ₪">
     <span class="rate" id="rateLabel"></span>
   </div>
@@ -357,6 +369,9 @@ const T={
     dealsBtn:"🔥 מבצעים חמים",dealsTitle:"🔥 טיסות סודיות — הזול ביותר מתל אביב",
     dealsTitleBudget:(b)=>`🔥 לאן שבא לי — עד ${b} ₪ מתל אביב`,budgetPh:"תקציב מקס׳ ₪",
     dealsBudgetNone:(b)=>`אין יעדים עד ${b} ₪ כרגע — נסה תקציב גבוה יותר`,
+    calBtn:"📅 החודש הזול",calTitle:"📅 לוח מחירים — היום הזול בחודש",
+    calLoading:"בונה לוח מחירים…",calNone:"אין נתוני לוח למסלול/חודש הזה — נסה חודש אחר או יעד אחר",
+    calCheapest:"הכי זול",calHint:"לחץ על יום כדי לחפש טיסות בתאריך הזה",
     dealsLoading:"מחפש מבצעים…",dealsNone:"אין מבצעים כרגע — נסה שוב מאוחר יותר",
     paxLbl:"נוסעים",adultsLbl:"מבוגרים",adultsSub:"מעל 12",childrenLbl:"ילדים",childrenSub:"2–11",
     infantsLbl:"תינוקות",infantsSub:"עד שנתיים",paxSummary:(n)=>`${n} 👤`,perPerson:"לנוסע",
@@ -399,6 +414,9 @@ const T={
     dealsBtn:"🔥 Hot deals",dealsTitle:"🔥 Secret flights — cheapest from Tel Aviv",
     dealsTitleBudget:(b)=>`🔥 Where can I go — up to ${b} ₪ from Tel Aviv`,budgetPh:"Max budget ₪",
     dealsBudgetNone:(b)=>`No destinations up to ${b} ₪ right now — try a higher budget`,
+    calBtn:"📅 Cheapest month",calTitle:"📅 Price calendar — cheapest day of the month",
+    calLoading:"Building price calendar…",calNone:"No calendar data for this route/month — try another month or destination",
+    calCheapest:"Cheapest",calHint:"Tap a day to search flights on that date",
     dealsLoading:"Finding deals…",dealsNone:"No deals right now — try again later",
     paxLbl:"Passengers",adultsLbl:"Adults",adultsSub:"12+",childrenLbl:"Children",childrenSub:"2–11",
     infantsLbl:"Infants",infantsSub:"under 2",paxSummary:(n)=>`${n} 👤`,perPerson:"per person",
@@ -441,6 +459,9 @@ const T={
     dealsBtn:"🔥 Горящие",dealsTitle:"🔥 Секретные рейсы — дешевле всего из Тель-Авива",
     dealsTitleBudget:(b)=>`🔥 Куда улететь — до ${b} ₪ из Тель-Авива`,budgetPh:"Макс. бюджет ₪",
     dealsBudgetNone:(b)=>`Нет направлений до ${b} ₪ сейчас — попробуйте больший бюджет`,
+    calBtn:"📅 Дешёвый месяц",calTitle:"📅 Календарь цен — самый дешёвый день месяца",
+    calLoading:"Строю календарь цен…",calNone:"Нет данных календаря для этого маршрута/месяца — попробуйте другой месяц или направление",
+    calCheapest:"Дешевле всего",calHint:"Нажмите на день, чтобы найти рейсы на эту дату",
     dealsLoading:"Ищу акции…",dealsNone:"Сейчас нет акций — попробуйте позже",
     paxLbl:"Пассажиры",adultsLbl:"Взрослые",adultsSub:"12+",childrenLbl:"Дети",childrenSub:"2–11",
     infantsLbl:"Младенцы",infantsSub:"до 2 лет",paxSummary:(n)=>`${n} 👤`,perPerson:"за человека",
@@ -805,6 +826,7 @@ function applyLang(lang){
   document.getElementById("lDateRet").textContent=t.dateRetLbl;
   document.getElementById("searchBtn").textContent=t.searchBtn;
   document.getElementById("dealsBtn").textContent=t.dealsBtn;
+  document.getElementById("calBtn").textContent=t.calBtn;
   document.getElementById("budget").placeholder=t.budgetPh;
   document.getElementById("lPax").textContent=t.paxLbl;
   document.getElementById("lAdults").textContent=t.adultsLbl;   document.getElementById("sAdults").textContent=t.adultsSub;
@@ -1166,6 +1188,52 @@ async function showDeals(){
   }
 }
 
+/* 📅 לוח מחירים — היום הזול בחודש (לפי היעד הנבחר + חודש תאריך היציאה) */
+async function showCalendar(){
+  const t=T[currentLang];
+  const box=document.getElementById("results");
+  const fromC=COUNTRIES.find(c=>c.code===fromSel.value);
+  const toC  =COUNTRIES.find(c=>c.code===selectedToCode);
+  if(!toC){ alert(t.errTo); return; }
+  if(fromC.code===toC.code){ alert(t.errSame); return; }
+  const dep=parseDMY(dateOut.value);
+  if(!dep){ alert(t.errDate); return; }                         /* צריך תאריך כדי לדעת איזה חודש */
+  const month=`${dep.getFullYear()}-${pad(dep.getMonth()+1)}`;
+  const fromN=cLng(fromC), toN=cLng(toC);
+  box.innerHTML=`<div class="results-head"><h2>${t.calTitle}</h2></div><div class="empty">${t.calLoading}</div>`;
+  try{
+    const r=await fetch(`${PROXY_BASE}/calendar?origin=${fromC.iata}&destination=${toC.iata}&month=${month}`);
+    const d=await r.json();
+    if(d&&Array.isArray(d.days)&&d.days.length){
+      const cheapest=d.cheapest;
+      const cells=d.days.map(day=>{
+        const dt=parseISO(day.date);
+        const isMin=day.price===cheapest;
+        return `<button class="cal-cell${isMin?" cal-min":""}" data-cal-date="${day.date}">
+          <div class="cal-d">${dt?fmtDMY(dt):day.date}</div>
+          <div class="cal-p">${Number(day.price).toLocaleString()} ₪</div>
+          ${isMin?`<div class="cal-tag">${t.calCheapest}</div>`:""}
+        </button>`;
+      }).join("");
+      box.innerHTML=`<div class="results-head"><h2>${t.calTitle}</h2></div>
+        <div class="search-summary"><div class="ss-route">${fromN.c} (${fromC.iata}) → ${toN.c} (${toC.iata}) · ${month}</div>
+        <div class="ss-sub">${t.calHint}</div></div>
+        <div class="cal-grid">${cells}</div>`;
+    }else{
+      box.innerHTML=`<div class="results-head"><h2>${t.calTitle}</h2></div><div class="empty">${t.calNone}</div>`;
+    }
+  }catch(e){
+    box.innerHTML=`<div class="results-head"><h2>${t.calTitle}</h2></div><div class="empty">${t.calNone}</div>`;
+  }
+}
+/* לחיצה על יום בלוח → ממלא את תאריך היציאה ומריץ חיפוש */
+document.addEventListener("click",e=>{
+  const cell=e.target.closest(".cal-cell");
+  if(!cell) return;
+  const dt=parseISO(cell.dataset.calDate);
+  if(dt){ dateOut.value=fmtDMY(dt); syncRet(); doSearch(); window.scrollTo({top:0,behavior:"smooth"}); }
+});
+
 /* לחיצה על מבצע → ממלא את החיפוש ומריץ אותו */
 document.addEventListener("click",e=>{
   const row=e.target.closest(".deal-row");
@@ -1185,6 +1253,7 @@ document.addEventListener("click",e=>{
   }
 });
 document.getElementById("dealsBtn").addEventListener("click",showDeals);
+document.getElementById("calBtn").addEventListener("click",showCalendar);
 
 /* ══════════════════════════════════════════
    👨‍👩‍👧 בורר נוסעים
