@@ -415,6 +415,11 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
       <label id="lDateRet">תאריך חזרה</label>
       <input type="text" id="dateReturn" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10">
     </div>
+    <div class="field">
+      <label id="lMaxStops">מקס׳ עצירות</label>
+      <input type="number" id="maxStops" min="0" max="9" value="9">
+      <small class="field-hint" id="maxStopsHint"></small>
+    </div>
   </div>
   <div class="actions">
     <div class="field pax-field">
@@ -490,7 +495,7 @@ const T={
     lightBtn:"מצב בהיר",darkBtn:"מצב כהה",
     fromLbl:"ארץ יציאה",toLbl:"ארץ / עיר יעד",
     toPlh:"הקלד ארץ, עיר או קוד…",
-    dateOutLbl:"תאריך יציאה",nightsLbl:"ימי שהייה",dateRetLbl:"תאריך חזרה",
+    dateOutLbl:"תאריך יציאה",nightsLbl:"ימי שהייה",dateRetLbl:"תאריך חזרה",maxStopsLbl:"מקס׳ עצירות",maxStopsHint:"0 = טיסה ישירה · 9 = ללא הגבלה",
     nightsHint:"0 = חיפוש גמיש מתאריך היציאה והלאה",nightsHintActive:"חיפוש גמיש — הזול ביותר מתאריך היציאה והלאה",
     dpTitle:"בחירת תאריכים",dpApply:"אישור",dpClear:"נקה",dpNights:(n)=>`${n} לילות`,mapHead:"היעד על המפה",curLabel:"מטבע",
     searchBtn:"חפש כרטיסים",
@@ -542,7 +547,7 @@ const T={
     lightBtn:"Light",darkBtn:"Dark",
     fromLbl:"Departure",toLbl:"Destination",
     toPlh:"Type country, city or code…",
-    dateOutLbl:"Departure date",nightsLbl:"Nights",dateRetLbl:"Return date",
+    dateOutLbl:"Departure date",nightsLbl:"Nights",dateRetLbl:"Return date",maxStopsLbl:"Max stops",maxStopsHint:"0 = direct · 9 = no limit",
     nightsHint:"0 = flexible search from the departure date onward",nightsHintActive:"Flexible search — cheapest from the departure date onward",
     dpTitle:"Select dates",dpApply:"Apply",dpClear:"Clear",dpNights:(n)=>`${n} night${n===1?"":"s"}`,mapHead:"Destination on the map",curLabel:"Currency",
     searchBtn:"Search flights",
@@ -594,7 +599,7 @@ const T={
     lightBtn:"Светлая",darkBtn:"Тёмная",
     fromLbl:"Откуда",toLbl:"Куда",
     toPlh:"Введите страну, город или код…",
-    dateOutLbl:"Дата вылета",nightsLbl:"Ночей",dateRetLbl:"Дата возврата",
+    dateOutLbl:"Дата вылета",nightsLbl:"Ночей",dateRetLbl:"Дата возврата",maxStopsLbl:"Макс. пересадок",maxStopsHint:"0 = прямой · 9 = без ограничений",
     nightsHint:"0 = гибкий поиск от даты вылета и далее",nightsHintActive:"Гибкий поиск — самое дешёвое от даты вылета и далее",
     dpTitle:"Выбор дат",dpApply:"Применить",dpClear:"Сбросить",dpNights:(n)=>`${n} ноч.`,mapHead:"Направление на карте",curLabel:"Валюта",
     searchBtn:"Найти рейсы",
@@ -964,6 +969,7 @@ function airlineName(code){
 let currentLang   = "he";
 let currentCur    = "ils";   /* מטבע נבחר: ils / usd / eur */
 function curSym(){ return {ils:"₪",usd:"$",eur:"€"}[currentCur]||"₪"; }
+function maxStopsVal(){ const v=parseInt((document.getElementById("maxStops")||{}).value,10); return (v>=0&&v<=9)?v:9; }
 function curBarHtml(){ return '<div class="lang-bar cur-bar" role="group" aria-label="currency">'
   +["ils","usd","eur"].map(c=>'<button class="lang-btn'+(c===currentCur?" active":"")+'" data-cur="'+c+'" aria-label="'+c.toUpperCase()+'">'+({ils:"₪",usd:"$",eur:"€"}[c])+'</button>').join("")+'</div>'; }
 
@@ -973,7 +979,7 @@ function saveState(){
   if(!_stateReady) return;
   try{ localStorage.setItem(STATE_KEY, JSON.stringify({
     from:fromSel.value, to:selectedToCode,
-    dateOut:dateOut.value, dateReturn:dateReturn.value, nights:nights.value,
+    dateOut:dateOut.value, dateReturn:dateReturn.value, nights:nights.value, maxStops:maxStopsVal(),
     pax, bags, lang:currentLang, cur:currentCur, theme:currentTheme, light:isLight
   })); }catch(e){}
 }
@@ -991,6 +997,7 @@ function restoreState(){
   if(st.dateOut) dateOut.value=st.dateOut;
   if(st.dateReturn!=null) dateReturn.value=st.dateReturn;
   if(st.nights!=null && st.nights!=="") nights.value=st.nights;
+  if(st.maxStops!=null) document.getElementById("maxStops").value=st.maxStops;
 }
 let currentTheme  = "dark";
 let isLight       = true;   /* ברירת מחדל: מצב בהיר פרימיום (ניתן להחלפה) */
@@ -1025,6 +1032,8 @@ function applyLang(lang){
   document.getElementById("lDateOut").textContent=t.dateOutLbl;
   document.getElementById("lNights").textContent=t.nightsLbl;
   updateNightsHint();
+  document.getElementById("lMaxStops").textContent=t.maxStopsLbl;
+  document.getElementById("maxStopsHint").textContent=t.maxStopsHint;
   document.getElementById("lDateRet").textContent=t.dateRetLbl;
   document.getElementById("searchBtn").innerHTML='<i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><span>'+t.searchBtn+'</span>';
   document.getElementById("dealsBtn").innerHTML='<i class="fa-solid fa-fire" aria-hidden="true"></i><span>'+t.dealsBtn+'</span>';
@@ -1565,7 +1574,7 @@ async function fetchOffers(s){
   if(box) box.innerHTML="";
   try{
     const u=`${PROXY_BASE}/offers?origin=${s.fromC.iata}&destination=${s.toC.iata}`+
-            `&depart=${fmtISO(s.dep)}`+(s.ret?`&return=${fmtISO(s.ret)}`:"")+`&cur=${currentCur}`;
+            `&depart=${fmtISO(s.dep)}`+(s.ret?`&return=${fmtISO(s.ret)}`:"")+`&cur=${currentCur}&stops=${maxStopsVal()}`;
     const r=await fetch(u);
     const d=await r.json();
     if(d&&Array.isArray(d.offers)&&d.offers.length){
@@ -1611,7 +1620,7 @@ async function resolveFlexDates(fromC,toC,dep){
   const box=document.getElementById("results");
   box.innerHTML=`<div class="results-head"><h2>${t.flexSearching}</h2></div>`;
   try{
-    const u=`${PROXY_BASE}/price?origin=${fromC.iata}&destination=${toC.iata}&depart=${fmtISO(dep)}&cur=${currentCur}`; /* בלי return = דו-כיווני גמיש */
+    const u=`${PROXY_BASE}/price?origin=${fromC.iata}&destination=${toC.iata}&depart=${fmtISO(dep)}&cur=${currentCur}&stops=${maxStopsVal()}`; /* בלי return = דו-כיווני גמיש */
     const r=await fetch(u); const d=await r.json();
     if(d&&d.found&&d.returnISO){
       const fret=parseISO(d.returnISO);    /* תאריך החזרה שנמצא — לשימוש פנימי בלבד (קישורים+מחיר), בלי למלא בטופס */
@@ -1776,6 +1785,7 @@ updatePaxBtn();
 
 document.getElementById("searchBtn").addEventListener("click",doSearch);
 fromSel.addEventListener("change",()=>{ setFromFlag(); saveState(); if(lastSearch) render(); });
+document.getElementById("maxStops").addEventListener("change",()=>{ saveState(); if(lastSearch) doSearch(); });
 restoreState();           /* משחזר בחירות קודמות (F5) — דורס את ברירות המחדל לפני התצוגה */
 _stateReady=true;
 applyTheme();             /* מחיל ערכה/מצב בהיר שנשמרו */

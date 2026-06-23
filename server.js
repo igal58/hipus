@@ -76,6 +76,7 @@ async function getJSON(url, tries = 3) {
 }
 const ALLOWED_CUR = ["ils","usd","eur"];
 function curOf(v){ v=(v||"").toLowerCase(); return ALLOWED_CUR.includes(v) ? v : CFG.currency; }
+function stopsOf(v){ const n=parseInt(v,10); return (Number.isFinite(n)&&n>=0&&n<=9) ? n : 9; }  // מקס׳ עצירות (ברירת מחדל 9 = ללא הגבלה מעשית)
 function tpUrl(o, d, depart, ret, mode, limit, cur) {
   const flex = !ret;                                   // no return chosen → flexible round-trip (return open)
   const dep = mode === "month" ? depart.slice(0,7) : depart;
@@ -98,9 +99,9 @@ function mapFare(it, approx, flex) {
     link: link ? "https://www.aviasales.com"+link : "" };
 }
 /* several DISTINCT real fares (varied airline / price / times) for one route */
-async function fetchOffers(o, d, depart, ret, cur) {
+async function fetchOffers(o, d, depart, ret, cur, maxStops) {
   if (!TOKEN_OK) return { offers:[], reason:"no-token" };
-  const flex = !ret;
+  const flex = !ret; const mx = (maxStops==null?9:maxStops);
   for (const mode of ["exact","month"]) {
     try {
       const json = await getJSON(tpUrl(o,d,depart,ret,mode,30,cur));
@@ -110,6 +111,7 @@ async function fetchOffers(o, d, depart, ret, cur) {
         for (const it of arr) {
           if (!it || !it.price) continue;
           if ((it.departure_at||"").slice(0,10) < depart) continue;   // flex/month: only fares on/after the chosen departure date
+          if (((typeof it.transfers==="number")?it.transfers:0) > mx) continue;   // max stops filter
           const key = `${it.airline}|${it.price}|${(it.departure_at||"").slice(0,16)}|${(it.return_at||"").slice(0,16)}`;
           if (seen.has(key)) continue; seen.add(key);
           offers.push(mapFare(it, mode==="month", flex));
@@ -121,13 +123,15 @@ async function fetchOffers(o, d, depart, ret, cur) {
   }
   return { offers:[], reason:"no-data" };
 }
-async function fetchPrice(o, d, depart, ret, cur) {
+async function fetchPrice(o, d, depart, ret, cur, maxStops) {
   if (!TOKEN_OK) return { found:false, reason:"no-token" };
+  const mx = (maxStops==null?9:maxStops);
   for (const mode of ["exact","month"]) {
     try {
       const json = await getJSON(tpUrl(o,d,depart,ret,mode,30,cur));   // fetch many (sorted by price) so we can pick the cheapest on/after the date
       const arr = json && json.success && Array.isArray(json.data) ? json.data : [];
-      const it = arr.find(x => x && x.price && (x.departure_at||"").slice(0,10) >= depart);  // cheapest fare on/after the chosen departure date
+      const it = arr.find(x => x && x.price && (x.departure_at||"").slice(0,10) >= depart
+        && (((typeof x.transfers==="number")?x.transfers:0) <= mx));  // cheapest on/after the date within max stops
       if (it && it.price) {
         const da = (it.departure_at||"").slice(0,10);
         const ra = (it.return_at||"").slice(0,10);
@@ -323,7 +327,7 @@ const server = http.createServer(async (req, res) => {
     const depart=u.searchParams.get("depart")||"", ret=u.searchParams.get("return")||"";
     if (!o||!d||!depart) { res.writeHead(400,{"Content-Type":"application/json"});
       return res.end(JSON.stringify({found:false,reason:"bad-params"})); }
-    const out = await fetchPrice(o,d,depart,ret,curOf(u.searchParams.get("cur")));
+    const out = await fetchPrice(o,d,depart,ret,curOf(u.searchParams.get("cur")),stopsOf(u.searchParams.get("stops")));
     res.writeHead(200,{"Content-Type":"application/json"});
     return res.end(JSON.stringify(out));
   }
@@ -333,7 +337,7 @@ const server = http.createServer(async (req, res) => {
     const depart=u.searchParams.get("depart")||"", ret=u.searchParams.get("return")||"";
     if (!o||!d||!depart) { res.writeHead(400,{"Content-Type":"application/json"});
       return res.end(JSON.stringify({offers:[],reason:"bad-params"})); }
-    const out = await fetchOffers(o,d,depart,ret,curOf(u.searchParams.get("cur")));
+    const out = await fetchOffers(o,d,depart,ret,curOf(u.searchParams.get("cur")),stopsOf(u.searchParams.get("stops")));
     res.writeHead(200,{"Content-Type":"application/json"});
     return res.end(JSON.stringify(out));
   }
