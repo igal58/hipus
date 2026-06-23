@@ -13,78 +13,103 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Heebo:wght@400;500;600;700;800&display=swap">
 <style>
-/* ── ערכות צבעים (dark variants) ── */
+/* ── DESIGN TOKENS ── */
 :root{
-  --bg-a:#0b1120;--bg-b:#111a2e;--panel:#161f33;--panel2:#1e2940;
-  --accent:#2563eb;--accent2:#3b82f6;--text:#e8edf6;--muted:#9aa7bd;
-  --good:#16a34a;--line:#27324a;--gold:#f59e0b;
-  --shadow:0 1px 2px rgba(0,0,0,.30),0 8px 28px rgba(0,0,0,.28);
-  --shadow-sm:0 1px 3px rgba(0,0,0,.30);
-  --radius:16px;--radius-sm:12px;
-  --accent-ink:#fff;
-}
-body.theme-ocean  {--bg-a:#042f2e;--bg-b:#064e3b;--panel:#065f46;--panel2:#047857;--accent:#34d399;--accent2:#10b981;--text:#ecfdf5;--muted:#6ee7b7;--good:#4ade80;--line:#065f46}
-body.theme-sunset {--bg-a:#1c0a00;--bg-b:#3b1204;--panel:#431407;--panel2:#5c1a0a;--accent:#fb923c;--accent2:#f97316;--text:#fff7ed;--muted:#fed7aa;--good:#86efac;--line:#7c2d12}
-body.theme-purple {--bg-a:#1e1b4b;--bg-b:#312e81;--panel:#3730a3;--panel2:#4338ca;--accent:#a78bfa;--accent2:#818cf8;--text:#ede9fe;--muted:#c4b5fd;--good:#86efac;--line:#4338ca}
-body.theme-slate  {--bg-a:#1e293b;--bg-b:#334155;--panel:#334155;--panel2:#475569;--accent:#94a3b8;--accent2:#64748b;--text:#f8fafc;--muted:#cbd5e1;--good:#4ade80;--line:#475569}
-body.theme-rose   {--bg-a:#1a0010;--bg-b:#3b0024;--panel:#4c0030;--panel2:#6b003f;--accent:#f472b6;--accent2:#ec4899;--text:#fdf2f8;--muted:#fbcfe8;--good:#86efac;--line:#6b003f}
-
-/* ── מצב בהיר (פרימיום, ברירת מחדל) ── */
-body.light{
+  --accent:#2563eb;--accent2:#3b82f6;--accent-ink:#fff;
+  --good:#16a34a;--gold:#f59e0b;
+  --radius:16px;--radius-sm:12px;--fs:16px;
   --bg-a:#f6f8fb;--bg-b:#eef2f7;--panel:#ffffff;--panel2:#f4f7fb;
   --text:#0f1b2d;--muted:#5b6b85;--line:#e6ebf2;
   --shadow:0 1px 2px rgba(16,24,40,.05),0 10px 30px rgba(16,24,40,.07);
   --shadow-sm:0 1px 3px rgba(16,24,40,.08);
-  --accent-ink:#fff;
+}
+body.bg-dim{
+  --bg-a:#1a2233;--bg-b:#202b3f;--panel:#222e44;--panel2:#2a3852;
+  --text:#eaf0fa;--muted:#a7b4c9;--line:#34425d;
+  --shadow:0 1px 2px rgba(0,0,0,.30),0 10px 30px rgba(0,0,0,.25);--shadow-sm:0 1px 3px rgba(0,0,0,.30);
+}
+body.bg-dark{
+  --bg-a:#0b1120;--bg-b:#0e1626;--panel:#141d30;--panel2:#1b2740;
+  --text:#e8edf6;--muted:#94a3b8;--line:#22304a;
+  --shadow:0 1px 2px rgba(0,0,0,.40),0 10px 30px rgba(0,0,0,.35);--shadow-sm:0 1px 3px rgba(0,0,0,.40);
 }
 
 *{box-sizing:border-box;transition:background-color .22s,color .22s,border-color .22s}
+html{font-size:var(--fs)}
 body{margin:0;font-family:"Inter","Heebo","Segoe UI",Tahoma,Arial,sans-serif;
-  background:var(--bg-a);
-  color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+  background:var(--bg-a);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
 .fa-fw{width:1.1em;text-align:center}
 
-header{text-align:center;padding:26px 16px 6px}
-header h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em;
-  display:flex;align-items:center;justify-content:center;gap:10px}
-header h1 .fa-solid{color:var(--accent);font-size:22px}
-header p{color:var(--muted);margin:6px 0 0;font-size:14px}
+/* ── NAVBAR ── */
+.navbar{position:sticky;top:0;z-index:1200;background:var(--panel);border-bottom:1px solid var(--line)}
+.nav-inner{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:10px 18px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);flex:0 0 auto}
+.brand-mark{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:var(--shadow-sm)}
+.brand-text{display:flex;flex-direction:column;line-height:1.05}
+.brand-name{font-weight:800;font-size:18px;letter-spacing:-.02em}
+.brand-sub{font-size:10.5px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+.nav-actions{display:flex;align-items:center;gap:2px;margin-inline-start:10px;flex:1}
+.nav-link{display:inline-flex;align-items:center;gap:7px;background:transparent;border:0;color:var(--muted);
+  font:inherit;font-size:14px;font-weight:600;padding:8px 12px;border-radius:10px;cursor:pointer;white-space:nowrap}
+.nav-link:hover{background:var(--panel2);color:var(--text)}
+.nav-link.active{color:var(--accent)}
+.nav-link .fa-solid{font-size:14px}
+.nav-right{display:flex;align-items:center;gap:10px;flex:0 0 auto;margin-inline-start:auto}
+.nav-icon-btn{width:40px;height:40px;border-radius:11px;border:1px solid var(--line);background:var(--panel);
+  color:var(--text);cursor:pointer;display:grid;place-items:center;font-size:15px}
+.nav-icon-btn:hover{border-color:var(--accent);color:var(--accent)}
 
-/* ── TOOLBAR ── */
-.toolbar{max-width:1020px;margin:8px auto 0;display:flex;align-items:center;
-  gap:10px;flex-wrap:wrap;padding:0 12px;justify-content:space-between;
-  direction:ltr}  /* קבוע — לא זז בין עברית לאנגלית */
-.toolbar-left,.toolbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-
-/* בחירת שפה — segmented control */
-.lang-bar{display:flex;gap:2px;background:var(--panel2);
-  border:1px solid var(--line);border-radius:12px;padding:3px}
-.lang-btn{background:transparent;border:none;color:var(--muted);
-  border-radius:9px;padding:6px 13px;cursor:pointer;font-size:13px;font-weight:600;min-width:42px}
-.lang-btn.active{background:var(--panel);color:var(--accent);box-shadow:var(--shadow-sm)}
-body:not(.light) .lang-btn.active{background:var(--accent);color:#fff}
+/* lang segmented (navbar + currency + class) */
+.lang-bar{display:flex;gap:2px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:3px}
+.lang-btn{background:transparent;border:none;color:var(--muted);border-radius:9px;padding:6px 12px;
+  cursor:pointer;font-size:13px;font-weight:600;min-width:40px;font-family:inherit}
+.lang-btn.active{background:var(--accent);color:#fff}
 .lang-btn:hover:not(.active){color:var(--text)}
 
-/* מצב כהה/בהיר */
-.theme-toggle{display:inline-flex;align-items:center;gap:7px;background:var(--panel);
-  border:1px solid var(--line);color:var(--text);border-radius:12px;padding:7px 13px;
-  cursor:pointer;font-size:13px;font-weight:600}
-.theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
-.theme-toggle .fa-solid{font-size:14px}
+/* ── HERO ── */
+.hero{text-align:center;padding:22px 16px 4px;max-width:1180px;margin:0 auto}
+.hero h1{margin:0;font-size:25px;font-weight:800;letter-spacing:-.02em}
+.hero p{color:var(--muted);margin:6px 0 0;font-size:14px}
 
-/* ערכת צבעים */
-.palette{display:flex;align-items:center;gap:6px}
-.palette-lbl{font-size:12px;color:var(--muted)}
-.swatch{width:21px;height:21px;border-radius:50%;cursor:pointer;
-  border:2px solid transparent;transition:transform .12s,border-color .12s}
-.swatch:hover,.swatch.active{transform:scale(1.3);border-color:var(--text)}
-.sw-dark  {background:linear-gradient(135deg,#0f172a,#38bdf8)}
-.sw-ocean {background:linear-gradient(135deg,#042f2e,#34d399)}
-.sw-sunset{background:linear-gradient(135deg,#1c0a00,#fb923c)}
-.sw-purple{background:linear-gradient(135deg,#1e1b4b,#a78bfa)}
-.sw-slate {background:linear-gradient(135deg,#1e293b,#94a3b8)}
-.sw-rose  {background:linear-gradient(135deg,#1a0010,#f472b6)}
+/* ── CUSTOMIZE DRAWER ── */
+.drawer-overlay{position:fixed;inset:0;background:rgba(15,24,40,.45);backdrop-filter:blur(2px);
+  z-index:1800;opacity:0;visibility:hidden;transition:opacity .2s}
+.drawer-overlay.open{opacity:1;visibility:visible}
+.drawer{position:fixed;top:0;inset-inline-end:0;height:100%;width:340px;max-width:90vw;z-index:1900;
+  background:var(--panel);box-shadow:var(--shadow);transform:translateX(110%);
+  transition:transform .26s ease;padding:18px;overflow:auto}
+[dir=rtl] .drawer{inset-inline-end:auto;inset-inline-start:0;transform:translateX(-110%)}
+.drawer.open{transform:translateX(0)}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.drawer-title{font-weight:800;font-size:16px;display:inline-flex;align-items:center;gap:8px}
+.drawer-title .fa-solid{color:var(--accent)}
+.drawer-sec{padding:16px 0;border-top:1px solid var(--line);margin-top:8px}
+.drawer-lbl{font-size:13px;font-weight:700;color:var(--muted);margin-bottom:10px}
+.seg{display:flex;gap:6px}
+.seg-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--panel2);
+  border:1px solid var(--line);color:var(--text);border-radius:11px;padding:10px;cursor:pointer;font:inherit;font-size:13px;font-weight:600}
+.seg-btn:hover{border-color:var(--accent)}
+.seg-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.accent-row{display:flex;gap:12px;flex-wrap:wrap}
+.accent-dot{width:34px;height:34px;border-radius:50%;background:var(--c);border:2px solid transparent;cursor:pointer}
+.accent-dot:hover{transform:scale(1.08)}
+.accent-dot.active{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--c)}
+
+/* ── BOTTOM NAV (mobile) ── */
+.bottom-nav{display:none}
+@media(max-width:760px){
+  .nav-actions{display:none}
+  .brand-sub{display:none}
+  .bottom-nav{display:flex;position:fixed;bottom:0;inset-inline:0;z-index:1200;background:var(--panel);
+    border-top:1px solid var(--line);padding:6px 4px}
+  .bottom-nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:0;
+    color:var(--muted);font:inherit;font-size:11px;font-weight:600;padding:6px 2px;cursor:pointer}
+  .bottom-nav button.active{color:var(--accent)}
+  .bottom-nav button .fa-solid{font-size:17px}
+  body{padding-bottom:66px}
+}
 
 /* ── SEARCH CARD ── */
 .search-card{max-width:1020px;margin:14px auto;background:var(--panel);
@@ -314,6 +339,10 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
 .leaflet-container{background:var(--panel2);font-family:inherit;border-radius:var(--radius)}
 .map-pin{color:var(--accent);font-size:30px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3));
   display:grid;place-items:center}
+.map-dot{width:14px;height:14px;border-radius:50%;background:var(--accent);
+  border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.map-plane{color:var(--accent);font-size:18px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));
+  display:grid;place-items:center}
 @media(min-width:900px){
   #map{height:360px}
 }
@@ -364,34 +393,83 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
 </head>
 <body>
 
-<header>
-  <h1><i class="fa-solid fa-plane-up" aria-hidden="true"></i><span id="hTitle">חיפוש כרטיסי טיסה</span></h1>
-  <p id="hSub">השוואת מחירים בשקלים ובדולרים — מיון וסינון בזמן אמת</p>
-</header>
+<nav class="navbar">
+  <div class="nav-inner">
+    <a class="brand" href="#top" aria-label="FlyFinder">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="26" height="26"><path fill="currentColor" d="M29.4 4.6c-.9-.9-3-.5-5.5 1L18 8.9 7.6 5.5c-.4-.1-.8 0-1.1.3l-1.6 1.6c-.5.5-.4 1.3.2 1.6l7.6 4-3.9 3.9-3.4-.6c-.3-.1-.7 0-.9.3l-1 1c-.4.4-.3 1.1.2 1.4l3.6 2.2 2.2 3.6c.3.5 1 .6 1.4.2l1-1c.2-.2.3-.6.3-.9l-.6-3.4 3.9-3.9 4 7.6c.3.6 1.1.7 1.6.2l1.6-1.6c.3-.3.4-.7.3-1.1L23.1 14l3.3-5.9c1.5-2.5 1.9-4.6 1-5.5z"/></svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">FlyFinder</span>
+        <span class="brand-sub" id="brandSub">Flight Search</span>
+      </span>
+    </a>
+    <div class="nav-actions" id="navActions">
+      <button class="nav-link active" data-nav="search" type="button"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><span id="navSearch">חיפוש</span></button>
+      <button class="nav-link" data-nav="map" type="button"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i><span id="navMap">מפה</span></button>
+      <button class="nav-link" data-nav="deals" type="button"><i class="fa-solid fa-fire" aria-hidden="true"></i><span id="navDeals">מבצעים</span></button>
+      <button class="nav-link" data-nav="cal" type="button"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i><span id="navCal">החודש הזול</span></button>
+      <button class="nav-link" data-nav="alert" type="button"><i class="fa-solid fa-bell" aria-hidden="true"></i><span id="navAlert">התראה</span></button>
+    </div>
+    <div class="nav-right">
+      <div class="lang-bar nav-lang" role="group" aria-label="language">
+        <button class="lang-btn active" data-lang="he">עב</button>
+        <button class="lang-btn"        data-lang="en">EN</button>
+        <button class="lang-btn"        data-lang="ru">RU</button>
+      </div>
+      <button class="nav-icon-btn" id="customizeBtn" type="button" aria-label="Customize"><i class="fa-solid fa-sliders" aria-hidden="true"></i></button>
+    </div>
+  </div>
+</nav>
 
-<div class="toolbar">
-  <div class="toolbar-left">
-    <!-- בחירת שפה -->
-    <div class="lang-bar">
-      <button class="lang-btn active" data-lang="he">עב</button>
-      <button class="lang-btn"        data-lang="en">EN</button>
-      <button class="lang-btn"        data-lang="ru">RU</button>
-    </div>
-    <!-- מצב בהיר/כהה -->
-    <button class="theme-toggle" id="lightToggle"></button>
-  </div>
-  <div class="toolbar-right">
-    <div class="palette">
-      <span class="palette-lbl" id="paletteLabel">ערכה:</span>
-      <div class="swatch sw-dark   active" data-theme="dark"   title="כחול כהה"></div>
-      <div class="swatch sw-ocean"         data-theme="ocean"  title="ים"></div>
-      <div class="swatch sw-sunset"        data-theme="sunset" title="שקיעה"></div>
-      <div class="swatch sw-purple"        data-theme="purple" title="סגול"></div>
-      <div class="swatch sw-slate"         data-theme="slate"  title="אפור"></div>
-      <div class="swatch sw-rose"          data-theme="rose"   title="ורוד"></div>
-    </div>
-  </div>
+<div class="hero" id="top">
+  <h1><span id="hTitle">חיפוש כרטיסי טיסה</span></h1>
+  <p id="hSub">השוואת מחירים בשקלים ובדולרים — מיון וסינון בזמן אמת</p>
 </div>
+
+<!-- מגירת התאמה אישית -->
+<div class="drawer-overlay" id="custOverlay"></div>
+<aside class="drawer" id="custDrawer" role="dialog" aria-modal="true" aria-labelledby="custTitle">
+  <div class="drawer-head">
+    <span class="drawer-title" id="custTitle"><i class="fa-solid fa-sliders" aria-hidden="true"></i> התאמה אישית</span>
+    <button class="nav-icon-btn" id="custClose" type="button" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+  </div>
+  <div class="drawer-sec">
+    <div class="drawer-lbl" id="custFontLbl">גודל טקסט</div>
+    <div class="seg" id="fontSeg" role="group" aria-label="font size">
+      <button class="seg-btn" data-font="small"  type="button"><span style="font-size:12px">A</span></button>
+      <button class="seg-btn active" data-font="medium" type="button"><span style="font-size:15px">A</span></button>
+      <button class="seg-btn" data-font="large"  type="button"><span style="font-size:19px">A</span></button>
+    </div>
+  </div>
+  <div class="drawer-sec">
+    <div class="drawer-lbl" id="custAccentLbl">צבע מותג</div>
+    <div class="accent-row" id="accentRow" role="group" aria-label="accent color">
+      <button class="accent-dot active" data-accent="blue"    style="--c:#2563eb" aria-label="Blue"></button>
+      <button class="accent-dot" data-accent="teal"    style="--c:#0d9488" aria-label="Teal"></button>
+      <button class="accent-dot" data-accent="purple"  style="--c:#7c3aed" aria-label="Purple"></button>
+      <button class="accent-dot" data-accent="rose"    style="--c:#e11d48" aria-label="Rose"></button>
+      <button class="accent-dot" data-accent="orange"  style="--c:#ea580c" aria-label="Orange"></button>
+      <button class="accent-dot" data-accent="neutral" style="--c:#475569" aria-label="Neutral"></button>
+    </div>
+  </div>
+  <div class="drawer-sec">
+    <div class="drawer-lbl" id="custBgLbl">רקע</div>
+    <div class="seg" id="bgSeg" role="group" aria-label="background">
+      <button class="seg-btn active" data-bg="light" type="button"><i class="fa-solid fa-sun" aria-hidden="true"></i> <span id="bgLight">בהיר</span></button>
+      <button class="seg-btn" data-bg="dim"   type="button"><i class="fa-solid fa-cloud-moon" aria-hidden="true"></i> <span id="bgDim">עמום</span></button>
+      <button class="seg-btn" data-bg="dark"  type="button"><i class="fa-solid fa-moon" aria-hidden="true"></i> <span id="bgDark">כהה</span></button>
+    </div>
+  </div>
+</aside>
+
+<!-- ניווט תחתון (מובייל) -->
+<nav class="bottom-nav" id="bottomNav">
+  <button data-nav="search" class="active" type="button"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><span>חיפוש</span></button>
+  <button data-nav="deals" type="button"><i class="fa-solid fa-fire" aria-hidden="true"></i><span>מבצעים</span></button>
+  <button data-nav="map" type="button"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i><span>מפה</span></button>
+  <button data-nav="alert" type="button"><i class="fa-solid fa-bell" aria-hidden="true"></i><span>התראה</span></button>
+</nav>
 
 <section class="search-card">
   <div class="grid">
@@ -516,7 +594,7 @@ const T={
     lightBtn:"מצב בהיר",darkBtn:"מצב כהה",
     fromLbl:"ארץ יציאה",toLbl:"ארץ / עיר יעד",
     toPlh:"הקלד ארץ, עיר או קוד…",
-    dateOutLbl:"תאריך יציאה",nightsLbl:"ימי שהייה",dateRetLbl:"תאריך חזרה",maxStopsLbl:"מקס׳ עצירות",maxStopsHint:"0 = טיסה ישירה · 9 = ללא הגבלה",classLbl:"מחלקה",clsEconomy:"תיירות",clsComfort:"קומפורט",clsBusiness:"עסקים",clsFirst:"ראשונה",classEst:"מחיר משוער למחלקה",
+    dateOutLbl:"תאריך יציאה",nightsLbl:"ימי שהייה",dateRetLbl:"תאריך חזרה",maxStopsLbl:"מקס׳ עצירות",maxStopsHint:"0 = טיסה ישירה · 9 = ללא הגבלה",classLbl:"מחלקה",clsEconomy:"תיירות",clsComfort:"קומפורט",clsBusiness:"עסקים",clsFirst:"ראשונה",classEst:"מחיר משוער למחלקה",navSearch:"חיפוש",navMap:"מפה",navDeals:"מבצעים",navCal:"החודש הזול",navAlert:"התראה",brandSub:"חיפוש טיסות",custTitle:"התאמה אישית",custFont:"גודל טקסט",custAccent:"צבע מותג",custBg:"רקע",bgLight:"בהיר",bgDim:"עמום",bgDark:"כהה",
     nightsHint:"0 = חיפוש גמיש מתאריך היציאה והלאה",nightsHintActive:"חיפוש גמיש — הזול ביותר מתאריך היציאה והלאה",
     dpTitle:"בחירת תאריכים",dpApply:"אישור",dpClear:"נקה",dpNights:(n)=>`${n} לילות`,mapHead:"היעד על המפה",curLabel:"מטבע",
     searchBtn:"חפש כרטיסים",
@@ -568,7 +646,7 @@ const T={
     lightBtn:"Light",darkBtn:"Dark",
     fromLbl:"Departure",toLbl:"Destination",
     toPlh:"Type country, city or code…",
-    dateOutLbl:"Departure date",nightsLbl:"Nights",dateRetLbl:"Return date",maxStopsLbl:"Max stops",maxStopsHint:"0 = direct · 9 = no limit",classLbl:"Class",clsEconomy:"Economy",clsComfort:"Comfort",clsBusiness:"Business",clsFirst:"First",classEst:"est. class price",
+    dateOutLbl:"Departure date",nightsLbl:"Nights",dateRetLbl:"Return date",maxStopsLbl:"Max stops",maxStopsHint:"0 = direct · 9 = no limit",classLbl:"Class",clsEconomy:"Economy",clsComfort:"Comfort",clsBusiness:"Business",clsFirst:"First",classEst:"est. class price",navSearch:"Search",navMap:"Map",navDeals:"Deals",navCal:"Cheapest Month",navAlert:"Alert",brandSub:"Flight Search",custTitle:"Customize",custFont:"Text size",custAccent:"Accent",custBg:"Background",bgLight:"Light",bgDim:"Dim",bgDark:"Dark",
     nightsHint:"0 = flexible search from the departure date onward",nightsHintActive:"Flexible search — cheapest from the departure date onward",
     dpTitle:"Select dates",dpApply:"Apply",dpClear:"Clear",dpNights:(n)=>`${n} night${n===1?"":"s"}`,mapHead:"Destination on the map",curLabel:"Currency",
     searchBtn:"Search flights",
@@ -620,7 +698,7 @@ const T={
     lightBtn:"Светлая",darkBtn:"Тёмная",
     fromLbl:"Откуда",toLbl:"Куда",
     toPlh:"Введите страну, город или код…",
-    dateOutLbl:"Дата вылета",nightsLbl:"Ночей",dateRetLbl:"Дата возврата",maxStopsLbl:"Макс. пересадок",maxStopsHint:"0 = прямой · 9 = без ограничений",classLbl:"Класс",clsEconomy:"Эконом",clsComfort:"Комфорт",clsBusiness:"Бизнес",clsFirst:"Первый",classEst:"примерн. цена класса",
+    dateOutLbl:"Дата вылета",nightsLbl:"Ночей",dateRetLbl:"Дата возврата",maxStopsLbl:"Макс. пересадок",maxStopsHint:"0 = прямой · 9 = без ограничений",classLbl:"Класс",clsEconomy:"Эконом",clsComfort:"Комфорт",clsBusiness:"Бизнес",clsFirst:"Первый",classEst:"примерн. цена класса",navSearch:"Поиск",navMap:"Карта",navDeals:"Акции",navCal:"Дешёвый месяц",navAlert:"Оповещение",brandSub:"Поиск рейсов",custTitle:"Настройка",custFont:"Размер текста",custAccent:"Цвет",custBg:"Фон",bgLight:"Светлый",bgDim:"Тусклый",bgDark:"Тёмный",
     nightsHint:"0 = гибкий поиск от даты вылета и далее",nightsHintActive:"Гибкий поиск — самое дешёвое от даты вылета и далее",
     dpTitle:"Выбор дат",dpApply:"Применить",dpClear:"Сбросить",dpNights:(n)=>`${n} ноч.`,mapHead:"Направление на карте",curLabel:"Валюта",
     searchBtn:"Найти рейсы",
@@ -1006,7 +1084,7 @@ function saveState(){
   try{ localStorage.setItem(STATE_KEY, JSON.stringify({
     from:fromSel.value, to:selectedToCode,
     dateOut:dateOut.value, dateReturn:dateReturn.value, nights:nights.value, maxStops:maxStopsVal(),
-    pax, bags, lang:currentLang, cur:currentCur, cls:currentClass, theme:currentTheme, light:isLight
+    pax, bags, lang:currentLang, cur:currentCur, cls:currentClass, accent:currentAccent, bg:currentBg, font:currentFont
   })); }catch(e){}
 }
 function loadState(){ try{ return JSON.parse(localStorage.getItem(STATE_KEY)||"null"); }catch{ return null; } }
@@ -1015,8 +1093,9 @@ function restoreState(){
   if(st.lang && T[st.lang]) currentLang=st.lang;
   if(["ils","usd","eur"].includes(st.cur)) currentCur=st.cur;
   if(["economy","comfort","business","first"].includes(st.cls)) currentClass=st.cls;
-  if(st.theme) currentTheme=st.theme;
-  if(typeof st.light==="boolean") isLight=st.light;
+  if(ACCENTS[st.accent]) currentAccent=st.accent;
+  if(["light","dim","dark"].includes(st.bg)) currentBg=st.bg;
+  if(FONTS[st.font]) currentFont=st.font;
   if(st.pax && typeof st.pax==="object") pax=Object.assign({adults:1,children:0,infants:0},st.pax);
   if(st.bags && typeof st.bags==="object") bags=Object.assign({cabin:0,checked:0},st.bags);
   if(st.to && COUNTRIES.some(c=>c.code===st.to)) selectedToCode=st.to;
@@ -1026,8 +1105,12 @@ function restoreState(){
   if(st.nights!=null && st.nights!=="") nights.value=st.nights;
   if(st.maxStops!=null) document.getElementById("maxStops").value=st.maxStops;
 }
-let currentTheme  = "dark";
-let isLight       = true;   /* ברירת מחדל: מצב בהיר פרימיום (ניתן להחלפה) */
+let currentAccent = "blue";    /* blue/teal/purple/rose/orange/neutral */
+let currentBg     = "light";   /* light/dim/dark */
+let currentFont   = "medium";  /* small/medium/large */
+const ACCENTS={ blue:["#2563eb","#3b82f6"], teal:["#0d9488","#14b8a6"], purple:["#7c3aed","#8b5cf6"],
+  rose:["#e11d48","#f43f5e"], orange:["#ea580c","#f97316"], neutral:["#475569","#64748b"] };
+const FONTS={ small:"14.5px", medium:"16px", large:"18px" };
 let lastSearch    = null;
 let pax           = {adults:1, children:0, infants:0};
 let bags          = {cabin:0, checked:0};
@@ -1051,8 +1134,14 @@ function applyLang(lang){
   document.getElementById("pageTitle").textContent=t.title;
   document.getElementById("hTitle").textContent=t.title;
   document.getElementById("hSub").textContent=t.sub;
-  document.getElementById("paletteLabel").textContent=t.palette;
-  setThemeToggleLabel();
+  const setTxt=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  setTxt("brandSub",t.brandSub);
+  setTxt("navSearch",t.navSearch); setTxt("navMap",t.navMap); setTxt("navDeals",t.navDeals);
+  setTxt("navCal",t.navCal); setTxt("navAlert",t.navAlert);
+  const ct=document.getElementById("custTitle"); if(ct) ct.innerHTML='<i class="fa-solid fa-sliders" aria-hidden="true"></i> '+t.custTitle;
+  setTxt("custFontLbl",t.custFont); setTxt("custAccentLbl",t.custAccent); setTxt("custBgLbl",t.custBg);
+  setTxt("bgLight",t.bgLight); setTxt("bgDim",t.bgDim); setTxt("bgDark",t.bgDark);
+  document.querySelectorAll(".bottom-nav button").forEach(b=>{ const k={search:t.navSearch,deals:t.navDeals,map:t.navMap,alert:t.navAlert}[b.dataset.nav]; const s=b.querySelector("span"); if(s&&k) s.textContent=k; });
   document.getElementById("lFrom").textContent=t.fromLbl;
   document.getElementById("lTo").textContent=t.toLbl;
   document.getElementById("to").placeholder=t.toPlh;
@@ -1112,30 +1201,44 @@ document.addEventListener("click",e=>{
 });
 
 /* ══════════════════════════════════════════
-   ערכות צבעים
+   התאמה אישית (accent / רקע / גודל טקסט) — מגירה
 ══════════════════════════════════════════ */
-const THEMES=["dark","ocean","sunset","purple","slate","rose"];
-document.querySelectorAll(".swatch").forEach(sw=>
-  sw.addEventListener("click",()=>{ currentTheme=sw.dataset.theme; applyTheme(); })
-);
-document.getElementById("lightToggle").addEventListener("click",()=>{ isLight=!isLight; applyTheme(); });
-
-/* כפתור מצב בהיר/כהה — אייקון שמש/ירח + טקסט, בלי אמוג'י */
-function setThemeToggleLabel(){
-  const t=T[currentLang];
-  document.getElementById("lightToggle").innerHTML=
-    '<i class="fa-solid fa-'+(isLight?"moon":"sun")+'" aria-hidden="true"></i><span>'+(isLight?t.darkBtn:t.lightBtn)+'</span>';
+function applyCustomize(){
+  const root=document.documentElement;
+  const acc=ACCENTS[currentAccent]||ACCENTS.blue;
+  root.style.setProperty("--accent",acc[0]);
+  root.style.setProperty("--accent2",acc[1]);
+  root.style.setProperty("--fs",FONTS[currentFont]||FONTS.medium);
+  document.body.classList.remove("bg-light","bg-dim","bg-dark");
+  document.body.classList.add("bg-"+currentBg);
+  document.querySelectorAll("#accentRow .accent-dot").forEach(b=>b.classList.toggle("active",b.dataset.accent===currentAccent));
+  document.querySelectorAll("#bgSeg .seg-btn").forEach(b=>b.classList.toggle("active",b.dataset.bg===currentBg));
+  document.querySelectorAll("#fontSeg .seg-btn").forEach(b=>b.classList.toggle("active",b.dataset.font===currentFont));
 }
+/* פתיחה/סגירה של המגירה */
+const _custDrawer=document.getElementById("custDrawer"), _custOverlay=document.getElementById("custOverlay");
+function openCustomize(){ _custDrawer.classList.add("open"); _custOverlay.classList.add("open"); }
+function closeCustomize(){ _custDrawer.classList.remove("open"); _custOverlay.classList.remove("open"); }
+document.getElementById("customizeBtn").addEventListener("click",openCustomize);
+document.getElementById("custClose").addEventListener("click",closeCustomize);
+_custOverlay.addEventListener("click",closeCustomize);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&_custDrawer.classList.contains("open")) closeCustomize(); });
+document.getElementById("accentRow").addEventListener("click",e=>{ const b=e.target.closest(".accent-dot"); if(!b)return; currentAccent=b.dataset.accent; applyCustomize(); saveState(); });
+document.getElementById("bgSeg").addEventListener("click",e=>{ const b=e.target.closest(".seg-btn"); if(!b)return; currentBg=b.dataset.bg; applyCustomize(); saveState(); });
+document.getElementById("fontSeg").addEventListener("click",e=>{ const b=e.target.closest(".seg-btn"); if(!b)return; currentFont=b.dataset.font; applyCustomize(); saveState(); });
+applyCustomize();
 
-function applyTheme(){
-  THEMES.forEach(t=>document.body.classList.remove("theme-"+t));
-  document.body.classList.add("theme-"+currentTheme);
-  document.body.classList.toggle("light",isLight);
-  setThemeToggleLabel();
-  document.querySelectorAll(".swatch").forEach(sw=>sw.classList.toggle("active",sw.dataset.theme===currentTheme));
-  saveState();
+/* ניווט בנאבבר + ניווט תחתון → מפעיל את הפעולות הקיימות */
+function navGo(which){
+  const scrollTo=el=>{ if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); };
+  if(which==="search"){ scrollTo(document.querySelector(".search-card")); }
+  else if(which==="map"){ scrollTo(document.querySelector(".map-section")); }
+  else if(which==="deals"){ if(typeof showDeals==="function") showDeals(); scrollTo(document.getElementById("results")); }
+  else if(which==="cal"){ if(typeof showCalendar==="function") showCalendar(); scrollTo(document.getElementById("results")); }
+  else if(which==="alert"){ const a=document.querySelector(".alert-box"); if(a) scrollTo(a); else scrollTo(document.getElementById("results")); }
+  document.querySelectorAll("[data-nav]").forEach(b=>b.classList.toggle("active",b.dataset.nav===which));
 }
-applyTheme();
+document.querySelectorAll("[data-nav]").forEach(b=>b.addEventListener("click",()=>navGo(b.dataset.nav)));
 
 /* ══════════════════════════════════════════
    תפריט יציאה
@@ -1336,7 +1439,7 @@ updateNightsHint();
 /* ══════════════════════════════════════════
    מפת Leaflet — ממקדת על היעד הנבחר (קואורדינטות מ-Travelpayouts autocomplete)
 ══════════════════════════════════════════ */
-let _map=null,_marker=null; const _coordCache={};
+let _map=null,_route=null; const _coordCache={};
 function initMap(){
   if(_map||typeof L==="undefined")return;
   _map=L.map("map",{zoomControl:true,scrollWheelZoom:false}).setView([32.08,34.78],4);
@@ -1357,15 +1460,44 @@ async function geocodeIata(iata){
   }catch(e){}
   return null;
 }
+/* קשת טיסה — עקומת בזייה ריבועית עם נקודת בקרה מוסטת בניצב לאמצע */
+function arcPoints(a,b,n){
+  const dLat=b.lat-a.lat, dLon=b.lon-a.lon, dist=Math.hypot(dLat,dLon)||1;
+  const curve=Math.min(dist*0.2, 16);
+  const cp={lat:(a.lat+b.lat)/2 + (-dLon/dist)*curve, lon:(a.lon+b.lon)/2 + (dLat/dist)*curve};
+  const pts=[];
+  for(let i=0;i<=n;i++){ const t=i/n, u=1-t;
+    pts.push([u*u*a.lat+2*u*t*cp.lat+t*t*b.lat, u*u*a.lon+2*u*t*cp.lon+t*t*b.lon]); }
+  return pts;
+}
+function bearing(p,q){ const φ1=p[0]*Math.PI/180,φ2=q[0]*Math.PI/180,dλ=(q[1]-p[1])*Math.PI/180;
+  const y=Math.sin(dλ)*Math.cos(φ2), x=Math.cos(φ1)*Math.sin(φ2)-Math.sin(φ1)*Math.cos(φ2)*Math.cos(dλ);
+  return (Math.atan2(y,x)*180/Math.PI+360)%360; }
+/* מצייר מסלול טיסה: מוצא + יעד + קשת + מטוס באמצע */
 async function focusMap(code){
   initMap(); if(!_map)return;
-  const c=COUNTRIES.find(x=>x.code===code); if(!c)return;
-  const g=await geocodeIata(c.iata); if(!g)return;
-  _map.setView([g.lat,g.lon],6,{animate:true});
-  const icon=L.divIcon({className:"map-pin-wrap",html:'<div class="map-pin"><i class="fa-solid fa-location-dot"></i></div>',iconSize:[30,34],iconAnchor:[15,30]});
-  if(_marker)_marker.setLatLng([g.lat,g.lon]).setIcon(icon);
-  else _marker=L.marker([g.lat,g.lon],{icon}).addTo(_map);
-  const n=cLng(c); _marker.bindPopup(`${n.c} — ${n.ct} (${c.iata})`);
+  const dC=COUNTRIES.find(x=>x.code===code); if(!dC)return;
+  const oC=COUNTRIES.find(x=>x.code===(typeof fromSel!=="undefined"?fromSel.value:"IL"))||dC;
+  const [dG,oG]=await Promise.all([geocodeIata(dC.iata),geocodeIata(oC.iata)]);
+  if(!dG)return;
+  if(_route)_map.removeLayer(_route);
+  _route=L.layerGroup().addTo(_map);
+  const accent=(getComputedStyle(document.documentElement).getPropertyValue("--accent")||"#2563eb").trim();
+  const destPt=[dG.lat,dG.lon];
+  const destIcon=L.divIcon({className:"",html:'<div class="map-pin"><i class="fa-solid fa-location-dot"></i></div>',iconSize:[30,34],iconAnchor:[15,30]});
+  L.marker(destPt,{icon:destIcon}).addTo(_route).bindPopup(`${cLng(dC).c} — ${cLng(dC).ct} (${dC.iata})`);
+  if(oG && (oG.lat!==dG.lat||oG.lon!==dG.lon)){
+    const oPt=[oG.lat,oG.lon];
+    L.marker(oPt,{icon:L.divIcon({className:"",html:'<div class="map-dot"></div>',iconSize:[16,16],iconAnchor:[8,8]})})
+      .addTo(_route).bindPopup(`${cLng(oC).c} — ${cLng(oC).ct} (${oC.iata})`);
+    const pts=arcPoints(oG,dG,50);
+    L.polyline(pts,{color:accent,weight:2.5,opacity:.9,dashArray:"1 9",lineCap:"round"}).addTo(_route);
+    const m=Math.floor(pts.length/2), br=bearing(pts[m-2],pts[m+2]);
+    L.marker(pts[m],{icon:L.divIcon({className:"",html:`<div class="map-plane" style="transform:rotate(${Math.round(br-90)}deg)"><i class="fa-solid fa-plane"></i></div>`,iconSize:[26,26],iconAnchor:[13,13]})}).addTo(_route);
+    _map.fitBounds([oPt,destPt],{padding:[55,55],maxZoom:7,animate:true});
+  } else {
+    _map.setView(destPt,6,{animate:true});
+  }
   setTimeout(()=>_map&&_map.invalidateSize(),120);
 }
 
@@ -1832,11 +1964,11 @@ document.addEventListener("click",e=>{ if(!e.target.closest(".pax-wrap")) paxPan
 updatePaxBtn();
 
 document.getElementById("searchBtn").addEventListener("click",doSearch);
-fromSel.addEventListener("change",()=>{ setFromFlag(); saveState(); if(lastSearch) render(); });
+fromSel.addEventListener("change",()=>{ setFromFlag(); focusMap(selectedToCode); saveState(); if(lastSearch) render(); });
 document.getElementById("maxStops").addEventListener("change",()=>{ saveState(); if(lastSearch) doSearch(); });
 restoreState();           /* משחזר בחירות קודמות (F5) — דורס את ברירות המחדל לפני התצוגה */
 _stateReady=true;
-applyTheme();             /* מחיל ערכה/מצב בהיר שנשמרו */
+applyCustomize();         /* מחיל accent/רקע/גודל טקסט שנשמרו */
 applyLang(currentLang);   /* קובע תוויות + אייקונים + שדה היעד לפי השפה שנשמרה */
 initMap();
 focusMap(selectedToCode); /* ממקד את המפה על היעד הנבחר */
