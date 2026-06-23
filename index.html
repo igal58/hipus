@@ -166,6 +166,8 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
 button.deals-btn{background:linear-gradient(90deg,#f59e0b,#f97316);color:#fff;border:0;
   font-weight:700;font-size:15px;padding:11px 20px;border-radius:10px;cursor:pointer}
 button.deals-btn:hover{filter:brightness(1.1)}
+.budget-in{align-self:flex-end;width:120px;padding:11px 12px;border-radius:10px;
+  border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:15px}
 .deal-row{cursor:pointer}
 .deal-row .logo{font-size:12px}
 
@@ -306,6 +308,7 @@ button.deals-btn:hover{filter:brightness(1.1)}
     </div>
     <button class="search" id="searchBtn">🔍 חפש כרטיסים</button>
     <button class="deals-btn" id="dealsBtn">🔥 מבצעים חמים</button>
+    <input type="number" id="budget" class="budget-in" min="0" step="100" placeholder="תקציב מקס׳ ₪">
     <span class="rate" id="rateLabel"></span>
   </div>
 </section>
@@ -352,6 +355,8 @@ const T={
     outTime:"🛫 יציאה",retTime:"🛬 חזרה",noBag:"🧳 ללא כבודה רשומה",
     flexLbl:"תאריכים גמישים",flexSearching:"מחפש את הזול ביותר מהתאריך והלאה…",
     dealsBtn:"🔥 מבצעים חמים",dealsTitle:"🔥 טיסות סודיות — הזול ביותר מתל אביב",
+    dealsTitleBudget:(b)=>`🔥 לאן שבא לי — עד ${b} ₪ מתל אביב`,budgetPh:"תקציב מקס׳ ₪",
+    dealsBudgetNone:(b)=>`אין יעדים עד ${b} ₪ כרגע — נסה תקציב גבוה יותר`,
     dealsLoading:"מחפש מבצעים…",dealsNone:"אין מבצעים כרגע — נסה שוב מאוחר יותר",
     paxLbl:"נוסעים",adultsLbl:"מבוגרים",adultsSub:"מעל 12",childrenLbl:"ילדים",childrenSub:"2–11",
     infantsLbl:"תינוקות",infantsSub:"עד שנתיים",paxSummary:(n)=>`${n} 👤`,perPerson:"לנוסע",
@@ -392,6 +397,8 @@ const T={
     outTime:"🛫 Out",retTime:"🛬 Back",noBag:"🧳 No checked bag",
     flexLbl:"flexible dates",flexSearching:"Finding the cheapest from this date onward…",
     dealsBtn:"🔥 Hot deals",dealsTitle:"🔥 Secret flights — cheapest from Tel Aviv",
+    dealsTitleBudget:(b)=>`🔥 Where can I go — up to ${b} ₪ from Tel Aviv`,budgetPh:"Max budget ₪",
+    dealsBudgetNone:(b)=>`No destinations up to ${b} ₪ right now — try a higher budget`,
     dealsLoading:"Finding deals…",dealsNone:"No deals right now — try again later",
     paxLbl:"Passengers",adultsLbl:"Adults",adultsSub:"12+",childrenLbl:"Children",childrenSub:"2–11",
     infantsLbl:"Infants",infantsSub:"under 2",paxSummary:(n)=>`${n} 👤`,perPerson:"per person",
@@ -432,6 +439,8 @@ const T={
     outTime:"🛫 Вылет",retTime:"🛬 Обратно",noBag:"🧳 Без багажа",
     flexLbl:"гибкие даты",flexSearching:"Ищем самый дешёвый с этой даты…",
     dealsBtn:"🔥 Горящие",dealsTitle:"🔥 Секретные рейсы — дешевле всего из Тель-Авива",
+    dealsTitleBudget:(b)=>`🔥 Куда улететь — до ${b} ₪ из Тель-Авива`,budgetPh:"Макс. бюджет ₪",
+    dealsBudgetNone:(b)=>`Нет направлений до ${b} ₪ сейчас — попробуйте больший бюджет`,
     dealsLoading:"Ищу акции…",dealsNone:"Сейчас нет акций — попробуйте позже",
     paxLbl:"Пассажиры",adultsLbl:"Взрослые",adultsSub:"12+",childrenLbl:"Дети",childrenSub:"2–11",
     infantsLbl:"Младенцы",infantsSub:"до 2 лет",paxSummary:(n)=>`${n} 👤`,perPerson:"за человека",
@@ -796,6 +805,7 @@ function applyLang(lang){
   document.getElementById("lDateRet").textContent=t.dateRetLbl;
   document.getElementById("searchBtn").textContent=t.searchBtn;
   document.getElementById("dealsBtn").textContent=t.dealsBtn;
+  document.getElementById("budget").placeholder=t.budgetPh;
   document.getElementById("lPax").textContent=t.paxLbl;
   document.getElementById("lAdults").textContent=t.adultsLbl;   document.getElementById("sAdults").textContent=t.adultsSub;
   document.getElementById("lChildren").textContent=t.childrenLbl; document.getElementById("sChildren").textContent=t.childrenSub;
@@ -1122,13 +1132,17 @@ async function showDeals(){
   const t=T[currentLang];
   const box=document.getElementById("results");
   const origin=(COUNTRIES.find(c=>c.code===fromSel.value)||{iata:"TLV"}).iata;
-  box.innerHTML=`<div class="results-head"><h2>${t.dealsTitle}</h2></div><div class="empty">${t.dealsLoading}</div>`;
+  const budget=Math.round(Number(document.getElementById("budget").value)||0);   /* 0 = ללא הגבלה */
+  const title=budget>0?t.dealsTitleBudget(budget.toLocaleString()):t.dealsTitle;
+  box.innerHTML=`<div class="results-head"><h2>${title}</h2></div><div class="empty">${t.dealsLoading}</div>`;
   try{
     const r=await fetch(`${PROXY_BASE}/deals?origin=${origin}`);
     const d=await r.json();
-    if(d&&d.deals&&d.deals.length){
+    let deals=(d&&Array.isArray(d.deals))?d.deals:[];
+    if(budget>0) deals=deals.filter(dl=>Number(dl.price)<=budget);   /* "לאן שבא לי": רק מה שנכנס בתקציב */
+    if(deals.length){
       let rows="";
-      d.deals.forEach(dl=>{
+      deals.forEach(dl=>{
         const c=findByIata(dl.dest);
         const name=c?(()=>{const n=cLng(c);return `${n.c} · ${n.ct}`;})():dl.dest;
         const dep=dl.depart?fmtDMY(parseISO(dl.depart)):"";
@@ -1142,12 +1156,13 @@ async function showDeals(){
           <span class="buy">${t.openLive}</span>
         </div>`;
       });
-      box.innerHTML=`<div class="results-head"><h2>${t.dealsTitle}</h2></div>`+rows;
+      box.innerHTML=`<div class="results-head"><h2>${title}</h2></div>`+rows;
     }else{
-      box.innerHTML=`<div class="results-head"><h2>${t.dealsTitle}</h2></div><div class="empty">${t.dealsNone}</div>`;
+      const none=budget>0?t.dealsBudgetNone(budget.toLocaleString()):t.dealsNone;
+      box.innerHTML=`<div class="results-head"><h2>${title}</h2></div><div class="empty">${none}</div>`;
     }
   }catch(e){
-    box.innerHTML=`<div class="results-head"><h2>${t.dealsTitle}</h2></div><div class="empty">${t.dealsNone}</div>`;
+    box.innerHTML=`<div class="results-head"><h2>${title}</h2></div><div class="empty">${t.dealsNone}</div>`;
   }
 }
 
