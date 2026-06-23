@@ -90,6 +90,7 @@ async function fetchOffers(o, d, depart, ret) {
         const seen = new Set(); const offers = [];
         for (const it of arr) {
           if (!it || !it.price) continue;
+          if ((it.departure_at||"").slice(0,10) < depart) continue;   // flex/month: only fares on/after the chosen departure date
           const key = `${it.airline}|${it.price}|${(it.departure_at||"").slice(0,16)}|${(it.return_at||"").slice(0,16)}`;
           if (seen.has(key)) continue; seen.add(key);
           offers.push(mapFare(it, mode==="month", flex));
@@ -105,8 +106,9 @@ async function fetchPrice(o, d, depart, ret) {
   if (!TOKEN_OK) return { found:false, reason:"no-token" };
   for (const mode of ["exact","month"]) {
     try {
-      const json = await getJSON(tpUrl(o,d,depart,ret,mode));
-      const it = json && json.success && Array.isArray(json.data) && json.data[0];
+      const json = await getJSON(tpUrl(o,d,depart,ret,mode,30));   // fetch many (sorted by price) so we can pick the cheapest on/after the date
+      const arr = json && json.success && Array.isArray(json.data) ? json.data : [];
+      const it = arr.find(x => x && x.price && (x.departure_at||"").slice(0,10) >= depart);  // cheapest fare on/after the chosen departure date
       if (it && it.price) {
         const da = (it.departure_at||"").slice(0,10);
         const ra = (it.return_at||"").slice(0,10);
