@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icons/7.2.3/css/flag-icons.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Heebo:wght@400;500;600;700;800&display=swap">
@@ -286,6 +288,19 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
   .buy{grid-column:1/-1;text-align:center}
   .toolbar{justify-content:flex-start}
 }
+/* ── MAP ── */
+.map-section{max-width:1020px;margin:14px auto;padding:0 8px}
+.map-head{font-weight:700;font-size:14px;color:var(--muted);margin:0 4px 8px;display:flex;align-items:center;gap:7px}
+.map-head .fa-solid{color:var(--accent)}
+#map{height:300px;width:100%;border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);z-index:1}
+.leaflet-container{background:var(--panel2);font-family:inherit;border-radius:var(--radius)}
+.map-pin{color:var(--accent);font-size:30px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3));
+  display:grid;place-items:center}
+@media(min-width:900px){
+  #map{height:360px}
+}
+
 /* ── DATE RANGE PICKER ── */
 .dp-modal{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;
   background:rgba(15,24,40,.45);backdrop-filter:blur(2px)}
@@ -432,6 +447,11 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
   </div>
 </section>
 
+<section class="map-section">
+  <div class="map-head"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> <span id="mapHead"></span></div>
+  <div id="map"></div>
+</section>
+
 <section class="results" id="results"></section>
 
 <!-- בורר טווח תאריכים -->
@@ -465,7 +485,7 @@ const T={
     toPlh:"הקלד ארץ, עיר או קוד…",
     dateOutLbl:"תאריך יציאה",nightsLbl:"ימי שהייה",dateRetLbl:"תאריך חזרה",
     nightsHint:"0 = חיפוש גמיש מתאריך היציאה והלאה",nightsHintActive:"חיפוש גמיש — הזול ביותר מתאריך היציאה והלאה",
-    dpTitle:"בחירת תאריכים",dpApply:"אישור",dpClear:"נקה",dpNights:(n)=>`${n} לילות`,
+    dpTitle:"בחירת תאריכים",dpApply:"אישור",dpClear:"נקה",dpNights:(n)=>`${n} לילות`,mapHead:"היעד על המפה",
     searchBtn:"חפש כרטיסים",
     sortLbl:"מיון:",sortPrice:"מחיר",sortStops:"עצירות+מחיר",
     filtLbl:"עצירות:",filtAll:"הכל",filtDirect:"ישיר",filt1:"עצירה 1",filt2:"2+ עצירות",
@@ -517,7 +537,7 @@ const T={
     toPlh:"Type country, city or code…",
     dateOutLbl:"Departure date",nightsLbl:"Nights",dateRetLbl:"Return date",
     nightsHint:"0 = flexible search from the departure date onward",nightsHintActive:"Flexible search — cheapest from the departure date onward",
-    dpTitle:"Select dates",dpApply:"Apply",dpClear:"Clear",dpNights:(n)=>`${n} night${n===1?"":"s"}`,
+    dpTitle:"Select dates",dpApply:"Apply",dpClear:"Clear",dpNights:(n)=>`${n} night${n===1?"":"s"}`,mapHead:"Destination on the map",
     searchBtn:"Search flights",
     sortLbl:"Sort:",sortPrice:"Price",sortStops:"Stops+price",
     filtLbl:"Stops:",filtAll:"All",filtDirect:"Direct",filt1:"1 stop",filt2:"2+ stops",
@@ -569,7 +589,7 @@ const T={
     toPlh:"Введите страну, город или код…",
     dateOutLbl:"Дата вылета",nightsLbl:"Ночей",dateRetLbl:"Дата возврата",
     nightsHint:"0 = гибкий поиск от даты вылета и далее",nightsHintActive:"Гибкий поиск — самое дешёвое от даты вылета и далее",
-    dpTitle:"Выбор дат",dpApply:"Применить",dpClear:"Сбросить",dpNights:(n)=>`${n} ноч.`,
+    dpTitle:"Выбор дат",dpApply:"Применить",dpClear:"Сбросить",dpNights:(n)=>`${n} ноч.`,mapHead:"Направление на карте",
     searchBtn:"Найти рейсы",
     sortLbl:"Сортировка:",sortPrice:"Цена",sortStops:"Пересадки+цена",
     filtLbl:"Пересадки:",filtAll:"Все",filtDirect:"Прямой",filt1:"1 пересадка",filt2:"2+ пересадки",
@@ -988,6 +1008,7 @@ function applyLang(lang){
   if(tc){ const n=cLng(tc); document.getElementById("to").value=`${n.c} — ${n.ct}`; }
   if(typeof setToFlag==="function") setToFlag(selectedToCode);
   if(typeof setFromFlag==="function") setFromFlag();
+  const mh=document.getElementById("mapHead"); if(mh) mh.textContent=t.mapHead;
   /* עדכון תוצאות */
   applyView();
 }
@@ -1093,6 +1114,7 @@ acDrop.addEventListener("mousedown",e=>{
   const n=cLng(COUNTRIES.find(c=>c.code===selectedToCode));
   toInput.value=`${n.c} — ${n.ct}`;
   setToFlag(selectedToCode);
+  if(typeof focusMap==="function") focusMap(selectedToCode);
   closeDrop();
 });
 document.addEventListener("click",e=>{ if(!e.target.closest(".ac-wrap")) closeDrop(); });
@@ -1213,6 +1235,42 @@ updateNightsHint();
     inp.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();open();} });
   });
 })();
+
+/* ══════════════════════════════════════════
+   מפת Leaflet — ממקדת על היעד הנבחר (קואורדינטות מ-Travelpayouts autocomplete)
+══════════════════════════════════════════ */
+let _map=null,_marker=null; const _coordCache={};
+function initMap(){
+  if(_map||typeof L==="undefined")return;
+  _map=L.map("map",{zoomControl:true,scrollWheelZoom:false}).setView([32.08,34.78],4);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {maxZoom:18,attribution:'&copy; OpenStreetMap'}).addTo(_map);
+  setTimeout(()=>_map&&_map.invalidateSize(),250);
+}
+async function geocodeIata(iata){
+  if(_coordCache[iata])return _coordCache[iata];
+  try{
+    const r=await fetch("https://autocomplete.travelpayouts.com/places2?locale=en&term="+encodeURIComponent(iata));
+    const arr=await r.json();
+    const list=Array.isArray(arr)?arr:[];
+    const hit=list.find(x=>x&&x.code===iata&&x.coordinates)||list.find(x=>x&&x.coordinates);
+    if(hit&&hit.coordinates&&hit.coordinates.lat!=null){
+      const c={lat:hit.coordinates.lat,lon:hit.coordinates.lon}; _coordCache[iata]=c; return c;
+    }
+  }catch(e){}
+  return null;
+}
+async function focusMap(code){
+  initMap(); if(!_map)return;
+  const c=COUNTRIES.find(x=>x.code===code); if(!c)return;
+  const g=await geocodeIata(c.iata); if(!g)return;
+  _map.setView([g.lat,g.lon],6,{animate:true});
+  const icon=L.divIcon({className:"map-pin-wrap",html:'<div class="map-pin"><i class="fa-solid fa-location-dot"></i></div>',iconSize:[30,34],iconAnchor:[15,30]});
+  if(_marker)_marker.setLatLng([g.lat,g.lon]).setIcon(icon);
+  else _marker=L.marker([g.lat,g.lon],{icon}).addTo(_map);
+  const n=cLng(c); _marker.bindPopup(`${n.c} — ${n.ct} (${c.iata})`);
+  setTimeout(()=>_map&&_map.invalidateSize(),120);
+}
 
 /* ══════════════════════════════════════════
    שער המרה חי
@@ -1581,7 +1639,7 @@ document.addEventListener("click",e=>{
   const c=findByIata(row.dataset.dest);
   if(c){
     selectedToCode=c.code;
-    const n=cLng(c); toInput.value=`${n.c} — ${n.ct}`; setToFlag(selectedToCode);
+    const n=cLng(c); toInput.value=`${n.c} — ${n.ct}`; setToFlag(selectedToCode); focusMap(selectedToCode);
     const dp=parseISO(row.dataset.depart); if(dp) dateOut.value=fmtDMY(dp);
     const rt=parseISO(row.dataset.ret); if(rt){ dateReturn.value=fmtDMY(rt); syncNts(); } else { syncRet(); }
     doSearch();
@@ -1632,6 +1690,8 @@ updatePaxBtn();
 document.getElementById("searchBtn").addEventListener("click",doSearch);
 fromSel.addEventListener("change",()=>{ setFromFlag(); if(lastSearch) render(); });
 applyLang("he");          /* קובע תוויות + אייקונים (מחליף את ה-HTML הסטטי) בטעינה */
+initMap();
+focusMap(selectedToCode); /* ממקד את המפה על יעד ברירת המחדל */
 doSearch();
 loadRate();
 </script>
