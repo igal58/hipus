@@ -255,9 +255,10 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
 .pax-btn .fa-solid{color:var(--muted)}
 .pax-sep{color:var(--muted);margin:0 2px}
 .pax-btn:hover{border-color:var(--accent)}
-.pax-panel{position:absolute;top:calc(100% + 4px);inset-inline-start:0;inset-inline-end:0;z-index:999;
-  background:var(--panel2);border:1px solid var(--accent);border-radius:10px;
-  box-shadow:0 8px 24px rgba(0,0,0,.45);padding:6px;display:none}
+.pax-panel{position:absolute;top:calc(100% + 6px);inset-inline-start:0;inset-inline-end:auto;
+  width:280px;max-width:86vw;z-index:1500;
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  box-shadow:var(--shadow);padding:8px;display:none}
 .pax-panel.open{display:block}
 .pax-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 6px}
 .pax-row+.pax-row{border-top:1px solid var(--line)}
@@ -515,7 +516,7 @@ const T={
     lightBtn:"מצב בהיר",darkBtn:"מצב כהה",
     fromLbl:"ארץ יציאה",toLbl:"ארץ / עיר יעד",
     toPlh:"הקלד ארץ, עיר או קוד…",
-    dateOutLbl:"תאריך יציאה",nightsLbl:"ימי שהייה",dateRetLbl:"תאריך חזרה",maxStopsLbl:"מקס׳ עצירות",maxStopsHint:"0 = טיסה ישירה · 9 = ללא הגבלה",classLbl:"מחלקה",clsEconomy:"תיירות",clsComfort:"קומפורט",clsBusiness:"עסקים",clsFirst:"ראשונה",
+    dateOutLbl:"תאריך יציאה",nightsLbl:"ימי שהייה",dateRetLbl:"תאריך חזרה",maxStopsLbl:"מקס׳ עצירות",maxStopsHint:"0 = טיסה ישירה · 9 = ללא הגבלה",classLbl:"מחלקה",clsEconomy:"תיירות",clsComfort:"קומפורט",clsBusiness:"עסקים",clsFirst:"ראשונה",classEst:"מחיר משוער למחלקה",
     nightsHint:"0 = חיפוש גמיש מתאריך היציאה והלאה",nightsHintActive:"חיפוש גמיש — הזול ביותר מתאריך היציאה והלאה",
     dpTitle:"בחירת תאריכים",dpApply:"אישור",dpClear:"נקה",dpNights:(n)=>`${n} לילות`,mapHead:"היעד על המפה",curLabel:"מטבע",
     searchBtn:"חפש כרטיסים",
@@ -567,7 +568,7 @@ const T={
     lightBtn:"Light",darkBtn:"Dark",
     fromLbl:"Departure",toLbl:"Destination",
     toPlh:"Type country, city or code…",
-    dateOutLbl:"Departure date",nightsLbl:"Nights",dateRetLbl:"Return date",maxStopsLbl:"Max stops",maxStopsHint:"0 = direct · 9 = no limit",classLbl:"Class",clsEconomy:"Economy",clsComfort:"Comfort",clsBusiness:"Business",clsFirst:"First",
+    dateOutLbl:"Departure date",nightsLbl:"Nights",dateRetLbl:"Return date",maxStopsLbl:"Max stops",maxStopsHint:"0 = direct · 9 = no limit",classLbl:"Class",clsEconomy:"Economy",clsComfort:"Comfort",clsBusiness:"Business",clsFirst:"First",classEst:"est. class price",
     nightsHint:"0 = flexible search from the departure date onward",nightsHintActive:"Flexible search — cheapest from the departure date onward",
     dpTitle:"Select dates",dpApply:"Apply",dpClear:"Clear",dpNights:(n)=>`${n} night${n===1?"":"s"}`,mapHead:"Destination on the map",curLabel:"Currency",
     searchBtn:"Search flights",
@@ -619,7 +620,7 @@ const T={
     lightBtn:"Светлая",darkBtn:"Тёмная",
     fromLbl:"Откуда",toLbl:"Куда",
     toPlh:"Введите страну, город или код…",
-    dateOutLbl:"Дата вылета",nightsLbl:"Ночей",dateRetLbl:"Дата возврата",maxStopsLbl:"Макс. пересадок",maxStopsHint:"0 = прямой · 9 = без ограничений",classLbl:"Класс",clsEconomy:"Эконом",clsComfort:"Комфорт",clsBusiness:"Бизнес",clsFirst:"Первый",
+    dateOutLbl:"Дата вылета",nightsLbl:"Ночей",dateRetLbl:"Дата возврата",maxStopsLbl:"Макс. пересадок",maxStopsHint:"0 = прямой · 9 = без ограничений",classLbl:"Класс",clsEconomy:"Эконом",clsComfort:"Комфорт",clsBusiness:"Бизнес",clsFirst:"Первый",classEst:"примерн. цена класса",
     nightsHint:"0 = гибкий поиск от даты вылета и далее",nightsHintActive:"Гибкий поиск — самое дешёвое от даты вылета и далее",
     dpTitle:"Выбор дат",dpApply:"Применить",dpClear:"Сбросить",dpNights:(n)=>`${n} ноч.`,mapHead:"Направление на карте",curLabel:"Валюта",
     searchBtn:"Найти рейсы",
@@ -989,6 +990,9 @@ function airlineName(code){
 let currentLang   = "he";
 let currentCur    = "ils";   /* מטבע נבחר: ils / usd / eur */
 let currentClass  = "economy";  /* מחלקה: economy / comfort / business / first */
+/* מקור הנתונים מחזיר רק מחיר תיירות → הערכת יחס מחיר למחלקות גבוהות (מסומן כ"משוער") */
+const CLASS_MULT  = {economy:1, comfort:1.6, business:3, first:5};
+function classMult(){ return CLASS_MULT[currentClass]||1; }
 function curSym(){ return {ils:"₪",usd:"$",eur:"€"}[currentCur]||"₪"; }
 function maxStopsVal(){ const v=parseInt((document.getElementById("maxStops")||{}).value,10); return (v>=0&&v<=9)?v:9; }
 function paxCount(){ return Math.max(1, pax.adults+pax.children+pax.infants); }  /* סה"כ נוסעים — להכפלת המחיר */
@@ -1583,8 +1587,10 @@ function fmtDur(min){ if(!min) return ""; const t=T[currentLang]; return t.dur(M
 function offerCard(of,fromC,toC,isBest,flex){
   const t=T[currentLang];
   const pc=paxCount();
-  const per=Number(of.price).toLocaleString();
-  const p=Number(of.price*pc).toLocaleString();   /* מחיר כולל לכל הנוסעים */
+  const cm=classMult(); const est=currentClass!=="economy";
+  const unit=of.price*cm;                          /* מחיר לנוסע במחלקה הנבחרת (משוער אם לא תיירות) */
+  const per=Number(Math.round(unit)).toLocaleString();
+  const p=Number(Math.round(unit*pc)).toLocaleString();   /* מחיר כולל לכל הנוסעים */
   const showRet=!flex;
   const durTxt=fmtDur(of.duration);
   const retDate=of.returnISO?fmtDMY(parseISO(of.returnISO)):"";
@@ -1599,7 +1605,7 @@ function offerCard(of,fromC,toC,isBest,flex){
       <div class="cities">${fromC.iata} <i class="fa-solid fa-arrow-right-long dir-ic" aria-hidden="true"></i> ${toC.iata}${stopsHtml(of.transfers)}${isBest?`<span class="badge"><i class="fa-solid fa-star" aria-hidden="true"></i> ${t.cheapest}</span>`:""}</div>
       <div class="meta"><span><i class="fa-regular fa-calendar" aria-hidden="true"></i> ${of.depart}</span>${retDate?`<span class="dot">·</span><span>${retDate}</span>`:""}${durTxt?`<span class="dot">·</span><span><i class="fa-regular fa-clock" aria-hidden="true"></i> ${durTxt}</span>`:""}${times}<span class="dot">·</span><span><i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i> ${t.noBag}</span></div>
     </div>
-    <div class="price"><div class="ils">${p} ${curSym()}</div><div class="usd">${pc>1?`${pc} × ${per} ${curSym()} ${t.perPerson}`:(of.approx?t.approxLbl:t.lowestLbl)}</div></div>
+    <div class="price"><div class="ils">${est?"≈ ":""}${p} ${curSym()}</div><div class="usd">${[(pc>1?`${pc} × ${per} ${curSym()} ${t.perPerson}`:""),(est?t.classEst:""),((!est&&pc<=1)?(of.approx?t.approxLbl:t.lowestLbl):"")].filter(Boolean).join(" · ")}</div></div>
     <span class="buy"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> ${t.aviasalesBuy}</span>
   </a>`;
 }
@@ -1620,9 +1626,10 @@ async function fetchOffers(s){
     if(d&&Array.isArray(d.offers)&&d.offers.length){
       const flex=!!s.flex;
       const c=d.offers[0];                                   /* הזול ביותר — לסיכום העליון */
-      const pc=paxCount();
-      const cp=Number(c.price*pc).toLocaleString();          /* מחיר כולל לכל הנוסעים */
-      const perP=pc>1?` · ${pc} × ${Number(c.price).toLocaleString()} ${curSym()} ${t.perPerson}`:"";
+      const pc=paxCount(); const cm=classMult(); const est=currentClass!=="economy";
+      const unit=c.price*cm;
+      const cp=(est?"≈ ":"")+Number(Math.round(unit*pc)).toLocaleString();   /* מחיר כולל לכל הנוסעים */
+      const perP=(pc>1?` · ${pc} × ${Number(Math.round(unit)).toLocaleString()} ${curSym()} ${t.perPerson}`:"")+(est?` · ${t.classEst}`:"");
       const showRet=!flex;
       const timesTxt=(c.departTime?` · ${t.outTime} ${c.departTime}`:"")+((showRet&&c.returnTime)?` · ${t.retTime} ${c.returnTime}`:"");
       if(el) el.innerHTML=t.priceFrom(cp,airlineName(c.airline),c.depart,c.approx)+timesTxt+` · ${t.noBag}`+perP;
