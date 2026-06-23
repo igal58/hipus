@@ -138,9 +138,15 @@ button.cal-btn .fa-solid{color:var(--accent)}
 .ticket:hover{transform:translateY(-2px);border-color:var(--accent)}
 .ticket.cheapest{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
 .airline{display:flex;align-items:center;gap:9px;min-width:100px}
-.logo{width:38px;height:38px;border-radius:9px;display:grid;place-items:center;
-  font-weight:800;color:#fff;font-size:13px}
+.logo{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;
+  font-weight:800;color:#fff;font-size:15px;background:var(--accent)}
 .airline-name{font-size:13px;line-height:1.3}
+.muted-sm{color:var(--muted);font-size:11px}
+.dir-ic{color:var(--muted);font-size:.82em;margin:0 5px}
+[dir=rtl] .dir-ic.fa-arrow-right-long{transform:scaleX(-1)}
+.dot{color:var(--muted);opacity:.55;margin:0 1px}
+.route .meta i{opacity:.7;margin-inline-end:2px}
+.price .ils .fa-solid{display:none}
 .route .cities{font-weight:700;font-size:15px}
 .route .meta{color:var(--muted);font-size:12px;margin-top:3px;
   display:flex;align-items:center;flex-wrap:wrap;gap:4px}
@@ -159,9 +165,13 @@ body.light .flex-pill{color:#04293f}
 .price{text-align:center}
 .price .ils{font-size:20px;font-weight:800;color:var(--accent)}
 .price .usd{color:var(--muted);font-size:13px;margin-top:2px}
-.buy{background:var(--good);color:#03260f;text-decoration:none;
-  font-weight:700;padding:9px 16px;border-radius:10px;white-space:nowrap;font-size:13px}
-.buy:hover{filter:brightness(1.1)}
+.buy{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  background:var(--good);color:#fff;text-decoration:none;
+  font-weight:700;padding:10px 16px;border-radius:10px;white-space:nowrap;font-size:13px}
+.buy:hover{filter:brightness(1.06)}
+.buy .fa-solid{font-size:11px}
+.cbtn-ic{color:var(--muted);font-size:11px;margin-inline-start:2px}
+.badge .fa-solid{font-size:9px;margin-inline-end:2px}
 .empty{text-align:center;color:var(--muted);padding:40px;font-size:15px}
 
 /* ── SEARCH SUMMARY ── */
@@ -286,7 +296,7 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
       <button class="lang-btn"        data-lang="ru">RU</button>
     </div>
     <!-- מצב בהיר/כהה -->
-    <button class="theme-toggle" id="lightToggle">☀️ מצב בהיר</button>
+    <button class="theme-toggle" id="lightToggle"></button>
   </div>
   <div class="toolbar-right">
     <div class="palette">
@@ -321,7 +331,7 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
     <div class="field">
       <label id="lNights">ימי שהייה</label>
       <input type="number" id="nights" min="0" max="180" value="7">
-      <small class="field-hint" id="nightsHint">💡 0 = חיפוש גמיש מתאריך היציאה והלאה</small>
+      <small class="field-hint" id="nightsHint"></small>
     </div>
     <div class="field">
       <label id="lDateRet">תאריך חזרה</label>
@@ -358,9 +368,9 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
         </div>
       </div>
     </div>
-    <button class="search" id="searchBtn">🔍 חפש כרטיסים</button>
-    <button class="deals-btn" id="dealsBtn">🔥 מבצעים חמים</button>
-    <button class="cal-btn" id="calBtn">📅 החודש הזול</button>
+    <button class="search" id="searchBtn"></button>
+    <button class="deals-btn" id="dealsBtn"></button>
+    <button class="cal-btn" id="calBtn"></button>
     <input type="number" id="budget" class="budget-in" min="0" step="100" placeholder="תקציב מקס׳ ₪">
     <span class="rate" id="rateLabel"></span>
   </div>
@@ -380,16 +390,16 @@ const T={
     palette:"ערכה:",
     lightBtn:"מצב בהיר",darkBtn:"מצב כהה",
     fromLbl:"ארץ יציאה",toLbl:"ארץ / עיר יעד",
-    toPlh:"🔍 הקלד ארץ, עיר או קוד…",
+    toPlh:"הקלד ארץ, עיר או קוד…",
     dateOutLbl:"תאריך יציאה",nightsLbl:"ימי שהייה",dateRetLbl:"תאריך חזרה",
     nightsHint:"0 = חיפוש גמיש מתאריך היציאה והלאה",nightsHintActive:"חיפוש גמיש — הזול ביותר מתאריך היציאה והלאה",
     searchBtn:"חפש כרטיסים",
-    sortLbl:"מיון:",sortPrice:"💰 מחיר",sortStops:"🛑 עצירות+מחיר",
+    sortLbl:"מיון:",sortPrice:"מחיר",sortStops:"עצירות+מחיר",
     filtLbl:"עצירות:",filtAll:"הכל",filtDirect:"ישיר",filt1:"עצירה 1",filt2:"2+ עצירות",
     showing:(n,t)=>`מציג ${n} מתוך ${t} כרטיסים`,
     cheapest:"משתלם",
-    sDirect:"ישיר ✈️",s1:"עצירה 1",s2:(n)=>`${n} עצירות`,
-    buyBtn:"לרכישה ←",
+    sDirect:"ישיר",s1:"עצירה 1",s2:(n)=>`${n} עצירות`,
+    buyBtn:"לרכישה",
     noFlt:"אין כרטיסים בסינון הנוכחי — שנה מסנן עצירות",
     noRes:"לא נמצאו תוצאות",
     errTo:"בחר ארץ יעד מהרשימה",errSame:"ארץ היציאה והיעד זהות",
@@ -397,31 +407,31 @@ const T={
     rate:(v)=>`שער המרה: 1$ = ${v} ₪`,rateL:(v)=>`שער חי: 1$ = ${v} ₪`,
     resTitle:"חיפושים חיים אמיתיים",
     resSub:"בחר אתר כדי לראות מחירים אמיתיים בזמן אמת ולרכוש",
-    routeFor:(o,d,a,b)=>`${o} ← ${d} · ${a} – ${b}`,
-    openLive:"פתח חיפוש חי ←",buyLbl:"רכישה ←",
+    routeFor:(o,d,a,b)=>`${o} <i class="fa-solid fa-plane dir-ic" aria-hidden="true"></i> ${d} · ${a} – ${b}`,
+    openLive:"פתח חיפוש חי",buyLbl:"רכישה",
     refLbl:"מחיר ייחוס",refTitle:"המחיר מקורו ב-Aviasales — לייחוס בלבד, ייתכן שונה במנוע זה",
-    offersTitle:"✈️ טיסות אמיתיות — מחיר חי (Aviasales)",compareTitle:"🔎 השוואה וחיפוש באתרים אחרים",
+    offersTitle:"טיסות אמיתיות — מחיר חי (Aviasales)",compareTitle:"השוואה וחיפוש באתרים אחרים",
     priceChecking:"בודק מחיר אמיתי…",
-    priceFrom:(p,air,date,approx)=>`💰 ${approx?"בערך מ-":"מ-"}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
+    priceFrom:(p,air,date,approx)=>`${approx?"בערך מ-":"מ-"}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"מחירים חיים יוצגו באתרי החיפוש למטה",
     lowestLbl:"מחיר משתלם",approxLbl:"בערך · החודש",
-    dur:(h,m)=>`${h}ש ${m}ד`,aviasalesBuy:"רכישה ב-Aviasales ←",
-    outTime:"🛫 יציאה",retTime:"🛬 חזרה",noBag:"🧳 ללא כבודה רשומה",
+    dur:(h,m)=>`${h}ש ${m}ד`,aviasalesBuy:"רכישה ב-Aviasales",
+    outTime:"יציאה",retTime:"חזרה",noBag:"ללא כבודה רשומה",
     flexLbl:"תאריכים גמישים",flexSearching:"מחפש את הזול ביותר מהתאריך והלאה…",
-    dealsBtn:"מבצעים חמים",dealsTitle:"🔥 טיסות סודיות — הזול ביותר מתל אביב",
-    dealsTitleBudget:(b)=>`🔥 לאן שבא לי — עד ${b} ₪ מתל אביב`,budgetPh:"תקציב מקס׳ ₪",
+    dealsBtn:"מבצעים חמים",dealsTitle:"טיסות סודיות — הזול ביותר מתל אביב",
+    dealsTitleBudget:(b)=>`לאן שבא לי — עד ${b} ₪ מתל אביב`,budgetPh:"תקציב מקס׳ ₪",
     dealsBudgetNone:(b)=>`אין יעדים עד ${b} ₪ כרגע — נסה תקציב גבוה יותר`,
-    calBtn:"החודש הזול",calTitle:"📅 לוח מחירים — היום הזול בחודש",
+    calBtn:"החודש הזול",calTitle:"לוח מחירים — היום הזול בחודש",
     calLoading:"בונה לוח מחירים…",calNone:"אין נתוני לוח למסלול/חודש הזה — נסה חודש אחר או יעד אחר",
     calCheapest:"הכי זול",calHint:"לחץ על יום כדי לחפש טיסות בתאריך הזה",
-    flexMonthsTitle:"🗓️ כמה חודשים קדימה — הזול בכל חודש",flexMonthsHint:"חיפוש גמיש: לחץ על חודש כדי לראות את הטיסות בתאריך הזול שלו",flexMonthsNone:"אין נתונים לחודשים הקרובים",
-    alertTitle:"🔔 התראת מחיר",alertSub:"נשלח לך מייל כשהמחיר למסלול הזה יירד לסכום שתבחר",
+    flexMonthsTitle:"כמה חודשים קדימה — הזול בכל חודש",flexMonthsHint:"חיפוש גמיש: לחץ על חודש כדי לראות את הטיסות בתאריך הזול שלו",flexMonthsNone:"אין נתונים לחודשים הקרובים",
+    alertTitle:"התראת מחיר",alertSub:"נשלח לך מייל כשהמחיר למסלול הזה יירד לסכום שתבחר",
     alertEmailPh:"המייל שלך",alertTargetPh:"מחיר יעד ₪",alertBtn:"צור התראה",alertSending:"יוצר התראה…",
-    alertOk:"✅ ההתראה נוצרה! נשלח לך מייל כשהמחיר יירד ליעד.",alertErr:"אירעה שגיאה — נסה שוב",
+    alertOk:"ההתראה נוצרה! נשלח לך מייל כשהמחיר יירד ליעד.",alertErr:"אירעה שגיאה — נסה שוב",
     alertBadEmail:"אנא הזן כתובת מייל תקינה",alertBadTarget:"אנא הזן מחיר יעד",
     dealsLoading:"מחפש מבצעים…",dealsNone:"אין מבצעים כרגע — נסה שוב מאוחר יותר",
     paxLbl:"נוסעים",adultsLbl:"מבוגרים",adultsSub:"מעל 12",childrenLbl:"ילדים",childrenSub:"2–11",
-    infantsLbl:"תינוקות",infantsSub:"עד שנתיים",paxSummary:(n)=>`${n} 👤`,perPerson:"לנוסע",
+    infantsLbl:"תינוקות",infantsSub:"עד שנתיים",paxSummary:(n)=>`${n}`,perPerson:"לנוסע",
     bagsGroup:"תיקים",cabinBag:"כבודת יד",checkedBag:"כבודה רשומה",bagNote:"כבודה רשומה בתשלום נפרד בהזמנה",
   },
   en:{
@@ -431,16 +441,16 @@ const T={
     palette:"Theme:",
     lightBtn:"Light",darkBtn:"Dark",
     fromLbl:"Departure",toLbl:"Destination",
-    toPlh:"🔍 Type country, city or code…",
+    toPlh:"Type country, city or code…",
     dateOutLbl:"Departure date",nightsLbl:"Nights",dateRetLbl:"Return date",
     nightsHint:"0 = flexible search from the departure date onward",nightsHintActive:"Flexible search — cheapest from the departure date onward",
     searchBtn:"Search flights",
-    sortLbl:"Sort:",sortPrice:"💰 Price",sortStops:"🛑 Stops+price",
+    sortLbl:"Sort:",sortPrice:"Price",sortStops:"Stops+price",
     filtLbl:"Stops:",filtAll:"All",filtDirect:"Direct",filt1:"1 stop",filt2:"2+ stops",
     showing:(n,t)=>`Showing ${n} of ${t} tickets`,
     cheapest:"Good value",
-    sDirect:"Direct ✈️",s1:"1 stop",s2:(n)=>`${n} stops`,
-    buyBtn:"Buy →",
+    sDirect:"Direct",s1:"1 stop",s2:(n)=>`${n} stops`,
+    buyBtn:"Buy",
     noFlt:"No flights match this filter — try changing stops",
     noRes:"No results found",
     errTo:"Please select a destination from the list",errSame:"Origin and destination are the same",
@@ -448,31 +458,31 @@ const T={
     rate:(v)=>`Exchange rate: 1$ = ${v} ₪`,rateL:(v)=>`Live rate: 1$ = ${v} ₪`,
     resTitle:"Real live searches",
     resSub:"Pick a site to see real-time prices and book",
-    routeFor:(o,d,a,b)=>`${o} → ${d} · ${a} – ${b}`,
-    openLive:"Open live search →",buyLbl:"Buy →",
+    routeFor:(o,d,a,b)=>`${o} <i class="fa-solid fa-plane dir-ic" aria-hidden="true"></i> ${d} · ${a} – ${b}`,
+    openLive:"Open live search",buyLbl:"Buy",
     refLbl:"reference price",refTitle:"Price sourced from Aviasales — reference only, may differ on this engine",
-    offersTitle:"✈️ Real fares — live price (Aviasales)",compareTitle:"🔎 Compare & search on other sites",
+    offersTitle:"Real fares — live price (Aviasales)",compareTitle:"Compare & search on other sites",
     priceChecking:"Checking live price…",
-    priceFrom:(p,air,date,approx)=>`💰 ${approx?"approx. ":"from "}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
+    priceFrom:(p,air,date,approx)=>`${approx?"approx. ":"from "}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"Live prices shown on the search sites below",
     lowestLbl:"good value",approxLbl:"approx · month",
-    dur:(h,m)=>`${h}h ${m}m`,aviasalesBuy:"Book on Aviasales →",
-    outTime:"🛫 Out",retTime:"🛬 Back",noBag:"🧳 No checked bag",
+    dur:(h,m)=>`${h}h ${m}m`,aviasalesBuy:"Book on Aviasales",
+    outTime:"Out",retTime:"Back",noBag:"No checked bag",
     flexLbl:"flexible dates",flexSearching:"Finding the cheapest from this date onward…",
-    dealsBtn:"Hot deals",dealsTitle:"🔥 Secret flights — cheapest from Tel Aviv",
-    dealsTitleBudget:(b)=>`🔥 Where can I go — up to ${b} ₪ from Tel Aviv`,budgetPh:"Max budget ₪",
+    dealsBtn:"Hot deals",dealsTitle:"Secret flights — cheapest from Tel Aviv",
+    dealsTitleBudget:(b)=>`Where can I go — up to ${b} ₪ from Tel Aviv`,budgetPh:"Max budget ₪",
     dealsBudgetNone:(b)=>`No destinations up to ${b} ₪ right now — try a higher budget`,
-    calBtn:"Cheapest month",calTitle:"📅 Price calendar — cheapest day of the month",
+    calBtn:"Cheapest month",calTitle:"Price calendar — cheapest day of the month",
     calLoading:"Building price calendar…",calNone:"No calendar data for this route/month — try another month or destination",
     calCheapest:"Cheapest",calHint:"Tap a day to search flights on that date",
-    flexMonthsTitle:"🗓️ Next few months — cheapest each month",flexMonthsHint:"Flexible search: tap a month to see flights on its cheapest date",flexMonthsNone:"No data for the coming months",
-    alertTitle:"🔔 Price alert",alertSub:"We'll email you when this route drops to your target price",
+    flexMonthsTitle:"Next few months — cheapest each month",flexMonthsHint:"Flexible search: tap a month to see flights on its cheapest date",flexMonthsNone:"No data for the coming months",
+    alertTitle:"Price alert",alertSub:"We'll email you when this route drops to your target price",
     alertEmailPh:"Your email",alertTargetPh:"Target price ₪",alertBtn:"Create alert",alertSending:"Creating alert…",
-    alertOk:"✅ Alert created! We'll email you when the price drops to your target.",alertErr:"Something went wrong — try again",
+    alertOk:"Alert created! We'll email you when the price drops to your target.",alertErr:"Something went wrong — try again",
     alertBadEmail:"Please enter a valid email",alertBadTarget:"Please enter a target price",
     dealsLoading:"Finding deals…",dealsNone:"No deals right now — try again later",
     paxLbl:"Passengers",adultsLbl:"Adults",adultsSub:"12+",childrenLbl:"Children",childrenSub:"2–11",
-    infantsLbl:"Infants",infantsSub:"under 2",paxSummary:(n)=>`${n} 👤`,perPerson:"per person",
+    infantsLbl:"Infants",infantsSub:"under 2",paxSummary:(n)=>`${n}`,perPerson:"per person",
     bagsGroup:"Bags",cabinBag:"Carry-on",checkedBag:"Checked bag",bagNote:"checked bags priced at booking",
   },
   ru:{
@@ -482,16 +492,16 @@ const T={
     palette:"Тема:",
     lightBtn:"Светлая",darkBtn:"Тёмная",
     fromLbl:"Откуда",toLbl:"Куда",
-    toPlh:"🔍 Введите страну, город или код…",
+    toPlh:"Введите страну, город или код…",
     dateOutLbl:"Дата вылета",nightsLbl:"Ночей",dateRetLbl:"Дата возврата",
     nightsHint:"0 = гибкий поиск от даты вылета и далее",nightsHintActive:"Гибкий поиск — самое дешёвое от даты вылета и далее",
     searchBtn:"Найти рейсы",
-    sortLbl:"Сортировка:",sortPrice:"💰 Цена",sortStops:"🛑 Пересадки+цена",
+    sortLbl:"Сортировка:",sortPrice:"Цена",sortStops:"Пересадки+цена",
     filtLbl:"Пересадки:",filtAll:"Все",filtDirect:"Прямой",filt1:"1 пересадка",filt2:"2+ пересадки",
     showing:(n,t)=>`Показано ${n} из ${t} билетов`,
     cheapest:"Выгодно",
-    sDirect:"Прямой ✈️",s1:"1 пересадка",s2:(n)=>`${n} пересадки`,
-    buyBtn:"Купить →",
+    sDirect:"Прямой",s1:"1 пересадка",s2:(n)=>`${n} пересадки`,
+    buyBtn:"Купить",
     noFlt:"Нет рейсов по фильтру — измените параметры",
     noRes:"Ничего не найдено",
     errTo:"Выберите пункт назначения из списка",errSame:"Откуда и куда совпадают",
@@ -499,31 +509,31 @@ const T={
     rate:(v)=>`Курс: 1$ = ${v} ₪`,rateL:(v)=>`Живой курс: 1$ = ${v} ₪`,
     resTitle:"Реальный живой поиск",
     resSub:"Выберите сайт, чтобы увидеть актуальные цены и купить",
-    routeFor:(o,d,a,b)=>`${o} → ${d} · ${a} – ${b}`,
-    openLive:"Открыть живой поиск →",buyLbl:"Купить →",
+    routeFor:(o,d,a,b)=>`${o} <i class="fa-solid fa-plane dir-ic" aria-hidden="true"></i> ${d} · ${a} – ${b}`,
+    openLive:"Открыть живой поиск",buyLbl:"Купить",
     refLbl:"справочная цена",refTitle:"Цена взята с Aviasales — справочно, может отличаться на этом сайте",
-    offersTitle:"✈️ Реальные рейсы — цена (Aviasales)",compareTitle:"🔎 Сравнить и искать на других сайтах",
+    offersTitle:"Реальные рейсы — цена (Aviasales)",compareTitle:"Сравнить и искать на других сайтах",
     priceChecking:"Проверяю реальную цену…",
-    priceFrom:(p,air,date,approx)=>`💰 ${approx?"около ":"от "}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
+    priceFrom:(p,air,date,approx)=>`${approx?"около ":"от "}${p} ₪${air?` · ${air}`:""}${date?` · ${date}`:""} · Aviasales`,
     priceNone:"Актуальные цены — на сайтах поиска ниже",
     lowestLbl:"выгодная цена",approxLbl:"около · месяц",
-    dur:(h,m)=>`${h}ч ${m}м`,aviasalesBuy:"Купить на Aviasales →",
-    outTime:"🛫 Вылет",retTime:"🛬 Обратно",noBag:"🧳 Без багажа",
+    dur:(h,m)=>`${h}ч ${m}м`,aviasalesBuy:"Купить на Aviasales",
+    outTime:"Вылет",retTime:"Обратно",noBag:"Без багажа",
     flexLbl:"гибкие даты",flexSearching:"Ищем самый дешёвый с этой даты…",
-    dealsBtn:"Горящие",dealsTitle:"🔥 Секретные рейсы — дешевле всего из Тель-Авива",
-    dealsTitleBudget:(b)=>`🔥 Куда улететь — до ${b} ₪ из Тель-Авива`,budgetPh:"Макс. бюджет ₪",
+    dealsBtn:"Горящие",dealsTitle:"Секретные рейсы — дешевле всего из Тель-Авива",
+    dealsTitleBudget:(b)=>`Куда улететь — до ${b} ₪ из Тель-Авива`,budgetPh:"Макс. бюджет ₪",
     dealsBudgetNone:(b)=>`Нет направлений до ${b} ₪ сейчас — попробуйте больший бюджет`,
-    calBtn:"Дешёвый месяц",calTitle:"📅 Календарь цен — самый дешёвый день месяца",
+    calBtn:"Дешёвый месяц",calTitle:"Календарь цен — самый дешёвый день месяца",
     calLoading:"Строю календарь цен…",calNone:"Нет данных календаря для этого маршрута/месяца — попробуйте другой месяц или направление",
     calCheapest:"Дешевле всего",calHint:"Нажмите на день, чтобы найти рейсы на эту дату",
-    flexMonthsTitle:"🗓️ Ближайшие месяцы — самый дешёвый в каждом",flexMonthsHint:"Гибкий поиск: нажмите на месяц, чтобы увидеть рейсы на его дешёвую дату",flexMonthsNone:"Нет данных за ближайшие месяцы",
-    alertTitle:"🔔 Оповещение о цене",alertSub:"Пришлём письмо, когда цена на этот маршрут упадёт до вашей цели",
+    flexMonthsTitle:"Ближайшие месяцы — самый дешёвый в каждом",flexMonthsHint:"Гибкий поиск: нажмите на месяц, чтобы увидеть рейсы на его дешёвую дату",flexMonthsNone:"Нет данных за ближайшие месяцы",
+    alertTitle:"Оповещение о цене",alertSub:"Пришлём письмо, когда цена на этот маршрут упадёт до вашей цели",
     alertEmailPh:"Ваш email",alertTargetPh:"Целевая цена ₪",alertBtn:"Создать оповещение",alertSending:"Создаю оповещение…",
-    alertOk:"✅ Оповещение создано! Пришлём письмо при снижении цены.",alertErr:"Произошла ошибка — попробуйте снова",
+    alertOk:"Оповещение создано! Пришлём письмо при снижении цены.",alertErr:"Произошла ошибка — попробуйте снова",
     alertBadEmail:"Введите корректный email",alertBadTarget:"Введите целевую цену",
     dealsLoading:"Ищу акции…",dealsNone:"Сейчас нет акций — попробуйте позже",
     paxLbl:"Пассажиры",adultsLbl:"Взрослые",adultsSub:"12+",childrenLbl:"Дети",childrenSub:"2–11",
-    infantsLbl:"Младенцы",infantsSub:"до 2 лет",paxSummary:(n)=>`${n} 👤`,perPerson:"за человека",
+    infantsLbl:"Младенцы",infantsSub:"до 2 лет",paxSummary:(n)=>`${n}`,perPerson:"за человека",
     bagsGroup:"Багаж",cabinBag:"Ручная кладь",checkedBag:"Багаж",bagNote:"багаж оплачивается при бронировании",
   }
 };
@@ -1101,11 +1111,12 @@ function render(){
 
   /* קישורי השוואה לאתרים אחרים — בלי מחיר (אין לנו מחיר אמיתי מהם), כולל El Al */
   const compare=`
-    <div class="compare-head">${t.compareTitle}</div>
+    <div class="compare-head"><i class="fa-solid fa-magnifying-glass-location" aria-hidden="true"></i> ${t.compareTitle}</div>
     <div class="compare-row">`+engines.map(e=>`
       <a class="compare-btn" href="${e.url}" target="_blank" rel="noopener">
         <span class="clogo" style="background:${e.color}">${e.code}</span>
         <span class="cname">${e.name}</span>
+        <i class="fa-solid fa-arrow-up-right-from-square cbtn-ic" aria-hidden="true"></i>
       </a>`).join("")+`
     </div>`;
 
@@ -1113,7 +1124,7 @@ function render(){
   const savedEmail=(()=>{ try{return localStorage.getItem("hipusEmail")||"";}catch{return "";} })();
   const alertUI=`
     <div class="alert-box">
-      <div class="alert-head">${t.alertTitle}</div>
+      <div class="alert-head"><i class="fa-solid fa-bell" aria-hidden="true"></i> ${t.alertTitle}</div>
       <div class="alert-sub">${t.alertSub}</div>
       <div class="alert-form">
         <input type="email" id="alertEmail" class="alert-in" placeholder="${t.alertEmailPh}" value="${savedEmail}">
@@ -1125,12 +1136,12 @@ function render(){
 
   /* 🗓️ חיפוש גמיש (ימי שהייה=0) → חלונית כמה חודשים קדימה, הזול בכל חודש */
   const flexPanel = lastSearch.flex
-    ? `<div class="flexmonths-head">${t.flexMonthsTitle}</div><div class="flexmonths-sub">${t.flexMonthsHint}</div>`
+    ? `<div class="flexmonths-head"><i class="fa-solid fa-calendar-week" aria-hidden="true"></i> ${t.flexMonthsTitle}</div><div class="flexmonths-sub">${t.flexMonthsHint}</div>`
       +`<div id="flexMonths" class="cal-grid"><div class="empty">${t.calLoading}</div></div>`
     : "";
 
   box.innerHTML=head
-    +`<div class="offers-head">${t.offersTitle}</div><div id="offers"></div>`
+    +`<div class="offers-head"><i class="fa-solid fa-plane-up" aria-hidden="true"></i> ${t.offersTitle}</div><div id="offers"></div>`
     +flexPanel
     +compare
     +alertUI;
@@ -1211,19 +1222,19 @@ function offerCard(of,fromC,toC,isBest,flex){
   const showRet=!flex;
   const durTxt=fmtDur(of.duration);
   const retDate=of.returnISO?fmtDMY(parseISO(of.returnISO)):"";
-  const times=(of.departTime?`<span>·</span><span>${t.outTime} ${of.departTime}</span>`:"")
-             +((showRet&&of.returnTime)?`<span>·</span><span>${t.retTime} ${of.returnTime}</span>`:"");
-  return `<a class="ticket engine-card best-card" href="${of.link}" target="_blank" rel="noopener">
+  const times=(of.departTime?`<span class="dot">·</span><span><i class="fa-solid fa-plane-departure" aria-hidden="true"></i> ${t.outTime} ${of.departTime}</span>`:"")
+             +((showRet&&of.returnTime)?`<span class="dot">·</span><span><i class="fa-solid fa-plane-arrival" aria-hidden="true"></i> ${t.retTime} ${of.returnTime}</span>`:"");
+  return `<a class="ticket engine-card best-card" href="${of.link}" target="_blank" rel="noopener" aria-label="${fromC.iata} ${toC.iata} ${p} ILS">
     <div class="airline">
-      <div class="logo" style="background:#00a991">✈</div>
-      <div class="airline-name">Aviasales${of.airline?` · ${airlineName(of.airline)}`:""}</div>
+      <div class="logo"><i class="fa-solid fa-plane-up" aria-hidden="true"></i></div>
+      <div class="airline-name">Aviasales${of.airline?`<br><span class="muted-sm">${airlineName(of.airline)}</span>`:""}</div>
     </div>
     <div class="route">
-      <div class="cities">${fromC.iata} → ${toC.iata}${stopsHtml(of.transfers)}${isBest?`<span class="badge">${t.cheapest}</span>`:""}</div>
-      <div class="meta"><span>${of.depart}</span>${retDate?`<span>·</span><span>${retDate}</span>`:""}${durTxt?`<span>·</span><span>${durTxt}</span>`:""}${times}<span>·</span><span>${t.noBag}</span></div>
+      <div class="cities">${fromC.iata} <i class="fa-solid fa-arrow-right-long dir-ic" aria-hidden="true"></i> ${toC.iata}${stopsHtml(of.transfers)}${isBest?`<span class="badge"><i class="fa-solid fa-star" aria-hidden="true"></i> ${t.cheapest}</span>`:""}</div>
+      <div class="meta"><span><i class="fa-regular fa-calendar" aria-hidden="true"></i> ${of.depart}</span>${retDate?`<span class="dot">·</span><span>${retDate}</span>`:""}${durTxt?`<span class="dot">·</span><span><i class="fa-regular fa-clock" aria-hidden="true"></i> ${durTxt}</span>`:""}${times}<span class="dot">·</span><span><i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i> ${t.noBag}</span></div>
     </div>
     <div class="price"><div class="ils">${p} ₪</div><div class="usd">${of.approx?t.approxLbl:t.lowestLbl}</div></div>
-    <span class="buy">${t.aviasalesBuy}</span>
+    <span class="buy"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> ${t.aviasalesBuy}</span>
   </a>`;
 }
 
@@ -1310,7 +1321,7 @@ async function showDeals(){
   const box=document.getElementById("results");
   const origin=(COUNTRIES.find(c=>c.code===fromSel.value)||{iata:"TLV"}).iata;
   const budget=Math.round(Number(document.getElementById("budget").value)||0);   /* 0 = ללא הגבלה */
-  const title=budget>0?t.dealsTitleBudget(budget.toLocaleString()):t.dealsTitle;
+  const title='<i class="fa-solid fa-fire" aria-hidden="true"></i> '+(budget>0?t.dealsTitleBudget(budget.toLocaleString()):t.dealsTitle);
   box.innerHTML=`<div class="results-head"><h2>${title}</h2></div><div class="empty">${t.dealsLoading}</div>`;
   try{
     const r=await fetch(`${PROXY_BASE}/deals?origin=${origin}`);
@@ -1326,11 +1337,11 @@ async function showDeals(){
         rows+=`<div class="ticket deal-row" data-dest="${dl.dest}" data-depart="${dl.depart}" data-ret="${dl.ret}">
           <div class="airline"><div class="logo" style="background:var(--accent2)">${dl.dest}</div></div>
           <div class="route">
-            <div class="cities">${origin} → ${dl.dest}</div>
-            <div class="meta"><span>${name}</span>${dep?`<span>·</span><span>${dep}</span>`:""}</div>
+            <div class="cities">${origin} <i class="fa-solid fa-arrow-right-long dir-ic" aria-hidden="true"></i> ${dl.dest}</div>
+            <div class="meta"><span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> ${name}</span>${dep?`<span class="dot">·</span><span>${dep}</span>`:""}</div>
           </div>
           <div class="price"><div class="ils">${Number(dl.price).toLocaleString()} ₪</div></div>
-          <span class="buy">${t.openLive}</span>
+          <span class="buy"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> ${t.openLive}</span>
         </div>`;
       });
       box.innerHTML=`<div class="results-head"><h2>${title}</h2></div>`+rows;
@@ -1355,7 +1366,7 @@ async function showCalendar(){
   if(!dep){ alert(t.errDate); return; }                         /* צריך תאריך כדי לדעת איזה חודש */
   const month=`${dep.getFullYear()}-${pad(dep.getMonth()+1)}`;
   const fromN=cLng(fromC), toN=cLng(toC);
-  box.innerHTML=`<div class="results-head"><h2>${t.calTitle}</h2></div><div class="empty">${t.calLoading}</div>`;
+  box.innerHTML=`<div class="results-head"><h2><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> ${t.calTitle}</h2></div><div class="empty">${t.calLoading}</div>`;
   try{
     const r=await fetch(`${PROXY_BASE}/calendar?origin=${fromC.iata}&destination=${toC.iata}&month=${month}`);
     const d=await r.json();
@@ -1370,15 +1381,15 @@ async function showCalendar(){
           ${isMin?`<div class="cal-tag">${t.calCheapest}</div>`:""}
         </button>`;
       }).join("");
-      box.innerHTML=`<div class="results-head"><h2>${t.calTitle}</h2></div>
-        <div class="search-summary"><div class="ss-route">${fromN.c} (${fromC.iata}) → ${toN.c} (${toC.iata}) · ${month}</div>
+      box.innerHTML=`<div class="results-head"><h2><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> ${t.calTitle}</h2></div>
+        <div class="search-summary"><div class="ss-route">${fromN.c} (${fromC.iata}) <i class="fa-solid fa-plane dir-ic" aria-hidden="true"></i> ${toN.c} (${toC.iata}) · ${month}</div>
         <div class="ss-sub">${t.calHint}</div></div>
         <div class="cal-grid">${cells}</div>`;
     }else{
-      box.innerHTML=`<div class="results-head"><h2>${t.calTitle}</h2></div><div class="empty">${t.calNone}</div>`;
+      box.innerHTML=`<div class="results-head"><h2><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> ${t.calTitle}</h2></div><div class="empty">${t.calNone}</div>`;
     }
   }catch(e){
-    box.innerHTML=`<div class="results-head"><h2>${t.calTitle}</h2></div><div class="empty">${t.calNone}</div>`;
+    box.innerHTML=`<div class="results-head"><h2><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> ${t.calTitle}</h2></div><div class="empty">${t.calNone}</div>`;
   }
 }
 /* לחיצה על יום בלוח → ממלא את תאריך היציאה ומריץ חיפוש */
