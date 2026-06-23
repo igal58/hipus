@@ -79,9 +79,10 @@ body{margin:0;font-family:"Inter","Heebo","Segoe UI",Tahoma,Arial,sans-serif;
 .drawer-overlay.open{opacity:1;visibility:visible}
 .drawer{position:fixed;top:0;inset-inline-end:0;height:100%;width:340px;max-width:90vw;z-index:1900;
   background:var(--panel);box-shadow:var(--shadow);transform:translateX(110%);
-  transition:transform .26s ease;padding:18px;overflow:auto}
+  transition:transform .26s ease,visibility .26s;padding:18px;overflow:auto;
+  visibility:hidden}
 [dir=rtl] .drawer{inset-inline-end:auto;inset-inline-start:0;transform:translateX(-110%)}
-.drawer.open{transform:translateX(0)}
+.drawer.open{transform:translateX(0)!important;visibility:visible}
 .drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .drawer-title{font-weight:800;font-size:16px;display:inline-flex;align-items:center;gap:8px}
 .drawer-title .fa-solid{color:var(--accent)}
