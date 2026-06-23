@@ -1,0 +1,26 @@
+name: Price alerts check
+
+# מפעיל את בדיקת התראות המחיר כל 3 שעות — בלי שום מסך פתוח.
+# גם מעיר את שרת Render (שכבה חינמית נרדמת ללא תנועה).
+#
+# הקמה (חד-פעמית):
+#   1. ב-Render → Environment: הגדר CRON_KEY=<סוד כלשהו> (וגם RESEND_API_KEY לשליחת מייל אמיתי).
+#   2. ב-GitHub → Settings → Secrets and variables → Actions → New repository secret:
+#        Name: CRON_KEY   Value: אותו סוד בדיוק.
+#   3. אפשר להריץ ידנית מ-Actions → Price alerts check → Run workflow.
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'     # כל 3 שעות (UTC)
+  workflow_dispatch:           # הרצה ידנית מ-GitHub
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger price-alert check
+        run: |
+          echo "Pinging /check-alerts ..."
+          curl -fsS --max-time 90 \
+            "https://hipus.onrender.com/check-alerts?key=${{ secrets.CRON_KEY }}" \
+            || echo "check-alerts call failed (server waking up?) — will retry next run"

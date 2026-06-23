@@ -183,6 +183,40 @@ async function fetchCalendar(o, d, month) {
   return { days:[], reason:"no-data" };
 }
 
+/* ── חיפוש גמיש רב-חודשי — הזול ביותר בכל אחד מהחודשים הקרובים (לימי שהייה=0) ── */
+async function fetchFlexMonths(o, d, fromDate, monthsCount) {
+  if (!TOKEN_OK) return { months:[], reason:"no-token" };
+  const n = Math.min(Math.max(monthsCount||4, 1), 6);          // 1–6 חודשים
+  const baseY = Number(fromDate.slice(0,4)), baseM = Number(fromDate.slice(5,7));
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const dt = new Date(baseY, baseM - 1 + i, 1);
+    const month = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}`;
+    const minDate = i === 0 ? fromDate : month + "-01";         // החודש הראשון: רק מתאריך היציאה והלאה
+    try {
+      const json = await getJSON(tpCalendarUrl(o, d, month));
+      const data = json && json.success && json.data && typeof json.data === "object" ? json.data : null;
+      let best = null;
+      if (data) for (const date of Object.keys(data)) {
+        if (date < minDate) continue;
+        const it = data[date];
+        if (!it || !it.price) continue;
+        if (!best || it.price < best.price) {
+          let link = it.link || "";
+          if (link && CFG.marker) link += (link.includes("?")?"&":"?") + "marker=" + CFG.marker;
+          best = { month, date, price:Math.round(it.price), airline:it.airline||"",
+            transfers:(typeof it.transfers==="number"?it.transfers:null),
+            link: link ? "https://www.aviasales.com"+link : "" };
+        }
+      }
+      if (best) out.push(best);
+    } catch {}
+  }
+  if (!out.length) return { months:[], reason:"no-data" };
+  const cheapest = Math.min(...out.map(x=>x.price));
+  return { months: out, cheapest };
+}
+
 /* ════════════════════════════════════════════════════════════
    🔔 התראות מחיר (MVP) — אחסון בקובץ + שליחת מייל דרך Resend
    ────────────────────────────────────────────────────────────
@@ -336,6 +370,17 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200,{"Content-Type":"application/json"});
     return res.end(JSON.stringify(out));
   }
+  if (u.pathname === "/flexmonths") {
+    const o=(u.searchParams.get("origin")||"").toUpperCase();
+    const d=(u.searchParams.get("destination")||"").toUpperCase();
+    const from=u.searchParams.get("from")||"";
+    const months=Number(u.searchParams.get("months"))||4;
+    if (!o||!d||!from) { res.writeHead(400,{"Content-Type":"application/json"});
+      return res.end(JSON.stringify({months:[],reason:"bad-params"})); }
+    const out = await fetchFlexMonths(o,d,from,months);
+    res.writeHead(200,{"Content-Type":"application/json"});
+    return res.end(JSON.stringify(out));
+  }
   if (u.pathname === "/deals") {
     const o = (u.searchParams.get("origin") || "TLV").toUpperCase();
     const out = await fetchDeals(o);
@@ -345,10 +390,26 @@ const server = http.createServer(async (req, res) => {
   return serveStatic(req, res);   // everything else → static files (index.html, etc.)
 });
 
+/* ── מתזמן פנימי — בודק התראות אוטומטית כל כמה שעות (רץ בזמן שהשרת ער) ──
+   ⚠️ ב-Render חינמי השרת נרדם ללא תנועה, אז הטיימר לא ירוץ בזמן שינה.
+      הפתרון המלא לבדיקה גם בלי מסך: GitHub Action מתוזמן (.github/workflows/price-alerts.yml)
+      שמעיר את השרת כל 3 שעות וקורא ל-/check-alerts. גם self-ping מונע שינה כשיש RENDER_EXTERNAL_URL. */
+const CHECK_HOURS = Number(process.env.CHECK_HOURS) || 6;
+const SELF_URL = process.env.RENDER_EXTERNAL_URL || process.env.SELF_URL || "";
+function startSchedulers() {
+  setInterval(() => {
+    runAlertCheck().then(r => console.log(`[alerts] auto-check: ${r.checked} alert(s), dryRun=${r.dryRun}`)).catch(()=>{});
+  }, CHECK_HOURS * 3600 * 1000);
+  if (SELF_URL) {                                  // self-ping כל ~13 דק' כדי לצמצם שינה (best-effort)
+    setInterval(() => { https.get(SELF_URL.replace(/\/$/,"") + "/health", r=>r.resume()).on("error",()=>{}); }, 13 * 60 * 1000);
+  }
+}
+
 server.listen(CFG.port, () => {
   const url = `http://localhost:${CFG.port}`;
   console.log(`✈  Hipis running on ${url}`);
   console.log(`   token configured: ${TOKEN_OK ? "yes" : "NO — set TP_TOKEN or edit proxy.config.json"}`);
+  if (IS_CLOUD) { startSchedulers(); console.log(`   schedulers on: alert check every ${CHECK_HOURS}h${SELF_URL?", self-ping on":""}`); }
   if (!IS_CLOUD && process.platform === "win32") {
     exec(`start "" ${url}`);   // open the browser automatically on local Windows
   }

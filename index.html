@@ -151,8 +151,10 @@ a.engine-card:hover{border-color:var(--accent)}
 .card-price{min-width:78px}
 .card-price .usd{font-size:11px}
 .ref-note{font-size:10px;color:var(--muted);opacity:.8;font-style:italic;margin-top:1px;cursor:help}
-.offers-head,.compare-head{font-weight:800;color:var(--accent);font-size:15px;margin:18px 4px 9px}
+.offers-head,.compare-head,.flexmonths-head{font-weight:800;color:var(--accent);font-size:15px;margin:18px 4px 9px}
 .compare-head{color:var(--muted);font-size:14px;margin-top:22px}
+.flexmonths-head{margin-top:22px}
+.flexmonths-sub{color:var(--muted);font-size:13px;margin:0 4px 10px}
 .compare-row{display:flex;flex-wrap:wrap;gap:10px}
 .compare-btn{display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;
   background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;transition:border-color .15s}
@@ -388,6 +390,7 @@ const T={
     calBtn:"📅 החודש הזול",calTitle:"📅 לוח מחירים — היום הזול בחודש",
     calLoading:"בונה לוח מחירים…",calNone:"אין נתוני לוח למסלול/חודש הזה — נסה חודש אחר או יעד אחר",
     calCheapest:"הכי זול",calHint:"לחץ על יום כדי לחפש טיסות בתאריך הזה",
+    flexMonthsTitle:"🗓️ כמה חודשים קדימה — הזול בכל חודש",flexMonthsHint:"חיפוש גמיש: לחץ על חודש כדי לראות את הטיסות בתאריך הזול שלו",flexMonthsNone:"אין נתונים לחודשים הקרובים",
     alertTitle:"🔔 התראת מחיר",alertSub:"נשלח לך מייל כשהמחיר למסלול הזה יירד לסכום שתבחר",
     alertEmailPh:"המייל שלך",alertTargetPh:"מחיר יעד ₪",alertBtn:"צור התראה",alertSending:"יוצר התראה…",
     alertOk:"✅ ההתראה נוצרה! נשלח לך מייל כשהמחיר יירד ליעד.",alertErr:"אירעה שגיאה — נסה שוב",
@@ -438,6 +441,7 @@ const T={
     calBtn:"📅 Cheapest month",calTitle:"📅 Price calendar — cheapest day of the month",
     calLoading:"Building price calendar…",calNone:"No calendar data for this route/month — try another month or destination",
     calCheapest:"Cheapest",calHint:"Tap a day to search flights on that date",
+    flexMonthsTitle:"🗓️ Next few months — cheapest each month",flexMonthsHint:"Flexible search: tap a month to see flights on its cheapest date",flexMonthsNone:"No data for the coming months",
     alertTitle:"🔔 Price alert",alertSub:"We'll email you when this route drops to your target price",
     alertEmailPh:"Your email",alertTargetPh:"Target price ₪",alertBtn:"Create alert",alertSending:"Creating alert…",
     alertOk:"✅ Alert created! We'll email you when the price drops to your target.",alertErr:"Something went wrong — try again",
@@ -488,6 +492,7 @@ const T={
     calBtn:"📅 Дешёвый месяц",calTitle:"📅 Календарь цен — самый дешёвый день месяца",
     calLoading:"Строю календарь цен…",calNone:"Нет данных календаря для этого маршрута/месяца — попробуйте другой месяц или направление",
     calCheapest:"Дешевле всего",calHint:"Нажмите на день, чтобы найти рейсы на эту дату",
+    flexMonthsTitle:"🗓️ Ближайшие месяцы — самый дешёвый в каждом",flexMonthsHint:"Гибкий поиск: нажмите на месяц, чтобы увидеть рейсы на его дешёвую дату",flexMonthsNone:"Нет данных за ближайшие месяцы",
     alertTitle:"🔔 Оповещение о цене",alertSub:"Пришлём письмо, когда цена на этот маршрут упадёт до вашей цели",
     alertEmailPh:"Ваш email",alertTargetPh:"Целевая цена ₪",alertBtn:"Создать оповещение",alertSending:"Создаю оповещение…",
     alertOk:"✅ Оповещение создано! Пришлём письмо при снижении цены.",alertErr:"Произошла ошибка — попробуйте снова",
@@ -1087,12 +1092,53 @@ function render(){
       <div class="alert-msg" id="alertMsg"></div>
     </div>`;
 
+  /* 🗓️ חיפוש גמיש (ימי שהייה=0) → חלונית כמה חודשים קדימה, הזול בכל חודש */
+  const flexPanel = lastSearch.flex
+    ? `<div class="flexmonths-head">${t.flexMonthsTitle}</div><div class="flexmonths-sub">${t.flexMonthsHint}</div>`
+      +`<div id="flexMonths" class="cal-grid"><div class="empty">${t.calLoading}</div></div>`
+    : "";
+
   box.innerHTML=head
     +`<div class="offers-head">${t.offersTitle}</div><div id="offers"></div>`
+    +flexPanel
     +compare
     +alertUI;
   document.getElementById("alertBtn").addEventListener("click",submitAlert);
   fetchOffers(lastSearch);
+  if(lastSearch.flex) fetchFlexMonths(lastSearch);
+}
+
+/* שם חודש מקומי, למשל "אוגוסט 2026" / "August 2026" / "август 2026" */
+function monthLabel(ym){
+  const y=Number(ym.slice(0,4)), m=Number(ym.slice(5,7));
+  const loc=currentLang==="he"?"he-IL":currentLang==="ru"?"ru-RU":"en-US";
+  try{ return new Date(y,m-1,1).toLocaleDateString(loc,{month:"long",year:"numeric"}); }
+  catch{ return ym; }
+}
+/* משיכת הזול ביותר לכל אחד מהחודשים הקרובים (חיפוש גמיש) — תאי חודש שמשתמשים באותו handler של הלוח */
+async function fetchFlexMonths(s){
+  const box=document.getElementById("flexMonths");
+  if(!box||!s) return;
+  const t=T[currentLang];
+  try{
+    const u=`${PROXY_BASE}/flexmonths?origin=${s.fromC.iata}&destination=${s.toC.iata}&from=${fmtISO(s.dep)}&months=4`;
+    const r=await fetch(u); const d=await r.json();
+    if(d&&Array.isArray(d.months)&&d.months.length){
+      const cheapest=d.cheapest;
+      box.innerHTML=d.months.map(m=>{
+        const isMin=m.price===cheapest;
+        const dt=parseISO(m.date);
+        return `<button class="cal-cell${isMin?" cal-min":""}" data-cal-date="${m.date}">
+          <div class="cal-d">${monthLabel(m.month)}</div>
+          <div class="cal-p">${Number(m.price).toLocaleString()} ₪</div>
+          <div class="cal-d">${dt?fmtDMY(dt):m.date}</div>
+          ${isMin?`<div class="cal-tag">${t.calCheapest}</div>`:""}
+        </button>`;
+      }).join("");
+    }else{
+      box.innerHTML=`<div class="empty">${t.flexMonthsNone}</div>`;
+    }
+  }catch(e){ box.innerHTML=`<div class="empty">${t.flexMonthsNone}</div>`; }
 }
 
 /* שליחת בקשה ליצירת התראת מחיר עבור המסלול הנוכחי */
