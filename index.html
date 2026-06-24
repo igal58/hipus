@@ -1716,6 +1716,8 @@ function stopsHtml(n){
   return ` <span class="stops-pill ${cls}">${lbl}</span>`;
 }
 function fmtDur(min){ if(!min) return ""; const t=T[currentLang]; return t.dur(Math.floor(min/60),min%60); }
+/* טקסט כבודה רשומה לפי ההגדרה שמילא המשתמש (bags.checked); 0 → "ללא כבודה רשומה" */
+function bagText(t){ return bags.checked>0 ? `${bags.checked} ${t.checkedBag}` : t.noBag; }
 
 /* כרטיס טיסה אמיתי (מ-Aviasales) — מחיר/חברה/שעות/עצירות אמיתיים, קישור רכישה עם ה-marker */
 function offerCard(of,fromC,toC,isBest,flex){
@@ -1737,7 +1739,7 @@ function offerCard(of,fromC,toC,isBest,flex){
     </div>
     <div class="route">
       <div class="cities">${fromC.iata} <i class="fa-solid fa-arrow-right-long dir-ic" aria-hidden="true"></i> ${toC.iata}${stopsHtml(of.transfers)}${isBest?`<span class="badge"><i class="fa-solid fa-star" aria-hidden="true"></i> ${t.cheapest}</span>`:""}</div>
-      <div class="meta"><span><i class="fa-regular fa-calendar" aria-hidden="true"></i> ${of.depart}</span>${retDate?`<span class="dot">·</span><span>${retDate}</span>`:""}${durTxt?`<span class="dot">·</span><span><i class="fa-regular fa-clock" aria-hidden="true"></i> ${durTxt}</span>`:""}${times}<span class="dot">·</span><span><i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i> ${t.noBag}</span></div>
+      <div class="meta"><span><i class="fa-regular fa-calendar" aria-hidden="true"></i> ${of.depart}</span>${retDate?`<span class="dot">·</span><span>${retDate}</span>`:""}${durTxt?`<span class="dot">·</span><span><i class="fa-regular fa-clock" aria-hidden="true"></i> ${durTxt}</span>`:""}${times}<span class="dot">·</span><span><i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i> ${bagText(t)}</span></div>
     </div>
     <div class="price"><div class="ils">${est?"≈ ":""}${p} ${curSym()}</div><div class="usd">${[(pc>1?`${pc} × ${per} ${curSym()} ${t.perPerson}`:""),(est?t.classEst:""),((!est&&pc<=1)?(of.approx?t.approxLbl:t.lowestLbl):"")].filter(Boolean).join(" · ")}</div></div>
     <span class="buy"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> ${t.aviasalesBuy}</span>
@@ -1766,7 +1768,7 @@ async function fetchOffers(s){
       const perP=(pc>1?` · ${pc} × ${Number(Math.round(unit)).toLocaleString()} ${curSym()} ${t.perPerson}`:"")+(est?` · ${t.classEst}`:"");
       const showRet=!flex;
       const timesTxt=(c.departTime?` · ${t.outTime} ${c.departTime}`:"")+((showRet&&c.returnTime)?` · ${t.retTime} ${c.returnTime}`:"");
-      if(el) el.innerHTML=t.priceFrom(cp,airlineName(c.airline),c.depart,c.approx)+timesTxt+` · ${t.noBag}`+perP;
+      if(el) el.innerHTML=t.priceFrom(cp,airlineName(c.airline),c.depart,c.approx)+timesTxt+` · ${bagText(t)}`+perP;
       if(box) box.innerHTML=d.offers.map((of,i)=>offerCard(of,s.fromC,s.toC,i===0,flex)).join("");
     }else{
       if(el) el.textContent=t.priceNone;
