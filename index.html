@@ -1939,9 +1939,10 @@ const paxBtn=document.getElementById("paxBtn");
 const paxPanel=document.getElementById("paxPanel");
 function updatePaxBtn(){
   const total=pax.adults+pax.children+pax.infants;
-  const bagN=bags.cabin+bags.checked;
-  paxBtn.innerHTML='<i class="fa-solid fa-user" aria-hidden="true"></i><span>'+total+'</span>'
-    +(bagN>0?' <span class="pax-sep">·</span><i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i><span>'+bagN+'</span>':'');
+  let html='<i class="fa-solid fa-user" aria-hidden="true"></i><span>'+total+'</span>';
+  if(bags.cabin>0)   html+=' <span class="pax-sep">·</span><i class="fa-solid fa-suitcase" aria-hidden="true"></i><span>'+bags.cabin+'</span>';
+  if(bags.checked>0) html+=' <span class="pax-sep">·</span><i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i><span>'+bags.checked+'</span>';
+  paxBtn.innerHTML=html;
   document.getElementById("nAdults").textContent=pax.adults;
   document.getElementById("nChildren").textContent=pax.children;
   document.getElementById("nInfants").textContent=pax.infants;
