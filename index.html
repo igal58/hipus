@@ -181,6 +181,8 @@ button.cal-btn .fa-solid{color:var(--accent)}
 .airline{display:flex;align-items:center;gap:9px;min-width:100px}
 .logo{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;
   font-weight:800;color:#fff;font-size:15px;background:var(--accent)}
+.logo.logo-img{background:#fff;padding:3px;border:1px solid var(--line,#e5e7eb)}
+.logo img{width:100%;height:100%;object-fit:contain;display:block;border-radius:7px}
 .airline-name{font-size:13px;line-height:1.3}
 .muted-sm{color:var(--muted);font-size:11px}
 .dir-ic{color:var(--muted);font-size:.82em;margin:0 5px}
@@ -1062,6 +1064,17 @@ function airlineName(code){
   const a=AIRLINE_NAMES[(code||"").toUpperCase()];
   return a ? (a[currentLang]||a.en) : (code||"");
 }
+/* לוגו חברת תעופה מ-Aviasales (pics.avs.io); נפילה לאייקון מטוס אם אין/נכשל */
+function airlineLogo(code){
+  const c=(code||"").toUpperCase();
+  if(!c) return `<div class="logo"><i class="fa-solid fa-plane-up" aria-hidden="true"></i></div>`;
+  return `<div class="logo logo-img"><img src="https://pics.avs.io/120/120/${c}.png" alt="${airlineName(code)}" loading="lazy" onerror="logoErr(this)"></div>`;
+}
+function logoErr(img){
+  const box=img.parentElement;
+  box.classList.remove("logo-img");
+  box.innerHTML='<i class="fa-solid fa-plane-up" aria-hidden="true"></i>';
+}
 
 /* ══════════════════════════════════════════
    מצב גלובלי
@@ -1734,7 +1747,7 @@ function offerCard(of,fromC,toC,isBest,flex){
              +((showRet&&of.returnTime)?`<span class="dot">·</span><span><i class="fa-solid fa-plane-arrival" aria-hidden="true"></i> ${t.retTime} ${of.returnTime}</span>`:"");
   return `<a class="ticket engine-card best-card" href="${of.link}" target="_blank" rel="noopener" aria-label="${fromC.iata} ${toC.iata} ${p} ILS">
     <div class="airline">
-      <div class="logo"><i class="fa-solid fa-plane-up" aria-hidden="true"></i></div>
+      ${airlineLogo(of.airline)}
       <div class="airline-name">Aviasales${of.airline?`<br><span class="muted-sm">${airlineName(of.airline)}</span>`:""}</div>
     </div>
     <div class="route">
