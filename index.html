@@ -200,7 +200,8 @@ button.cal-btn .fa-solid{color:var(--accent)}
 .route .stops-cities{color:var(--muted);font-size:12px;margin-top:3px;
   display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px}
 .route .stops-cities i{opacity:.7;margin-inline-end:3px}
-.route .stops-cities .sc-leg{display:inline-flex;align-items:center}
+.route .stops-cities .sc-leg{display:inline-flex;align-items:center;gap:4px}
+.route .stops-cities .sc-lbl{color:var(--text);opacity:.85;font-weight:700}
 .route .land-temp{display:inline-flex;align-items:center;gap:6px;margin-top:5px;font-size:12px;
   font-weight:700;color:#0369a1;background:#e0f2fe;border-radius:20px;padding:3px 10px}
 .route .land-temp i{opacity:.85}
@@ -613,7 +614,7 @@ const T={
     filtLbl:"עצירות:",filtAll:"הכל",filtDirect:"ישיר",filt1:"עצירה 1",filt2:"2+ עצירות",
     showing:(n,t)=>`מציג ${n} מתוך ${t} כרטיסים`,
     cheapest:"משתלם",
-    sDirect:"ישיר",s1:"עצירה 1",s2:(n)=>`${n} עצירות`,layover:"עצירת ביניים",tempLand:"מזג אוויר בנחיתה",tempAvg:"ממוצע עונתי",
+    sDirect:"ישיר",s1:"עצירה 1",s2:(n)=>`${n} עצירות`,layover:"עצירת ביניים",tempLand:"מזג אוויר בנחיתה",tempAvg:"ממוצע עונתי",legOut:"הלוך",legBack:"חזור",
     buyBtn:"לרכישה",
     noFlt:"אין כרטיסים בסינון הנוכחי — שנה מסנן עצירות",
     noRes:"לא נמצאו תוצאות",
@@ -665,7 +666,7 @@ const T={
     filtLbl:"Stops:",filtAll:"All",filtDirect:"Direct",filt1:"1 stop",filt2:"2+ stops",
     showing:(n,t)=>`Showing ${n} of ${t} tickets`,
     cheapest:"Good value",
-    sDirect:"Direct",s1:"1 stop",s2:(n)=>`${n} stops`,layover:"Layover",tempLand:"Weather on landing",tempAvg:"seasonal avg",
+    sDirect:"Direct",s1:"1 stop",s2:(n)=>`${n} stops`,layover:"Layover",tempLand:"Weather on landing",tempAvg:"seasonal avg",legOut:"Outbound",legBack:"Return",
     buyBtn:"Buy",
     noFlt:"No flights match this filter — try changing stops",
     noRes:"No results found",
@@ -717,7 +718,7 @@ const T={
     filtLbl:"Пересадки:",filtAll:"Все",filtDirect:"Прямой",filt1:"1 пересадка",filt2:"2+ пересадки",
     showing:(n,t)=>`Показано ${n} из ${t} билетов`,
     cheapest:"Выгодно",
-    sDirect:"Прямой",s1:"1 пересадка",s2:(n)=>`${n} пересадки`,layover:"Пересадка",tempLand:"Погода при посадке",tempAvg:"сезонное среднее",
+    sDirect:"Прямой",s1:"1 пересадка",s2:(n)=>`${n} пересадки`,layover:"Пересадка",tempLand:"Погода при посадке",tempAvg:"сезонное среднее",legOut:"Туда",legBack:"Обратно",
     buyBtn:"Купить",
     noFlt:"Нет рейсов по фильтру — измените параметры",
     noRes:"Ничего не найдено",
@@ -1819,9 +1820,9 @@ function stopsCitiesHtml(of,showRet){
   const t=T[currentLang];
   const legs=[];
   if(of.stopsTo&&of.stopsTo.length)
-    legs.push(`<span class="sc-leg"><i class="fa-solid fa-plane-departure" aria-hidden="true"></i>${of.stopsTo.map(placeName).join(" · ")}</span>`);
+    legs.push(`<span class="sc-leg"><i class="fa-solid fa-plane-departure" aria-hidden="true"></i><b class="sc-lbl">${t.legOut}:</b> ${of.stopsTo.map(placeName).join(" · ")}</span>`);
   if(showRet&&of.stopsBack&&of.stopsBack.length)
-    legs.push(`<span class="sc-leg"><i class="fa-solid fa-plane-arrival" aria-hidden="true"></i>${of.stopsBack.map(placeName).join(" · ")}</span>`);
+    legs.push(`<span class="sc-leg"><i class="fa-solid fa-plane-arrival" aria-hidden="true"></i><b class="sc-lbl">${t.legBack}:</b> ${of.stopsBack.map(placeName).join(" · ")}</span>`);
   if(!legs.length) return "";
   return `<div class="stops-cities" title="${t.layover}"><i class="fa-solid fa-arrows-turn-right" aria-hidden="true"></i>${legs.join('<span class="dot">·</span>')}</div>`;
 }
