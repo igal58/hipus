@@ -201,6 +201,10 @@ button.cal-btn .fa-solid{color:var(--accent)}
   display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px}
 .route .stops-cities i{opacity:.7;margin-inline-end:3px}
 .route .stops-cities .sc-leg{display:inline-flex;align-items:center}
+.route .land-temp{display:inline-flex;align-items:center;gap:6px;margin-top:5px;font-size:12px;
+  font-weight:700;color:#0369a1;background:#e0f2fe;border-radius:20px;padding:3px 10px}
+.route .land-temp i{opacity:.85}
+body.light .route .land-temp{color:#bae6fd;background:#0c4a6e}
 body.light .s0{background:#14532d;color:#dcfce7}
 body.light .s1{background:#854d0e;color:#fef9c3}
 body.light .s2{background:#991b1b;color:#fee2e2}
@@ -609,7 +613,7 @@ const T={
     filtLbl:"עצירות:",filtAll:"הכל",filtDirect:"ישיר",filt1:"עצירה 1",filt2:"2+ עצירות",
     showing:(n,t)=>`מציג ${n} מתוך ${t} כרטיסים`,
     cheapest:"משתלם",
-    sDirect:"ישיר",s1:"עצירה 1",s2:(n)=>`${n} עצירות`,layover:"עצירת ביניים",
+    sDirect:"ישיר",s1:"עצירה 1",s2:(n)=>`${n} עצירות`,layover:"עצירת ביניים",tempLand:"מזג אוויר בנחיתה",tempAvg:"ממוצע עונתי",
     buyBtn:"לרכישה",
     noFlt:"אין כרטיסים בסינון הנוכחי — שנה מסנן עצירות",
     noRes:"לא נמצאו תוצאות",
@@ -661,7 +665,7 @@ const T={
     filtLbl:"Stops:",filtAll:"All",filtDirect:"Direct",filt1:"1 stop",filt2:"2+ stops",
     showing:(n,t)=>`Showing ${n} of ${t} tickets`,
     cheapest:"Good value",
-    sDirect:"Direct",s1:"1 stop",s2:(n)=>`${n} stops`,layover:"Layover",
+    sDirect:"Direct",s1:"1 stop",s2:(n)=>`${n} stops`,layover:"Layover",tempLand:"Weather on landing",tempAvg:"seasonal avg",
     buyBtn:"Buy",
     noFlt:"No flights match this filter — try changing stops",
     noRes:"No results found",
@@ -713,7 +717,7 @@ const T={
     filtLbl:"Пересадки:",filtAll:"Все",filtDirect:"Прямой",filt1:"1 пересадка",filt2:"2+ пересадки",
     showing:(n,t)=>`Показано ${n} из ${t} билетов`,
     cheapest:"Выгодно",
-    sDirect:"Прямой",s1:"1 пересадка",s2:(n)=>`${n} пересадки`,layover:"Пересадка",
+    sDirect:"Прямой",s1:"1 пересадка",s2:(n)=>`${n} пересадки`,layover:"Пересадка",tempLand:"Погода при посадке",tempAvg:"сезонное среднее",
     buyBtn:"Купить",
     noFlt:"Нет рейсов по фильтру — измените параметры",
     noRes:"Ничего не найдено",
@@ -1505,6 +1509,57 @@ async function resolvePlace(iata){
   }catch(e){}
   _placeCache[k]=iata;   /* fallback — הקוד עצמו */
 }
+/* ── מזג אוויר ביעד בשעת הנחיתה (Open-Meteo, ללא מפתח) ──
+   תאריך עד ~15 יום → תחזית שעתית אמיתית. רחוק יותר → ממוצע מאותו תאריך בשנה שעברה (approx).
+   לא ממציאים: אין נתון → null. */
+const _wxCache={};
+function cToF(c){ return Math.round(c*9/5+32); }
+function wxKey(iata,absMs){ return iata+"|"+Math.round(absMs/3600000); }
+function pickHour(j,targetAbs,approx){
+  const off=(j.utc_offset_seconds||0)*1000, H=j.hourly||{}, ts=H.time||[], tp=H.temperature_2m||[];
+  let bi=-1,bd=Infinity;
+  for(let i=0;i<ts.length;i++){ const abs=Date.parse(ts[i]+"Z")-off, dd=Math.abs(abs-targetAbs);
+    if(dd<bd){bd=dd;bi=i;} }
+  if(bi<0||tp[bi]==null) return null;
+  return {c:Math.round(tp[bi]),approx};
+}
+/* arrAbs = רגע הנחיתה ביעד (ms). מחזיר {c,approx} או null. ממלא cache. */
+async function fetchTemp(iata,arrAbs){
+  if(!iata||!arrAbs) return null;
+  const key=wxKey(iata,arrAbs);
+  if(_wxCache[key]!==undefined) return _wxCache[key];
+  let res=null;
+  try{
+    const g=await geocodeIata(iata);
+    if(g){
+      const days=(arrAbs-Date.now())/86400000;
+      const ymd=ms=>new Date(ms).toISOString().slice(0,10);
+      if(days>=-1 && days<=15){            /* טווח תחזית — נתון אמיתי */
+        const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${g.lat}&longitude=${g.lon}&hourly=temperature_2m&timezone=auto&start_date=${ymd(arrAbs-864e5)}&end_date=${ymd(arrAbs+864e5)}`);
+        res=pickHour(await r.json(),arrAbs,false);
+      }else{                                /* רחוק — ממוצע מהשנה שעברה */
+        const ly=new Date(arrAbs); ly.setFullYear(ly.getFullYear()-1); const lyAbs=ly.getTime();
+        const r=await fetch(`https://archive-api.open-meteo.com/v1/archive?latitude=${g.lat}&longitude=${g.lon}&hourly=temperature_2m&timezone=auto&start_date=${ymd(lyAbs-864e5)}&end_date=${ymd(lyAbs+864e5)}`);
+        res=pickHour(await r.json(),lyAbs,true);
+      }
+    }
+  }catch(e){ res=null; }
+  _wxCache[key]=res; return res;
+}
+/* רגע הנחיתה ביעד מתוך נתוני ההצעה (יציאה אבסולוטית + משך הטיסה הלוך) */
+function arrivalAbs(of){
+  const dep=of.departAt?Date.parse(of.departAt):NaN;
+  if(!dep) return null;
+  const dur=(typeof of.durationTo==="number"?of.durationTo:180);   /* חסר משך → ~3ש הערכה */
+  return dep+dur*60000;
+}
+function landTempHtml(of){
+  const a=arrivalAbs(of); if(!a) return "";
+  const w=_wxCache[wxKey(of._toIata,a)];
+  if(!w) return "";
+  const t=T[currentLang];
+  return `<div class="land-temp" title="${t.tempLand}"><i class="fa-solid fa-temperature-half" aria-hidden="true"></i>${w.approx?"≈ ":""}${w.c}°C / ${cToF(w.c)}°F${w.approx?` · ${t.tempAvg}`:""}</div>`;
+}
 /* קשת טיסה — עקומת בזייה ריבועית עם נקודת בקרה מוסטת בניצב לאמצע */
 function arcPoints(a,b,n){
   const dLat=b.lat-a.lat, dLon=b.lon-a.lon, dist=Math.hypot(dLat,dLon)||1;
@@ -1796,6 +1851,7 @@ function offerCard(of,fromC,toC,isBest,flex){
       <div class="cities">${fromC.iata} <i class="fa-solid fa-arrow-right-long dir-ic" aria-hidden="true"></i> ${toC.iata}${stopsHtml(of.transfers)}${isBest?`<span class="badge"><i class="fa-solid fa-star" aria-hidden="true"></i> ${t.cheapest}</span>`:""}</div>
       <div class="meta"><span><i class="fa-regular fa-calendar" aria-hidden="true"></i> ${of.depart}</span>${retDate?`<span class="dot">·</span><span>${retDate}</span>`:""}${durTxt?`<span class="dot">·</span><span><i class="fa-regular fa-clock" aria-hidden="true"></i> ${durTxt}</span>`:""}${times}<span class="dot">·</span><span><i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i> ${bagText(t)}</span></div>
       ${stopsCitiesHtml(of,showRet)}
+      ${landTempHtml(of)}
     </div>
     <div class="price"><div class="ils">${est?"≈ ":""}${p} ${curSym()}</div><div class="usd">${[(pc>1?`${pc} × ${per} ${curSym()} ${t.perPerson}`:""),(est?t.classEst:""),((!est&&pc<=1)?(of.approx?t.approxLbl:t.lowestLbl):"")].filter(Boolean).join(" · ")}</div></div>
     <span class="buy"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> ${t.aviasalesBuy}</span>
@@ -1826,8 +1882,12 @@ async function fetchOffers(s){
       const timesTxt=(c.departTime?` · ${t.outTime} ${c.departTime}`:"")+((showRet&&c.returnTime)?` · ${t.retTime} ${c.returnTime}`:"");
       if(el) el.innerHTML=t.priceFrom(cp,airlineName(c.airline),c.depart,c.approx)+timesTxt+` · ${bagText(t)}`+perP;
       /* פותרים את כל ערי העצירה מראש כדי שהכרטיסים יציגו עיר+ארץ ולא קודי IATA */
+      d.offers.forEach(o=>o._toIata=s.toC.iata);   /* היעד זהה לכל ההצעות */
       const stopCodes=[...new Set(d.offers.flatMap(o=>[...(o.stopsTo||[]),...(o.stopsBack||[])]))];
-      await Promise.all(stopCodes.map(resolvePlace));
+      await Promise.all([
+        ...stopCodes.map(resolvePlace),
+        ...d.offers.map(o=>fetchTemp(o._toIata,arrivalAbs(o)))   /* טמפ׳ בנחיתה לכל כרטיס (cache לפי שעה) */
+      ]);
       if(box) box.innerHTML=d.offers.map((of,i)=>offerCard(of,s.fromC,s.toC,i===0,flex)).join("");
     }else{
       if(el) el.textContent=t.priceNone;

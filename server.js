@@ -120,6 +120,7 @@ function mapFare(it, approx, flex) {
     transfers:(typeof it.transfers==="number"?it.transfers:null), duration:(it.duration||null),
     returnTransfers:(typeof it.return_transfers==="number"?it.return_transfers:null),
     stopsTo: stopsTo, stopsBack: stopsBack,
+    departAt:(it.departure_at||""), durationTo:(typeof it.duration_to==="number"?it.duration_to:null),  // ל-ETA נחיתה ביעד
     departTime:(it.departure_at||"").slice(11,16), returnTime:(it.return_at||"").slice(11,16),
     link: link ? "https://www.aviasales.com"+link : "" };
 }
