@@ -206,6 +206,22 @@ button.cal-btn .fa-solid{color:var(--accent)}
   font-weight:700;color:#0369a1;background:#e0f2fe;border-radius:20px;padding:3px 10px}
 .route .land-temp i{opacity:.85}
 body.light .route .land-temp{color:#bae6fd;background:#0c4a6e}
+.help-modal{position:fixed;top:50%;inset-inline-start:50%;transform:translate(-50%,-48%) scale(.98);
+  z-index:2000;width:680px;max-width:94vw;max-height:86vh;overflow:auto;background:var(--panel);
+  border-radius:16px;box-shadow:var(--shadow);padding:22px;opacity:0;visibility:hidden;
+  transition:opacity .2s ease,transform .2s ease,visibility .2s}
+[dir=rtl] .help-modal{transform:translate(50%,-48%) scale(.98)}
+.help-modal.open{opacity:1;visibility:visible;transform:translate(-50%,-50%) scale(1)}
+[dir=rtl] .help-modal.open{transform:translate(50%,-50%) scale(1)}
+.help-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
+.help-title{font-weight:800;font-size:19px;display:inline-flex;align-items:center;gap:8px}
+.help-title .fa-solid{color:var(--accent)}
+.help-intro{color:var(--muted);font-size:13px;margin:6px 0 2px;line-height:1.5}
+.help-sec{padding:13px 0;border-top:1px solid var(--line)}
+.help-sec h4{margin:0 0 8px;font-size:15px;display:flex;align-items:center;gap:8px}
+.help-sec h4 .fa-solid{color:var(--accent);width:18px;text-align:center}
+.help-sec ul{margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:5px}
+.help-sec li{font-size:13px;line-height:1.55}
 body.light .s0{background:#14532d;color:#dcfce7}
 body.light .s1{background:#854d0e;color:#fef9c3}
 body.light .s2{background:#991b1b;color:#fee2e2}
@@ -429,6 +445,7 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
         <button class="lang-btn"        data-lang="en">EN</button>
         <button class="lang-btn"        data-lang="ru">RU</button>
       </div>
+      <button class="nav-icon-btn" id="helpBtn" type="button" aria-label="Help"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button>
       <button class="nav-icon-btn" id="customizeBtn" type="button" aria-label="Customize"><i class="fa-solid fa-sliders" aria-hidden="true"></i></button>
     </div>
   </div>
@@ -474,6 +491,16 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
     </div>
   </div>
 </aside>
+
+<!-- חלון מדריך / עזרה -->
+<div class="drawer-overlay" id="helpOverlay"></div>
+<div class="help-modal" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="help-head">
+    <span class="help-title" id="helpTitle"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></span>
+    <button class="nav-icon-btn" id="helpClose" type="button" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+  </div>
+  <div id="helpBody"></div>
+</div>
 
 <!-- ניווט תחתון (מובייל) -->
 <nav class="bottom-nav" id="bottomNav">
@@ -615,6 +642,18 @@ const T={
     showing:(n,t)=>`מציג ${n} מתוך ${t} כרטיסים`,
     cheapest:"משתלם",
     sDirect:"ישיר",s1:"עצירה 1",s2:(n)=>`${n} עצירות`,layover:"עצירת ביניים",tempLand:"מזג אוויר בנחיתה",tempAvg:"ממוצע עונתי",legOut:"הלוך",legBack:"חזור",
+    help:{title:"מדריך ושימוש",intro:"כל מה שצריך כדי להפיק מהאתר את המקסימום. החיפוש מחזיר מחירים אמיתיים בזמן אמת ממקורות מקוונים.",secs:[
+      {ic:"fa-magnifying-glass",h:"חיפוש",items:["<b>מאיפה / לאן</b> — בחר עיר מוצא ויעד. אפשר להקליד בעברית, אנגלית, רוסית או קוד שדה תעופה (כמו TLV).","<b>תאריך יציאה / חזרה</b> ו-<b>ימי שהייה</b>. <b>ימי שהייה = 0</b> מפעיל חיפוש גמיש — מוצא את הזול מהתאריך והלאה בלי לקבע חזרה.","<b>מקס׳ עצירות</b> (0 = ישיר, 9 = ללא הגבלה), <b>נוסעים</b>, <b>כבודה</b> ו-<b>מחלקה</b> — כולם משפיעים על התוצאות ועל המחיר."]},
+      {ic:"fa-plane",h:"כרטיס תוצאה",items:["כל כרטיס הוא טיסה אמיתית עם מחיר, חברת תעופה, שעות יציאה/חזרה וקישור רכישה.","<b>משתלם ★</b> מסמן את ההצעה הזולה ביותר שנמצאה (לא הזולה בעולם — המקור יחיד).","<b>בערך · החודש</b> ליד המחיר = מחיר משוער מתוך חיפוש חודשי גמיש."]},
+      {ic:"fa-code-branch",h:"עצירות",items:["<b>הלוך</b> ו-<b>חזור</b> מוצגים בנפרד, עם עיר וארץ של כל עצירת ביניים.","התווית הצהובה (למשל עצירה 1) סופרת את כיוון ההלוך בלבד — לכן מספר העצירות בחזרה יכול להיות שונה."]},
+      {ic:"fa-temperature-half",h:"מזג אוויר בנחיתה",items:["הטמפ׳ הצפויה ביעד בשעת הנחיתה, ב-°C וב-°F.","עד כ-15 יום קדימה זו <b>תחזית אמיתית</b>. רחוק יותר מוצג <b>≈ ממוצע עונתי</b> (מאותו תאריך בשנה שעברה) — לא תחזית."]},
+      {ic:"fa-coins",h:"מטבע",items:["מעבר בין ₪ / $ / € בראש התוצאות — כל המחירים מתעדכנים מיד."]},
+      {ic:"fa-map-location-dot",h:"מפה ומסלול",items:["המפה מציגה את מסלול הטיסה מהמוצא ליעד עם קשת ואייקון מטוס, ומתעדכנת בשינוי מוצא/יעד."]},
+      {ic:"fa-calendar-days",h:"החודש הזול והחודשים הזולים",items:["<b>החודש הזול</b> מציג מחיר זול לכל יום בחודש; לחיצה על יום ממלאת אותו ומריצה חיפוש.","בתחתית כל חיפוש מוצגים גם <b>החודשים הזולים ביותר</b> קדימה."]},
+      {ic:"fa-fire",h:"מבצעים ולאן שבא לי",items:["<b>מבצעים</b> = הטיסות הזולות מתל אביב לכל העולם. הוסף <b>תקציב</b> כדי לסנן לאן שבא לי עד סכום מסוים."]},
+      {ic:"fa-bell",h:"התראת מחיר",items:["אחרי חיפוש אפשר להזין מייל ומחיר יעד למסלול — תקבל מייל כשהמחיר יורד אל היעד."]},
+      {ic:"fa-sliders",h:"התאמה אישית ושפה",items:["כפתור ההגדרות: צבע מותג, רקע (בהיר/עמום/כהה) וגודל טקסט. בורר השפה (עב/EN/RU) מחליף את כל הטקסט — כולל מדריך זה.","ההעדפות והחיפוש האחרון נשמרים גם אחרי רענון (F5)."]}
+    ]},
     buyBtn:"לרכישה",
     noFlt:"אין כרטיסים בסינון הנוכחי — שנה מסנן עצירות",
     noRes:"לא נמצאו תוצאות",
@@ -667,6 +706,18 @@ const T={
     showing:(n,t)=>`Showing ${n} of ${t} tickets`,
     cheapest:"Good value",
     sDirect:"Direct",s1:"1 stop",s2:(n)=>`${n} stops`,layover:"Layover",tempLand:"Weather on landing",tempAvg:"seasonal avg",legOut:"Outbound",legBack:"Return",
+    help:{title:"Guide & how to use",intro:"Everything you need to get the most out of the site. Search returns real, live prices from online sources.",secs:[
+      {ic:"fa-magnifying-glass",h:"Search",items:["<b>From / To</b> — pick origin and destination. Type in English, Hebrew, Russian, or an airport code (e.g. TLV).","<b>Departure / Return date</b> and <b>Nights</b>. <b>Nights = 0</b> runs a flexible search — the cheapest fare on/after your date, with no fixed return.","<b>Max stops</b> (0 = direct, 9 = no limit), <b>Passengers</b>, <b>Baggage</b> and <b>Class</b> all affect the results and the price."]},
+      {ic:"fa-plane",h:"Result card",items:["Each card is a real flight with price, airline, departure/return times and a booking link.","<b>Best value ★</b> marks the cheapest fare found (not the cheapest worldwide — single source).","<b>est. · monthly</b> next to the price = an estimate from a flexible monthly search."]},
+      {ic:"fa-code-branch",h:"Stops",items:["<b>Outbound</b> and <b>Return</b> are shown separately, with the city and country of every layover.","The yellow pill (e.g. 1 stop) counts the outbound leg only — so the number of return stops may differ."]},
+      {ic:"fa-temperature-half",h:"Weather on landing",items:["Expected temperature at the destination at landing time, in °C and °F.","Up to ~15 days ahead it is a <b>real forecast</b>. Further out it shows a <b>≈ seasonal average</b> (same date last year) — not a forecast."]},
+      {ic:"fa-coins",h:"Currency",items:["Switch between ₪ / $ / € at the top of the results — all prices update instantly."]},
+      {ic:"fa-map-location-dot",h:"Map & route",items:["The map shows the flight route from origin to destination with an arc and a plane icon, updating as you change them."]},
+      {ic:"fa-calendar-days",h:"Cheapest month & months",items:["<b>Cheapest month</b> shows the lowest price for each day of the month; clicking a day fills it and searches.","The <b>cheapest upcoming months</b> are also shown at the bottom of every search."]},
+      {ic:"fa-fire",h:"Deals & where to go",items:["<b>Deals</b> = the cheapest flights from Tel Aviv to anywhere. Add a <b>budget</b> to filter where to go under a given amount."]},
+      {ic:"fa-bell",h:"Price alert",items:["After a search you can enter an email and a target price for the route — you get an email when the price drops to it."]},
+      {ic:"fa-sliders",h:"Customize & language",items:["The settings button: accent color, background (light/dim/dark) and text size. The language switch (HE/EN/RU) changes all text — including this guide.","Your preferences and last search are saved across reloads (F5)."]}
+    ]},
     buyBtn:"Buy",
     noFlt:"No flights match this filter — try changing stops",
     noRes:"No results found",
@@ -719,6 +770,18 @@ const T={
     showing:(n,t)=>`Показано ${n} из ${t} билетов`,
     cheapest:"Выгодно",
     sDirect:"Прямой",s1:"1 пересадка",s2:(n)=>`${n} пересадки`,layover:"Пересадка",tempLand:"Погода при посадке",tempAvg:"сезонное среднее",legOut:"Туда",legBack:"Обратно",
+    help:{title:"Руководство",intro:"Всё, что нужно, чтобы получить максимум от сайта. Поиск показывает реальные цены в реальном времени из онлайн-источников.",secs:[
+      {ic:"fa-magnifying-glass",h:"Поиск",items:["<b>Откуда / Куда</b> — выберите город вылета и назначения. Вводите на русском, английском, иврите или код аэропорта (например TLV).","<b>Дата вылета / возврата</b> и <b>Ночей</b>. <b>Ночей = 0</b> запускает гибкий поиск — самый дешёвый рейс с вашей даты и далее, без фиксированного возврата.","<b>Макс. пересадок</b> (0 = прямой, 9 = без ограничений), <b>Пассажиры</b>, <b>Багаж</b> и <b>Класс</b> влияют на результаты и цену."]},
+      {ic:"fa-plane",h:"Карточка результата",items:["Каждая карточка — реальный рейс с ценой, авиакомпанией, временем вылета/возврата и ссылкой на покупку.","<b>Выгодно ★</b> отмечает самый дешёвый найденный рейс (не самый дешёвый в мире — один источник).","<b>примерно · за месяц</b> рядом с ценой = оценка из гибкого поиска по месяцу."]},
+      {ic:"fa-code-branch",h:"Пересадки",items:["<b>Туда</b> и <b>Обратно</b> показаны отдельно, с городом и страной каждой пересадки.","Жёлтая метка (например 1 пересадка) считает только направление туда — поэтому число пересадок обратно может отличаться."]},
+      {ic:"fa-temperature-half",h:"Погода при посадке",items:["Ожидаемая температура в пункте назначения при посадке, в °C и °F.","До ~15 дней вперёд это <b>реальный прогноз</b>. Дальше показывается <b>≈ сезонное среднее</b> (та же дата год назад) — не прогноз."]},
+      {ic:"fa-coins",h:"Валюта",items:["Переключение между ₪ / $ / € вверху результатов — все цены обновляются мгновенно."]},
+      {ic:"fa-map-location-dot",h:"Карта и маршрут",items:["Карта показывает маршрут рейса от вылета до назначения с дугой и иконкой самолёта, обновляясь при их смене."]},
+      {ic:"fa-calendar-days",h:"Дешёвый месяц и месяцы",items:["<b>Дешёвый месяц</b> показывает минимальную цену на каждый день месяца; клик по дню подставляет его и запускает поиск.","<b>Самые дешёвые ближайшие месяцы</b> также показаны внизу каждого поиска."]},
+      {ic:"fa-fire",h:"Акции и куда полететь",items:["<b>Акции</b> = самые дешёвые рейсы из Тель-Авива куда угодно. Добавьте <b>бюджет</b>, чтобы отфильтровать куда полететь до заданной суммы."]},
+      {ic:"fa-bell",h:"Оповещение о цене",items:["После поиска можно ввести e-mail и целевую цену маршрута — вы получите письмо, когда цена опустится до неё."]},
+      {ic:"fa-sliders",h:"Настройка и язык",items:["Кнопка настроек: цвет акцента, фон (светлый/тусклый/тёмный) и размер текста. Переключатель языка (HE/EN/RU) меняет весь текст — включая это руководство.","Ваши настройки и последний поиск сохраняются после перезагрузки (F5)."]}
+    ]},
     buyBtn:"Купить",
     noFlt:"Нет рейсов по фильтру — измените параметры",
     noRes:"Ничего не найдено",
@@ -1164,6 +1227,8 @@ function applyLang(lang){
   const ct=document.getElementById("custTitle"); if(ct) ct.innerHTML='<i class="fa-solid fa-sliders" aria-hidden="true"></i> '+t.custTitle;
   setTxt("custFontLbl",t.custFont); setTxt("custAccentLbl",t.custAccent); setTxt("custBgLbl",t.custBg);
   setTxt("bgLight",t.bgLight); setTxt("bgDim",t.bgDim); setTxt("bgDark",t.bgDark);
+  const hb=document.getElementById("helpBtn"); if(hb&&t.help) hb.setAttribute("aria-label",t.help.title);
+  if(typeof renderHelp==="function" && document.getElementById("helpModal") && document.getElementById("helpModal").classList.contains("open")) renderHelp();
   document.querySelectorAll(".bottom-nav button").forEach(b=>{ const k={search:t.navSearch,deals:t.navDeals,map:t.navMap,alert:t.navAlert}[b.dataset.nav]; const s=b.querySelector("span"); if(s&&k) s.textContent=k; });
   document.getElementById("lFrom").textContent=t.fromLbl;
   document.getElementById("lTo").textContent=t.toLbl;
@@ -1247,6 +1312,23 @@ document.getElementById("customizeBtn").addEventListener("click",toggleCustomize
 document.getElementById("custClose").addEventListener("click",closeCustomize);
 _custOverlay.addEventListener("click",closeCustomize);
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&_custDrawer.classList.contains("open")) closeCustomize(); });
+/* ── מדריך / עזרה — תוכן נבנה מהתרגום, מתחלף עם השפה ── */
+function renderHelp(){
+  const h=T[currentLang].help; if(!h) return;
+  const head=document.getElementById("helpTitle");
+  if(head) head.innerHTML='<i class="fa-solid fa-circle-question" aria-hidden="true"></i> '+h.title;
+  const body=document.getElementById("helpBody");
+  if(body) body.innerHTML=`<p class="help-intro">${h.intro}</p>`+h.secs.map(s=>
+    `<div class="help-sec"><h4><i class="fa-solid ${s.ic}" aria-hidden="true"></i> ${s.h}</h4><ul>${s.items.map(i=>`<li>${i}</li>`).join("")}</ul></div>`).join("");
+}
+const _helpModal=document.getElementById("helpModal"), _helpOverlay=document.getElementById("helpOverlay");
+function openHelp(){ renderHelp(); _helpModal.classList.add("open"); _helpOverlay.classList.add("open"); }
+function closeHelp(){ _helpModal.classList.remove("open"); _helpOverlay.classList.remove("open"); }
+function toggleHelp(){ _helpModal.classList.contains("open")?closeHelp():openHelp(); }
+document.getElementById("helpBtn").addEventListener("click",toggleHelp);
+document.getElementById("helpClose").addEventListener("click",closeHelp);
+_helpOverlay.addEventListener("click",closeHelp);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&_helpModal.classList.contains("open")) closeHelp(); });
 document.getElementById("accentRow").addEventListener("click",e=>{ const b=e.target.closest(".accent-dot"); if(!b)return; currentAccent=b.dataset.accent; applyCustomize(); saveState(); });
 document.getElementById("bgSeg").addEventListener("click",e=>{ const b=e.target.closest(".seg-btn"); if(!b)return; currentBg=b.dataset.bg; applyCustomize(); saveState(); });
 document.getElementById("fontSeg").addEventListener("click",e=>{ const b=e.target.closest(".seg-btn"); if(!b)return; currentFont=b.dataset.font; applyCustomize(); saveState(); });
