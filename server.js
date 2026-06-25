@@ -85,16 +85,41 @@ function tpUrl(o, d, depart, ret, mode, limit, cur) {
   if (!flex) params.return_at = mode === "month" ? ret.slice(0,7) : ret;
   return "https://api.travelpayouts.com/aviasales/v3/prices_for_dates?" + new URLSearchParams(params).toString();
 }
+/* חילוץ קודי שדה התעופה של מסלול הטיסה מתוך ה-link של Aviasales.
+   הפרמטר t= מקודד את רצף השדות כרצף אותיות (TLVFCOMUC = TLV→FCO→MUC).
+   מחזיר {out:[...iata], back:[...iata]} (לפי הסדר הופעה). אין נתון → null. */
+function parseRoute(link) {
+  try {
+    const m = /[?&]t=([^&]+)/.exec(link || ""); if (!m) return null;
+    const runs = (m[1].match(/[A-Z]{6,}/g) || []).filter(s => s.length % 3 === 0);
+    const split = s => s.match(/.{3}/g) || [];
+    return { out: runs[0] ? split(runs[0]) : null, back: runs[1] ? split(runs[1]) : null };
+  } catch { return null; }
+}
+/* חניות-ביניים מאומתות: רק אם נקודות הקצה והכמות תואמות ל-transfers (אחרת null — לא ממציאים). */
+function stopsFromRoute(seq, first, last, count) {
+  if (!seq || seq.length < 2) return null;
+  if (seq[0] !== first || seq[seq.length-1] !== last) return null;
+  const inter = seq.slice(1, -1);
+  if (inter.length !== (typeof count === "number" ? count : 0)) return null;
+  return inter;
+}
 function mapFare(it, approx, flex) {
   const da = (it.departure_at||"").slice(0,10);
   const ra = (it.return_at||"").slice(0,10);
   const depDMY = da ? `${da.slice(8,10)}/${da.slice(5,7)}/${da.slice(0,4)}` : "";
   let link = it.link || "";
+  const route = parseRoute(it.link);
+  const oA = it.origin_airport||it.origin||"", dA = it.destination_airport||it.destination||"";
+  const stopsTo  = route ? stopsFromRoute(route.out,  oA, dA, it.transfers)        : null;
+  const stopsBack = route ? stopsFromRoute(route.back, dA, oA, it.return_transfers) : null;
   if (link && CFG.marker) link += (link.includes("?")?"&":"?") + "marker=" + CFG.marker;
   return { approx, flex, price:Math.round(it.price),
     currency:(it.currency||CFG.currency).toUpperCase(), airline:it.airline||"",
     depart:depDMY, departISO:da, returnISO:ra,
     transfers:(typeof it.transfers==="number"?it.transfers:null), duration:(it.duration||null),
+    returnTransfers:(typeof it.return_transfers==="number"?it.return_transfers:null),
+    stopsTo: stopsTo, stopsBack: stopsBack,
     departTime:(it.departure_at||"").slice(11,16), returnTime:(it.return_at||"").slice(11,16),
     link: link ? "https://www.aviasales.com"+link : "" };
 }
@@ -104,7 +129,7 @@ async function fetchOffers(o, d, depart, ret, cur, maxStops) {
   const flex = !ret; const mx = (maxStops==null?9:maxStops);
   for (const mode of ["exact","month"]) {
     try {
-      const json = await getJSON(tpUrl(o,d,depart,ret,mode,30,cur));
+      const json = await getJSON(tpUrl(o,d,depart,ret,mode,60,cur));
       const arr = json && json.success && Array.isArray(json.data) ? json.data : [];
       if (arr.length) {
         const seen = new Set(); const offers = [];
@@ -115,7 +140,7 @@ async function fetchOffers(o, d, depart, ret, cur, maxStops) {
           const key = `${it.airline}|${it.price}|${(it.departure_at||"").slice(0,16)}|${(it.return_at||"").slice(0,16)}`;
           if (seen.has(key)) continue; seen.add(key);
           offers.push(mapFare(it, mode==="month", flex));
-          if (offers.length >= 6) break;
+          if (offers.length >= 12) break;
         }
         if (offers.length) { offers.sort((a,b)=>a.price-b.price); return { offers, flex }; }
       }

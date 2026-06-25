@@ -197,6 +197,10 @@ button.cal-btn .fa-solid{color:var(--accent)}
 .s0{background:#dcfce7;color:#166534}
 .s1{background:#fef9c3;color:#713f12}
 .s2{background:#fee2e2;color:#991b1b}
+.route .stops-cities{color:var(--muted);font-size:12px;margin-top:3px;
+  display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px}
+.route .stops-cities i{opacity:.7;margin-inline-end:3px}
+.route .stops-cities .sc-leg{display:inline-flex;align-items:center}
 body.light .s0{background:#14532d;color:#dcfce7}
 body.light .s1{background:#854d0e;color:#fef9c3}
 body.light .s2{background:#991b1b;color:#fee2e2}
@@ -605,7 +609,7 @@ const T={
     filtLbl:"עצירות:",filtAll:"הכל",filtDirect:"ישיר",filt1:"עצירה 1",filt2:"2+ עצירות",
     showing:(n,t)=>`מציג ${n} מתוך ${t} כרטיסים`,
     cheapest:"משתלם",
-    sDirect:"ישיר",s1:"עצירה 1",s2:(n)=>`${n} עצירות`,
+    sDirect:"ישיר",s1:"עצירה 1",s2:(n)=>`${n} עצירות`,layover:"עצירת ביניים",
     buyBtn:"לרכישה",
     noFlt:"אין כרטיסים בסינון הנוכחי — שנה מסנן עצירות",
     noRes:"לא נמצאו תוצאות",
@@ -657,7 +661,7 @@ const T={
     filtLbl:"Stops:",filtAll:"All",filtDirect:"Direct",filt1:"1 stop",filt2:"2+ stops",
     showing:(n,t)=>`Showing ${n} of ${t} tickets`,
     cheapest:"Good value",
-    sDirect:"Direct",s1:"1 stop",s2:(n)=>`${n} stops`,
+    sDirect:"Direct",s1:"1 stop",s2:(n)=>`${n} stops`,layover:"Layover",
     buyBtn:"Buy",
     noFlt:"No flights match this filter — try changing stops",
     noRes:"No results found",
@@ -709,7 +713,7 @@ const T={
     filtLbl:"Пересадки:",filtAll:"Все",filtDirect:"Прямой",filt1:"1 пересадка",filt2:"2+ пересадки",
     showing:(n,t)=>`Показано ${n} из ${t} билетов`,
     cheapest:"Выгодно",
-    sDirect:"Прямой",s1:"1 пересадка",s2:(n)=>`${n} пересадки`,
+    sDirect:"Прямой",s1:"1 пересадка",s2:(n)=>`${n} пересадки`,layover:"Пересадка",
     buyBtn:"Купить",
     noFlt:"Нет рейсов по фильтру — измените параметры",
     noRes:"Ничего не найдено",
@@ -1475,6 +1479,32 @@ async function geocodeIata(iata){
   }catch(e){}
   return null;
 }
+/* פותר קוד IATA של עצירה → "עיר, ארץ". קודם רשימת COUNTRIES (מתורגמת), אחרת autocomplete (שם אמיתי),
+   אחרת הקוד עצמו. לא ממציאים נתון. cache לפי שפה (השמות תלויי-שפה). */
+const _placeCache={};
+function placeName(iata){
+  if(!iata) return "";
+  const k=currentLang+"|"+iata;
+  if(_placeCache[k]!=null) return _placeCache[k];
+  const c=findByIata(iata);
+  if(c){ const L=cLng(c); const s=L.ct+(L.c?`, ${L.c}`:""); _placeCache[k]=s; return s; }
+  return iata;   /* טרם נפתר — מציגים את הקוד עד שה-resolve יחזור */
+}
+async function resolvePlace(iata){
+  if(!iata) return;
+  const k=currentLang+"|"+iata;
+  if(_placeCache[k]!=null && _placeCache[k]!==iata) return;   /* כבר ידוע */
+  const c=findByIata(iata);
+  if(c){ const L=cLng(c); _placeCache[k]=L.ct+(L.c?`, ${L.c}`:""); return; }
+  try{
+    const r=await fetch("https://autocomplete.travelpayouts.com/places2?locale="+currentLang+"&term="+encodeURIComponent(iata));
+    const arr=await r.json();
+    const hit=(Array.isArray(arr)?arr:[]).find(x=>x&&x.code===iata)||(Array.isArray(arr)?arr[0]:null);
+    if(hit){ const city=hit.city_name||hit.name||iata, country=hit.country_name||"";
+      _placeCache[k]=city+(country?`, ${country}`:""); return; }
+  }catch(e){}
+  _placeCache[k]=iata;   /* fallback — הקוד עצמו */
+}
 /* קשת טיסה — עקומת בזייה ריבועית עם נקודת בקרה מוסטת בניצב לאמצע */
 function arcPoints(a,b,n){
   const dLat=b.lat-a.lat, dLon=b.lon-a.lon, dist=Math.hypot(dLat,dLon)||1;
@@ -1728,6 +1758,18 @@ function stopsHtml(n){
   const lbl=n===0?t.sDirect:n===1?t.s1:t.s2(n);
   return ` <span class="stops-pill ${cls}">${lbl}</span>`;
 }
+/* שורת ערי העצירה (עיר+ארץ לכל חניית-ביניים). הלוך = מטוס-המראה, חזור = מטוס-נחיתה.
+   מוצג רק כשיש נתון מאומת (stopsTo/stopsBack מהשרת); אחרת כלום (לא ממציאים). */
+function stopsCitiesHtml(of,showRet){
+  const t=T[currentLang];
+  const legs=[];
+  if(of.stopsTo&&of.stopsTo.length)
+    legs.push(`<span class="sc-leg"><i class="fa-solid fa-plane-departure" aria-hidden="true"></i>${of.stopsTo.map(placeName).join(" · ")}</span>`);
+  if(showRet&&of.stopsBack&&of.stopsBack.length)
+    legs.push(`<span class="sc-leg"><i class="fa-solid fa-plane-arrival" aria-hidden="true"></i>${of.stopsBack.map(placeName).join(" · ")}</span>`);
+  if(!legs.length) return "";
+  return `<div class="stops-cities" title="${t.layover}"><i class="fa-solid fa-arrows-turn-right" aria-hidden="true"></i>${legs.join('<span class="dot">·</span>')}</div>`;
+}
 function fmtDur(min){ if(!min) return ""; const t=T[currentLang]; return t.dur(Math.floor(min/60),min%60); }
 /* טקסט כבודה רשומה לפי ההגדרה שמילא המשתמש (bags.checked); 0 → "ללא כבודה רשומה" */
 function bagText(t){ return bags.checked>0 ? `${bags.checked} ${t.checkedBag}` : t.noBag; }
@@ -1753,6 +1795,7 @@ function offerCard(of,fromC,toC,isBest,flex){
     <div class="route">
       <div class="cities">${fromC.iata} <i class="fa-solid fa-arrow-right-long dir-ic" aria-hidden="true"></i> ${toC.iata}${stopsHtml(of.transfers)}${isBest?`<span class="badge"><i class="fa-solid fa-star" aria-hidden="true"></i> ${t.cheapest}</span>`:""}</div>
       <div class="meta"><span><i class="fa-regular fa-calendar" aria-hidden="true"></i> ${of.depart}</span>${retDate?`<span class="dot">·</span><span>${retDate}</span>`:""}${durTxt?`<span class="dot">·</span><span><i class="fa-regular fa-clock" aria-hidden="true"></i> ${durTxt}</span>`:""}${times}<span class="dot">·</span><span><i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i> ${bagText(t)}</span></div>
+      ${stopsCitiesHtml(of,showRet)}
     </div>
     <div class="price"><div class="ils">${est?"≈ ":""}${p} ${curSym()}</div><div class="usd">${[(pc>1?`${pc} × ${per} ${curSym()} ${t.perPerson}`:""),(est?t.classEst:""),((!est&&pc<=1)?(of.approx?t.approxLbl:t.lowestLbl):"")].filter(Boolean).join(" · ")}</div></div>
     <span class="buy"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> ${t.aviasalesBuy}</span>
@@ -1782,6 +1825,9 @@ async function fetchOffers(s){
       const showRet=!flex;
       const timesTxt=(c.departTime?` · ${t.outTime} ${c.departTime}`:"")+((showRet&&c.returnTime)?` · ${t.retTime} ${c.returnTime}`:"");
       if(el) el.innerHTML=t.priceFrom(cp,airlineName(c.airline),c.depart,c.approx)+timesTxt+` · ${bagText(t)}`+perP;
+      /* פותרים את כל ערי העצירה מראש כדי שהכרטיסים יציגו עיר+ארץ ולא קודי IATA */
+      const stopCodes=[...new Set(d.offers.flatMap(o=>[...(o.stopsTo||[]),...(o.stopsBack||[])]))];
+      await Promise.all(stopCodes.map(resolvePlace));
       if(box) box.innerHTML=d.offers.map((of,i)=>offerCard(of,s.fromC,s.toC,i===0,flex)).join("");
     }else{
       if(el) el.textContent=t.priceNone;
