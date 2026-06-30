@@ -124,29 +124,35 @@ function mapFare(it, approx, flex) {
     departTime:(it.departure_at||"").slice(11,16), returnTime:(it.return_at||"").slice(11,16),
     link: link ? "https://www.aviasales.com"+link : "" };
 }
-/* several DISTINCT real fares (varied airline / price / times) for one route */
+/* several DISTINCT real fares (varied airline / price / times) for one route.
+   מטרה: לפחות ~10 טיסות אמיתיות לתקופה הנבחרת. צוברים ממספר שאילתות (תאריך מדויק
+   → כל החודש → גמיש), מנקים כפילויות, ומחזירים עד TARGET. כל מקור = Travelpayouts אמיתי. */
 async function fetchOffers(o, d, depart, ret, cur, maxStops) {
   if (!TOKEN_OK) return { offers:[], reason:"no-token" };
   const flex = !ret; const mx = (maxStops==null?9:maxStops);
-  for (const mode of ["exact","month"]) {
-    try {
-      const json = await getJSON(tpUrl(o,d,depart,ret,mode,60,cur));
-      const arr = json && json.success && Array.isArray(json.data) ? json.data : [];
-      if (arr.length) {
-        const seen = new Set(); const offers = [];
-        for (const it of arr) {
-          if (!it || !it.price) continue;
-          if ((it.departure_at||"").slice(0,10) < depart) continue;   // flex/month: only fares on/after the chosen departure date
-          if (((typeof it.transfers==="number")?it.transfers:0) > mx) continue;   // max stops filter
-          const key = `${it.airline}|${it.price}|${(it.departure_at||"").slice(0,16)}|${(it.return_at||"").slice(0,16)}`;
-          if (seen.has(key)) continue; seen.add(key);
-          offers.push(mapFare(it, mode==="month", flex));
-          if (offers.length >= 12) break;
-        }
-        if (offers.length) { offers.sort((a,b)=>a.price-b.price); return { offers, flex }; }
-      }
-    } catch {}
-  }
+  const TARGET = 12;
+  const seen = new Set(); const offers = [];
+  const add = (arr, isMonth) => {
+    for (const it of arr) {
+      if (!it || !it.price) continue;
+      if ((it.departure_at||"").slice(0,10) < depart) continue;             // only fares on/after the chosen departure date
+      if (((typeof it.transfers==="number")?it.transfers:0) > mx) continue; // max stops filter
+      const key = `${it.airline}|${it.price}|${(it.departure_at||"").slice(0,16)}|${(it.return_at||"").slice(0,16)}`;
+      if (seen.has(key)) continue; seen.add(key);
+      offers.push(mapFare(it, isMonth, flex));
+    }
+  };
+  const pull = async (qRet, mode) => {
+    try { const json = await getJSON(tpUrl(o, d, depart, qRet, mode, 100, cur));
+      return json && json.success && Array.isArray(json.data) ? json.data : []; }
+    catch { return []; }
+  };
+  // 1) תאריכים מדויקים + כל החודש (=התקופה) — במקביל למהירות
+  const [exactArr, monthArr] = await Promise.all([ pull(ret, "exact"), pull(ret, "month") ]);
+  add(exactArr, false); add(monthArr, true);
+  // 2) עדיין דל ויש תאריך חזרה? משלימים בחיפוש גמיש (חזרה פתוחה) — מרחיב את המלאי לתקופה
+  if (offers.length < TARGET && ret) add(await pull("", "month"), true);
+  if (offers.length) { offers.sort((a,b)=>a.price-b.price); return { offers: offers.slice(0, TARGET), flex }; }
   return { offers:[], reason:"no-data" };
 }
 async function fetchPrice(o, d, depart, ret, cur, maxStops) {
