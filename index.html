@@ -1740,30 +1740,21 @@ function applyView(){ if(lastSearch) render(); }
 /* ── בניית קישורים חיים אמיתיים לאתרי חיפוש הטיסות ──
    כל קישור פותח חיפוש אמיתי עם המסלול והתאריכים שנבחרו */
 function fmtSky(d){ return `${String(d.getFullYear()).slice(2)}${pad(d.getMonth()+1)}${pad(d.getDate())}`; } // YYMMDD
-/* ── קישור Google Flights אמיתי דרך פרמטר tfs (protobuf) — אמין, גוגל מכבד אותו (לא ?q= טקסט שלא נפרס) ──
-   מקודד: רגלי טיסה (תאריך+מוצא+יעד כשדות תעופה), נוסעים (8: 1=מבוגר,2=ילד,4=תינוק), מחלקה (9), סוג נסיעה (19). */
-function _gTag(f,w){ return (f<<3)|w; }
-function _gVar(n){ const o=[]; while(n>127){ o.push((n&127)|128); n=Math.floor(n/128); } o.push(n); return o; }
-function _gStr(f,s){ const b=[]; for(let i=0;i<s.length;i++) b.push(s.charCodeAt(i)); return [_gTag(f,2),..._gVar(b.length),...b]; }
-function _gLoc(iata){ return [_gTag(1,0),1,..._gStr(2,iata)]; }                     // 1=airport type
-function _gLeg(dateISO,o,d){ const dt=_gStr(2,dateISO);
-  const oi=_gLoc(o), of=[_gTag(13,2),..._gVar(oi.length),...oi];
-  const di=_gLoc(d), df=[_gTag(14,2),..._gVar(di.length),...di];
-  const body=[...dt,...of,...df]; return [_gTag(3,2),..._gVar(body.length),...body]; }
-function _gB64(bytes){ let bin=""; for(const b of bytes) bin+=String.fromCharCode(b); return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
+/* ── קישור Google Flights ── אומת חי בדפדפן: גוגל מפרש שאילתת טקסט "Flights from O to D on DEP through RET"
+   ומוסיף נוסעים ("2 adults 1 child"). ⚠️ הוספת מחלקה ("business class") שוברת את הפענוח (חוזר לדף בית) → לא נכלל.
+   tfs-protobuf נוסה ונדחה ע"י גוגל (פתח דף בית) — לכן חוזרים לפורמט הטקסט שעובד. */
 function googleFlightsUrl(o,d,depISO,retISO,oneWay,a,ch,inf,cls){
   if(!o||!d||!depISO) return "https://www.google.com/travel/flights";
   const ow=oneWay||!retISO;
-  let by=[_gTag(1,0),28];
-  by.push(..._gLeg(depISO,o,d));
-  if(!ow) by.push(..._gLeg(retISO,d,o));
-  for(let i=0;i<(a||1);i++) by.push(_gTag(8,0),1);
-  for(let i=0;i<(ch||0);i++) by.push(_gTag(8,0),2);
-  for(let i=0;i<(inf||0);i++) by.push(_gTag(8,0),4);
-  by.push(_gTag(9,0), ({economy:1,comfort:2,business:3,first:4}[cls||"economy"]||1));
-  by.push(_gTag(19,0), ow?2:1);
-  const hl=currentLang==="he"?"iw":currentLang==="ru"?"ru":"en";
-  return `https://www.google.com/travel/flights?tfs=${_gB64(by)}&hl=${hl}&curr=${(currentCur||"ils").toUpperCase()}`;
+  let q = ow ? `Flights from ${o} to ${d} on ${depISO}`
+             : `Flights from ${o} to ${d} on ${depISO} through ${retISO}`;
+  const ppl=[];                                                    // נוסעים — גוגל מקבל; מחלקה לא (שוברת)
+  if((a||1)>0) ppl.push(`${a||1} adult${(a||1)>1?"s":""}`);
+  if(ch>0) ppl.push(`${ch} child${ch>1?"ren":""}`);
+  if(inf>0) ppl.push(`${inf} infant${inf>1?"s":""}`);
+  if((a||1)+ (ch||0) + (inf||0) > 1) q += " " + ppl.join(" ");      // ברירת מחדל (מבוגר 1) — בלי טקסט נוסעים
+  /* ⚠️ חובה hl=en: השאילתה באנגלית נפרסת ע"י גוגל רק בלוקאל אנגלי. hl=iw/ru → גוגל פותח דף בית (אומת חי). */
+  return `https://www.google.com/travel/flights?q=${encodeURIComponent(q)}&hl=en&gl=IL&curr=${(currentCur||"ils").toUpperCase()}`;
 }
 function buildEngines(fromC,toC,dep,ret){
   const o=fromC.iata, d=toC.iata;
