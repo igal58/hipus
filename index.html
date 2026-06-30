@@ -1740,6 +1740,31 @@ function applyView(){ if(lastSearch) render(); }
 /* ── בניית קישורים חיים אמיתיים לאתרי חיפוש הטיסות ──
    כל קישור פותח חיפוש אמיתי עם המסלול והתאריכים שנבחרו */
 function fmtSky(d){ return `${String(d.getFullYear()).slice(2)}${pad(d.getMonth()+1)}${pad(d.getDate())}`; } // YYMMDD
+/* ── קישור Google Flights אמיתי דרך פרמטר tfs (protobuf) — אמין, גוגל מכבד אותו (לא ?q= טקסט שלא נפרס) ──
+   מקודד: רגלי טיסה (תאריך+מוצא+יעד כשדות תעופה), נוסעים (8: 1=מבוגר,2=ילד,4=תינוק), מחלקה (9), סוג נסיעה (19). */
+function _gTag(f,w){ return (f<<3)|w; }
+function _gVar(n){ const o=[]; while(n>127){ o.push((n&127)|128); n=Math.floor(n/128); } o.push(n); return o; }
+function _gStr(f,s){ const b=[]; for(let i=0;i<s.length;i++) b.push(s.charCodeAt(i)); return [_gTag(f,2),..._gVar(b.length),...b]; }
+function _gLoc(iata){ return [_gTag(1,0),1,..._gStr(2,iata)]; }                     // 1=airport type
+function _gLeg(dateISO,o,d){ const dt=_gStr(2,dateISO);
+  const oi=_gLoc(o), of=[_gTag(13,2),..._gVar(oi.length),...oi];
+  const di=_gLoc(d), df=[_gTag(14,2),..._gVar(di.length),...di];
+  const body=[...dt,...of,...df]; return [_gTag(3,2),..._gVar(body.length),...body]; }
+function _gB64(bytes){ let bin=""; for(const b of bytes) bin+=String.fromCharCode(b); return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
+function googleFlightsUrl(o,d,depISO,retISO,oneWay,a,ch,inf,cls){
+  if(!o||!d||!depISO) return "https://www.google.com/travel/flights";
+  const ow=oneWay||!retISO;
+  let by=[_gTag(1,0),28];
+  by.push(..._gLeg(depISO,o,d));
+  if(!ow) by.push(..._gLeg(retISO,d,o));
+  for(let i=0;i<(a||1);i++) by.push(_gTag(8,0),1);
+  for(let i=0;i<(ch||0);i++) by.push(_gTag(8,0),2);
+  for(let i=0;i<(inf||0);i++) by.push(_gTag(8,0),4);
+  by.push(_gTag(9,0), ({economy:1,comfort:2,business:3,first:4}[cls||"economy"]||1));
+  by.push(_gTag(19,0), ow?2:1);
+  const hl=currentLang==="he"?"iw":currentLang==="ru"?"ru":"en";
+  return `https://www.google.com/travel/flights?tfs=${_gB64(by)}&hl=${hl}&curr=${(currentCur||"ils").toUpperCase()}`;
+}
 function buildEngines(fromC,toC,dep,ret){
   const o=fromC.iata, d=toC.iata;
   const depI=fmtISO(dep), retI=fmtISO(ret);
@@ -1754,7 +1779,7 @@ function buildEngines(fromC,toC,dep,ret){
   const gWord={economy:"",comfort:" premium economy",business:" business class",first:" first class"}[cls];
   return [
     { name:"Google Flights", code:"G", color:"#4285f4",
-      url:`https://www.google.com/travel/flights?q=${encodeURIComponent(`flights from ${o} to ${d} on ${depI} returning ${retI}${total>1?` for ${gPax}`:""}${gWord}${bags.checked?` with ${bags.checked} checked bags`:""}`)}` },
+      url:googleFlightsUrl(o,d,depI,retI,false,a,ch,inf,cls) },
     { name:"Skyscanner", code:"SK", color:"#0770e3",
       url:`https://www.skyscanner.net/transport/flights/${o.toLowerCase()}/${d.toLowerCase()}/${fmtSky(dep)}/${fmtSky(ret)}/?${qPax}&cabinclass=${skyCls}` },
     { name:"Kiwi.com", code:"KW", color:"#00a991",
@@ -1957,16 +1982,12 @@ function offerBookLinks(o,d,depISO,retISO,oneWay){
   const dep=parseISO(depISO), ret=retISO?parseISO(retISO):null;
   if(!dep) return [];
   const ow=oneWay||!ret;
-  /* מעבירים את הפרמטרים שהמשתמש כבר בחר: נוסעים (מבוגרים/ילדים/תינוקות), מחלקה, כבודה */
-  const a=pax.adults, ch=pax.children, inf=pax.infants, total=a+ch+inf;
+  /* מעבירים את הפרמטרים שהמשתמש כבר בחר: נוסעים (מבוגרים/ילדים/תינוקות), מחלקה */
+  const a=pax.adults, ch=pax.children, inf=pax.infants;
   const qPax=`adults=${a}&children=${ch}&infants=${inf}`;                          /* Skyscanner */
-  const gPax=`${a} adult${a>1?"s":""}${ch?` ${ch} children`:""}${inf?` ${inf} infants`:""}`; /* Google text */
   const cls=currentClass||"economy";
   const skyCls={economy:"economy",comfort:"premiumeconomy",business:"business",first:"first"}[cls];
   const kayakCls={economy:"",comfort:"/premium",business:"/business",first:"/first"}[cls];
-  const gWord={economy:"",comfort:" premium economy",business:" business class",first:" first class"}[cls];
-  const gq=(ow?`flights from ${o} to ${d} on ${depISO}`:`flights from ${o} to ${d} on ${depISO} returning ${retISO}`)
-    +(total>1?` for ${gPax}`:"")+gWord+(bags.checked?` with ${bags.checked} checked bags`:"");
   const sky=ow?`https://www.skyscanner.net/transport/flights/${o.toLowerCase()}/${d.toLowerCase()}/${fmtSky(dep)}/?${qPax}&cabinclass=${skyCls}`
               :`https://www.skyscanner.net/transport/flights/${o.toLowerCase()}/${d.toLowerCase()}/${fmtSky(dep)}/${fmtSky(ret)}/?${qPax}&cabinclass=${skyCls}`;
   const kayak=(ow?`https://www.kayak.com/flights/${o}-${d}/${depISO}`:`https://www.kayak.com/flights/${o}-${d}/${depISO}/${retISO}`)
@@ -1975,7 +1996,7 @@ function offerBookLinks(o,d,depISO,retISO,oneWay){
   const exp=ow?`https://www.expedia.com/go/flight/search/Oneway/${depISO}?load=1&FromAirport=${o}&ToAirport=${d}${expPax}`
               :`https://www.expedia.com/go/flight/search/Roundtrip/${depISO}/${retISO}?load=1&FromAirport=${o}&ToAirport=${d}${expPax}`;
   return [
-    {name:"Google",  url:`https://www.google.com/travel/flights?q=${encodeURIComponent(gq)}`, color:"#4285f4"},
+    {name:"Google",  url:googleFlightsUrl(o,d,depISO,retISO,ow,a,ch,inf,cls), color:"#4285f4"},
     {name:"Skyscanner", url:sky, color:"#0770e3"},
     {name:"Kayak",   url:kayak, color:"#ff690f"},
     {name:"Expedia", url:exp, color:"#1668e3"},
