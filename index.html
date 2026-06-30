@@ -654,7 +654,7 @@ const T={
     showing:(n,t)=>`מציג ${n} מתוך ${t} כרטיסים`,
     cheapest:"משתלם",
     nearKm:(km)=>`~${km} ק״מ מהיעד`,
-    roundTrip:"הלוך ושוב",oneWayLbl:"כיוון אחד",hotelsBtn:"בתי מלון בסביבה",
+    roundTrip:"הלוך ושוב",oneWayLbl:"כיוון אחד",hotelsBtn:"בתי מלון בסביבה",alsoSearchOn:"חיפוש גם ב:",
     sDirect:"ישיר",s1:"עצירה 1",s2:(n)=>`${n} עצירות`,layover:"עצירת ביניים",tempLand:"מזג אוויר בנחיתה",tempAvg:"ממוצע עונתי",legOut:"הלוך",legBack:"חזור",
     help:{title:"מדריך ושימוש",intro:"כל מה שצריך כדי להפיק מהאתר את המקסימום. החיפוש מחזיר מחירים אמיתיים בזמן אמת ממקורות מקוונים.",secs:[
       {ic:"fa-magnifying-glass",h:"חיפוש",items:["<b>מאיפה / לאן</b> — בחר עיר מוצא ויעד. אפשר להקליד בעברית, אנגלית, רוסית או קוד שדה תעופה (כמו TLV).","<b>תאריך יציאה / חזרה</b> ו-<b>ימי שהייה</b>. <b>ימי שהייה = 0</b> מפעיל חיפוש גמיש — מוצא את הזול מהתאריך והלאה בלי לקבע חזרה.","<b>מקס׳ עצירות</b> (0 = ישיר, 9 = ללא הגבלה), <b>נוסעים</b>, <b>כבודה</b> ו-<b>מחלקה</b> — כולם משפיעים על התוצאות ועל המחיר."]},
@@ -723,7 +723,7 @@ const T={
     showing:(n,t)=>`Showing ${n} of ${t} tickets`,
     cheapest:"Good value",
     nearKm:(km)=>`~${km} km from destination`,
-    roundTrip:"Round trip",oneWayLbl:"One way",hotelsBtn:"Hotels nearby",
+    roundTrip:"Round trip",oneWayLbl:"One way",hotelsBtn:"Hotels nearby",alsoSearchOn:"Also search on:",
     sDirect:"Direct",s1:"1 stop",s2:(n)=>`${n} stops`,layover:"Layover",tempLand:"Weather on landing",tempAvg:"seasonal avg",legOut:"Outbound",legBack:"Return",
     help:{title:"Guide & how to use",intro:"Everything you need to get the most out of the site. Search returns real, live prices from online sources.",secs:[
       {ic:"fa-magnifying-glass",h:"Search",items:["<b>From / To</b> — pick origin and destination. Type in English, Hebrew, Russian, or an airport code (e.g. TLV).","<b>Departure / Return date</b> and <b>Nights</b>. <b>Nights = 0</b> runs a flexible search — the cheapest fare on/after your date, with no fixed return.","<b>Max stops</b> (0 = direct, 9 = no limit), <b>Passengers</b>, <b>Baggage</b> and <b>Class</b> all affect the results and the price."]},
@@ -792,7 +792,7 @@ const T={
     showing:(n,t)=>`Показано ${n} из ${t} билетов`,
     cheapest:"Выгодно",
     nearKm:(km)=>`~${km} км от цели`,
-    roundTrip:"Туда-обратно",oneWayLbl:"В одну сторону",hotelsBtn:"Отели рядом",
+    roundTrip:"Туда-обратно",oneWayLbl:"В одну сторону",hotelsBtn:"Отели рядом",alsoSearchOn:"Искать также на:",
     sDirect:"Прямой",s1:"1 пересадка",s2:(n)=>`${n} пересадки`,layover:"Пересадка",tempLand:"Погода при посадке",tempAvg:"сезонное среднее",legOut:"Туда",legBack:"Обратно",
     help:{title:"Руководство",intro:"Всё, что нужно, чтобы получить максимум от сайта. Поиск показывает реальные цены в реальном времени из онлайн-источников.",secs:[
       {ic:"fa-magnifying-glass",h:"Поиск",items:["<b>Откуда / Куда</b> — выберите город вылета и назначения. Вводите на русском, английском, иврите или код аэропорта (например TLV).","<b>Дата вылета / возврата</b> и <b>Ночей</b>. <b>Ночей = 0</b> запускает гибкий поиск — самый дешёвый рейс с вашей даты и далее, без фиксированного возврата.","<b>Макс. пересадок</b> (0 = прямой, 9 = без ограничений), <b>Пассажиры</b>, <b>Багаж</b> и <b>Класс</b> влияют на результаты и цену."]},
@@ -1950,6 +1950,27 @@ function fmtDur(min){ if(!min) return ""; const t=T[currentLang]; return t.dur(M
 /* טקסט כבודה רשומה לפי ההגדרה שמילא המשתמש (bags.checked); 0 → "ללא כבודה רשומה" */
 function bagText(t){ return bags.checked>0 ? `${bags.checked} ${t.checkedBag}` : t.noBag; }
 
+/* קישורי חיפוש/רכישה נוספים לאותה טיסה (מסלול+תאריכים) באתרים אחרים — פורמטים מאומתים, בלי המצאה.
+   one-way → פורמט כיוון-אחד בכל אתר. אין לנו deep-link לטיסה המדויקת, אז זה חיפוש לאותו מסלול. */
+function offerBookLinks(o,d,depISO,retISO,oneWay){
+  if(!o||!d||!depISO) return [];
+  const dep=parseISO(depISO), ret=retISO?parseISO(retISO):null;
+  if(!dep) return [];
+  const ow=oneWay||!ret;
+  const gq=ow?`flights from ${o} to ${d} on ${depISO}`:`flights from ${o} to ${d} on ${depISO} returning ${retISO}`;
+  const sky=ow?`https://www.skyscanner.net/transport/flights/${o.toLowerCase()}/${d.toLowerCase()}/${fmtSky(dep)}/`
+              :`https://www.skyscanner.net/transport/flights/${o.toLowerCase()}/${d.toLowerCase()}/${fmtSky(dep)}/${fmtSky(ret)}/`;
+  const kayak=ow?`https://www.kayak.com/flights/${o}-${d}/${depISO}`:`https://www.kayak.com/flights/${o}-${d}/${depISO}/${retISO}`;
+  const exp=ow?`https://www.expedia.com/go/flight/search/Oneway/${depISO}?load=1&FromAirport=${o}&ToAirport=${d}`
+              :`https://www.expedia.com/go/flight/search/Roundtrip/${depISO}/${retISO}?load=1&FromAirport=${o}&ToAirport=${d}`;
+  return [
+    {name:"Google",  url:`https://www.google.com/travel/flights?q=${encodeURIComponent(gq)}`, color:"#4285f4"},
+    {name:"Skyscanner", url:sky, color:"#0770e3"},
+    {name:"Kayak",   url:kayak, color:"#ff690f"},
+    {name:"Expedia", url:exp, color:"#1668e3"},
+  ];
+}
+
 /* כרטיס טיסה אמיתי (מ-Aviasales) — מחיר/חברה/שעות/עצירות אמיתיים, קישור רכישה עם ה-marker */
 function offerCard(of,fromC,toC,isBest,flex){
   const t=T[currentLang];
@@ -1971,6 +1992,8 @@ function offerCard(of,fromC,toC,isBest,flex){
   if(of.departISO) hUrl+="&checkIn="+of.departISO;
   if(of.returnISO) hUrl+="&checkOut="+of.returnISO;
   const hotelBtn=`<span class="hotel-btn" data-hotel="${hUrl}" role="button" tabindex="0" style="display:inline-flex;align-items:center;gap:6px;margin-top:9px;padding:6px 11px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;width:max-content"><i class="fa-solid fa-bed" aria-hidden="true"></i> ${t.hotelsBtn}</span>`;
+  const bk=offerBookLinks(fromC.iata,toIata,of.departISO,of.returnISO,ow);
+  const bookRow=bk.length?`<div class="card-book" style="grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;padding-top:9px;border-top:1px solid var(--line)"><span style="font-size:12px;color:var(--muted)">${t.alsoSearchOn}</span>${bk.map(b=>`<span class="book-btn" data-open="${b.url}" role="button" tabindex="0" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#fff;background:${b.color};padding:4px 9px;border-radius:8px;cursor:pointer">${b.name}<i class="fa-solid fa-arrow-up-right-from-square" style="font-size:10px" aria-hidden="true"></i></span>`).join("")}</div>`:"";
   return `<a class="ticket engine-card best-card" href="${of.link}" target="_blank" rel="noopener" aria-label="${fromC.iata} ${toIata} ${p} ILS">
     <div class="airline">
       ${airlineLogo(of.airline)}
@@ -1985,6 +2008,7 @@ function offerCard(of,fromC,toC,isBest,flex){
     </div>
     <div class="price"><div class="ils">${est?"≈ ":""}${p} ${curSym()}</div><div class="usd">${[(pc>1?`${pc} × ${per} ${curSym()} ${t.perPerson}`:""),(est?t.classEst:""),((!est&&pc<=1)?(of.approx?t.approxLbl:t.lowestLbl):"")].filter(Boolean).join(" · ")}</div><div class="usd" style="margin-top:2px">${ow?`<i class="fa-solid fa-arrow-right-long" aria-hidden="true"></i> ${t.oneWayLbl}`:`<i class="fa-solid fa-arrow-right-arrow-left" aria-hidden="true"></i> ${t.roundTrip}`}</div></div>
     <span class="buy"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> ${t.aviasalesBuy}</span>
+    ${bookRow}
   </a>`;
 }
 
@@ -2258,6 +2282,8 @@ updatePaxBtn();
 document.getElementById("searchBtn").addEventListener("click",doSearch);
 /* כפתור "בתי מלון" בכרטיס — הכרטיס עצמו הוא קישור לטיסה, אז עוצרים את הניווט ופותחים חיפוש מלונות */
 document.addEventListener("click",e=>{ const h=e.target.closest(".hotel-btn"); if(!h) return; e.preventDefault(); e.stopPropagation(); const url=h.getAttribute("data-hotel"); if(url) window.open(url,"_blank","noopener"); });
+/* קישורי "חיפוש גם ב..." בכרטיס — הכרטיס עצמו קישור ל-Aviasales, אז עוצרים ופותחים את האתר האחר */
+document.addEventListener("click",e=>{ const b=e.target.closest(".book-btn"); if(!b) return; e.preventDefault(); e.stopPropagation(); const url=b.getAttribute("data-open"); if(url) window.open(url,"_blank","noopener"); });
 { const gtb=document.getElementById("gfToggleBtn"); if(gtb) gtb.addEventListener("click",()=>{ const r=document.getElementById("gfRow"); const show=!(r&&r.style.display==="flex"); setGFVisible(show); const g=document.getElementById("gfUrl"); if(show&&g){ g.focus(); r.scrollIntoView({behavior:"smooth",block:"center"}); } }); }
 document.getElementById("gfBtn").addEventListener("click",importGFlights);
 document.getElementById("gfUrl").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); importGFlights(); } });
