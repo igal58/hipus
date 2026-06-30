@@ -85,6 +85,12 @@ function tpUrl(o, d, depart, ret, mode, limit, cur) {
   if (!flex) params.return_at = mode === "month" ? ret.slice(0,7) : ret;
   return "https://api.travelpayouts.com/aviasales/v3/prices_for_dates?" + new URLSearchParams(params).toString();
 }
+/* כיוון אחד (one_way=true) — למסלולים שבהם אין במטמון הלוך-חזור אבל יש כיוון-אחד (כמו TLV→BOM) */
+function tpUrlOW(o, d, depart, limit, cur) {
+  const params = { origin:o, destination:d, departure_at:depart.slice(0,7),
+    currency:(cur||CFG.currency), market:CFG.market, sorting:"price", limit:String(limit||60), one_way:"true", token:CFG.token };
+  return "https://api.travelpayouts.com/aviasales/v3/prices_for_dates?" + new URLSearchParams(params).toString();
+}
 /* חילוץ קודי שדה התעופה של מסלול הטיסה מתוך ה-link של Aviasales.
    הפרמטר t= מקודד את רצף השדות כרצף אותיות (TLVFCOMUC = TLV→FCO→MUC).
    מחזיר {out:[...iata], back:[...iata]} (לפי הסדר הופעה). אין נתון → null. */
@@ -153,6 +159,23 @@ async function fetchOffers(o, d, depart, ret, cur, maxStops) {
   add(exactArr, false); add(monthArr, true);
   // 2) עדיין דל ויש תאריך חזרה? משלימים בחיפוש גמיש (חזרה פתוחה) — מרחיב את המלאי לתקופה
   if (offers.length < TARGET && ret) add(await pull("", "month"), true);
+  // 3) עדיין ריק/דל? יש מסלולים (כמו TLV→BOM) שבמטמון יש להם רק כיוון-אחד — נציג אותם, מסומנים "כיוון אחד"
+  if (offers.length < TARGET) {
+    try {
+      const json = await getJSON(tpUrlOW(o, d, depart, 100, cur));
+      const arr = json && json.success && Array.isArray(json.data) ? json.data : [];
+      for (const it of arr) {
+        if (!it || !it.price) continue;
+        if ((it.departure_at||"").slice(0,10) < depart) continue;
+        if (((typeof it.transfers==="number")?it.transfers:0) > mx) continue;
+        const key = `OW|${it.airline}|${it.price}|${(it.departure_at||"").slice(0,16)}`;
+        if (seen.has(key)) continue; seen.add(key);
+        const f = mapFare(it, true, false); f.oneWay = true; f.returnISO = ""; f.returnTime = "";
+        offers.push(f);
+        if (offers.length >= TARGET) break;
+      }
+    } catch {}
+  }
   if (offers.length) { offers.sort((a,b)=>a.price-b.price); return { offers: offers.slice(0, TARGET), flex }; }
   return { offers:[], reason:"no-data" };
 }
@@ -211,6 +234,18 @@ async function fetchOffersLite(o, d, depart, ret, cur, maxStops, max) {
       if (seen.has(key)) continue; seen.add(key);
       offers.push(mapFare(it, true, flex));
       if (offers.length >= (max||4)) break;
+    }
+    if (!offers.length) {                                  // אין הלוך-חזור במטמון? נסה כיוון-אחד
+      const jw = await getJSON(tpUrlOW(o, d, depart, 40, cur));
+      const aw = jw && jw.success && Array.isArray(jw.data) ? jw.data : [];
+      for (const it of aw) {
+        if (!it || !it.price) continue;
+        if ((it.departure_at||"").slice(0,10) < depart) continue;
+        if (((typeof it.transfers==="number")?it.transfers:0) > mx) continue;
+        const f = mapFare(it, true, false); f.oneWay = true; f.returnISO = ""; f.returnTime = "";
+        offers.push(f);
+        if (offers.length >= (max||4)) break;
+      }
     }
     return offers;
   } catch { return []; }
