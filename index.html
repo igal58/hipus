@@ -595,7 +595,7 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
     <input type="number" id="budget" class="budget-in" min="0" step="100" placeholder="תקציב מקס׳ ₪">
     <span class="rate" id="rateLabel"></span>
   </div>
-  <div class="gf-row" style="display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap">
+  <div class="gf-row" id="gfRow" style="display:none;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap">
     <i class="fa-brands fa-google" aria-hidden="true" style="color:var(--accent);font-size:1.05em"></i>
     <input id="gfUrl" type="text" autocomplete="off" spellcheck="false"
       style="flex:1;min-width:220px;padding:11px 13px;border:1px solid var(--line);border-radius:11px;font:inherit;background:var(--panel);color:var(--text)">
@@ -2233,6 +2233,10 @@ updatePaxBtn();
 document.getElementById("searchBtn").addEventListener("click",doSearch);
 document.getElementById("gfBtn").addEventListener("click",importGFlights);
 document.getElementById("gfUrl").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); importGFlights(); } });
+/* תיבת הייבוא מוסתרת מהמשתמש הרגיל — נחשפת רק בקוד סודי: Ctrl+Shift+G, או #gf בכתובת */
+function setGFVisible(on){ const r=document.getElementById("gfRow"); if(r) r.style.display=on?"flex":"none"; }
+if(/(^|[#&])gf\b/i.test(location.hash)) setGFVisible(true);
+document.addEventListener("keydown",e=>{ if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(e.key==="G"||e.key==="g")){ e.preventDefault(); const r=document.getElementById("gfRow"); setGFVisible(!(r&&r.style.display==="flex")); const g=document.getElementById("gfUrl"); if(g&&r&&r.style.display==="flex") g.focus(); } });
 fromSel.addEventListener("change",()=>{ setFromFlag(); focusMap(selectedToCode); saveState(); if(lastSearch) render(); });
 document.getElementById("maxStops").addEventListener("change",()=>{ saveState(); if(lastSearch) doSearch(); });
 restoreState();           /* משחזר בחירות קודמות (F5) — דורס את ברירות המחדל לפני התצוגה */
