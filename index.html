@@ -1957,12 +1957,23 @@ function offerBookLinks(o,d,depISO,retISO,oneWay){
   const dep=parseISO(depISO), ret=retISO?parseISO(retISO):null;
   if(!dep) return [];
   const ow=oneWay||!ret;
-  const gq=ow?`flights from ${o} to ${d} on ${depISO}`:`flights from ${o} to ${d} on ${depISO} returning ${retISO}`;
-  const sky=ow?`https://www.skyscanner.net/transport/flights/${o.toLowerCase()}/${d.toLowerCase()}/${fmtSky(dep)}/`
-              :`https://www.skyscanner.net/transport/flights/${o.toLowerCase()}/${d.toLowerCase()}/${fmtSky(dep)}/${fmtSky(ret)}/`;
-  const kayak=ow?`https://www.kayak.com/flights/${o}-${d}/${depISO}`:`https://www.kayak.com/flights/${o}-${d}/${depISO}/${retISO}`;
-  const exp=ow?`https://www.expedia.com/go/flight/search/Oneway/${depISO}?load=1&FromAirport=${o}&ToAirport=${d}`
-              :`https://www.expedia.com/go/flight/search/Roundtrip/${depISO}/${retISO}?load=1&FromAirport=${o}&ToAirport=${d}`;
+  /* מעבירים את הפרמטרים שהמשתמש כבר בחר: נוסעים (מבוגרים/ילדים/תינוקות), מחלקה, כבודה */
+  const a=pax.adults, ch=pax.children, inf=pax.infants, total=a+ch+inf;
+  const qPax=`adults=${a}&children=${ch}&infants=${inf}`;                          /* Skyscanner */
+  const gPax=`${a} adult${a>1?"s":""}${ch?` ${ch} children`:""}${inf?` ${inf} infants`:""}`; /* Google text */
+  const cls=currentClass||"economy";
+  const skyCls={economy:"economy",comfort:"premiumeconomy",business:"business",first:"first"}[cls];
+  const kayakCls={economy:"",comfort:"/premium",business:"/business",first:"/first"}[cls];
+  const gWord={economy:"",comfort:" premium economy",business:" business class",first:" first class"}[cls];
+  const gq=(ow?`flights from ${o} to ${d} on ${depISO}`:`flights from ${o} to ${d} on ${depISO} returning ${retISO}`)
+    +(total>1?` for ${gPax}`:"")+gWord+(bags.checked?` with ${bags.checked} checked bags`:"");
+  const sky=ow?`https://www.skyscanner.net/transport/flights/${o.toLowerCase()}/${d.toLowerCase()}/${fmtSky(dep)}/?${qPax}&cabinclass=${skyCls}`
+              :`https://www.skyscanner.net/transport/flights/${o.toLowerCase()}/${d.toLowerCase()}/${fmtSky(dep)}/${fmtSky(ret)}/?${qPax}&cabinclass=${skyCls}`;
+  const kayak=(ow?`https://www.kayak.com/flights/${o}-${d}/${depISO}`:`https://www.kayak.com/flights/${o}-${d}/${depISO}/${retISO}`)
+    +`/${a}adults${ch?`/${ch}children`:""}${kayakCls}`;
+  const expPax=`&NumAdult=${a}${ch?`&NumChild=${ch}`:""}`;                          /* פרמטרים רשמיים של Expedia */
+  const exp=ow?`https://www.expedia.com/go/flight/search/Oneway/${depISO}?load=1&FromAirport=${o}&ToAirport=${d}${expPax}`
+              :`https://www.expedia.com/go/flight/search/Roundtrip/${depISO}/${retISO}?load=1&FromAirport=${o}&ToAirport=${d}${expPax}`;
   return [
     {name:"Google",  url:`https://www.google.com/travel/flights?q=${encodeURIComponent(gq)}`, color:"#4285f4"},
     {name:"Skyscanner", url:sky, color:"#0770e3"},
