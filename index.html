@@ -1573,16 +1573,20 @@ function initMap(){
   setTimeout(()=>_map&&_map.invalidateSize(),250);
 }
 async function geocodeIata(iata){
+  if(!iata)return null;
   if(_coordCache[iata])return _coordCache[iata];
-  try{
-    const r=await fetch("https://autocomplete.travelpayouts.com/places2?locale=en&term="+encodeURIComponent(iata));
-    const arr=await r.json();
-    const list=Array.isArray(arr)?arr:[];
-    const hit=list.find(x=>x&&x.code===iata&&x.coordinates)||list.find(x=>x&&x.coordinates);
-    if(hit&&hit.coordinates&&hit.coordinates.lat!=null){
-      const c={lat:hit.coordinates.lat,lon:hit.coordinates.lon}; _coordCache[iata]=c; return c;
-    }
-  }catch(e){}
+  for(let attempt=0;attempt<3;attempt++){                 /* autocomplete מדי פעם נכשל בקריאה קרה → ניסיון חוזר (כמו getJSON בשרת) */
+    try{
+      const r=await fetch("https://autocomplete.travelpayouts.com/places2?locale=en&term="+encodeURIComponent(iata));
+      const arr=await r.json();
+      const list=Array.isArray(arr)?arr:[];
+      const hit=list.find(x=>x&&x.code===iata&&x.coordinates)||list.find(x=>x&&x.coordinates);
+      if(hit&&hit.coordinates&&hit.coordinates.lat!=null){
+        const c={lat:hit.coordinates.lat,lon:hit.coordinates.lon}; _coordCache[iata]=c; return c;
+      }
+    }catch(e){}
+    if(attempt<2)await new Promise(s=>setTimeout(s,250*(attempt+1)));   /* השהיה קצרה ואז ניסיון נוסף */
+  }
   return null;
 }
 /* פותר קוד IATA של עצירה → "עיר, ארץ". קודם רשימת COUNTRIES (מתורגמת), אחרת autocomplete (שם אמיתי),
@@ -2042,7 +2046,7 @@ async function importGFlights(){
     }
     fromSel.value=oC.code; setFromFlag();
     selectedToCode=dC.code; const dn=cLng(dC); toInput.value=`${dn.c} — ${dn.ct}`; setToFlag(dC.code);
-    if(typeof focusMap==="function") focusMap(dC.code);
+    if(typeof focusMap==="function") await focusMap(dC.code);   /* ממתינים שהמפה תתעדכן (כולל retry של geocode) לפני הגלילה לתוצאות */
     const dep=d.depart?parseISO(d.depart):null;
     if(dep) dateOut.value=fmtDMY(dep);
     const ret=d.ret?parseISO(d.ret):null;
