@@ -116,6 +116,7 @@ function mapFare(it, approx, flex) {
   if (link && CFG.marker) link += (link.includes("?")?"&":"?") + "marker=" + CFG.marker;
   return { approx, flex, price:Math.round(it.price),
     currency:(it.currency||CFG.currency).toUpperCase(), airline:it.airline||"",
+    dest: dA,                                            // שדה הנחיתה בפועל (לחיפוש ברדיוס — יכול להיות יעד סמוך)
     depart:depDMY, departISO:da, returnISO:ra,
     transfers:(typeof it.transfers==="number"?it.transfers:null), duration:(it.duration||null),
     returnTransfers:(typeof it.return_transfers==="number"?it.return_transfers:null),
@@ -155,6 +156,79 @@ async function fetchOffers(o, d, depart, ret, cur, maxStops) {
   if (offers.length) { offers.sort((a,b)=>a.price-b.price); return { offers: offers.slice(0, TARGET), flex }; }
   return { offers:[], reason:"no-data" };
 }
+
+/* ── חיפוש ברדיוס: גם שדות תעופה סמוכים ליעד (עד N ק"מ) ──
+   נתוני שדות התעופה (קואורדינטות) מ-Travelpayouts data, נטענים פעם אחת ל-cache. */
+let _AIRPORTS = null, _airportsAt = 0;
+function loadAirports() {
+  if (_AIRPORTS && Date.now() - _airportsAt < 24*3600*1000) return Promise.resolve(_AIRPORTS);
+  return new Promise(resolve => {
+    https.get("https://api.travelpayouts.com/data/en/airports.json", r => {
+      let b = ""; r.on("data", c => b += c);
+      r.on("end", () => { try { _AIRPORTS = JSON.parse(b); _airportsAt = Date.now(); } catch { _AIRPORTS = _AIRPORTS || []; } resolve(_AIRPORTS); });
+    }).on("error", () => resolve(_AIRPORTS || []))
+      .setTimeout(12000, function(){ this.destroy(); resolve(_AIRPORTS || []); });
+  });
+}
+function haversineKm(a, b) {
+  const R = 6371, toR = x => x*Math.PI/180;
+  const dLat = toR(b.lat-a.lat), dLon = toR(b.lon-a.lon);
+  const s = Math.sin(dLat/2)**2 + Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.min(1, Math.sqrt(s)));
+}
+async function nearbyDests(destIata, radiusKm, max) {
+  const air = await loadAirports();
+  if (!Array.isArray(air) || !air.length) return [];
+  const home = air.find(x => x.code === destIata && x.coordinates);
+  if (!home) return [];
+  const out = [];
+  for (const x of air) {
+    if (!x || !x.coordinates || x.flightable === false) continue;
+    if (x.code === destIata || x.city_code === (home.city_code||destIata)) continue;   // לא היעד עצמו / אותה עיר
+    if (home.country_code && x.country_code !== home.country_code) continue;            // אותה מדינה (מונע באגי-קואורדינטות חוצי-יבשות במקור)
+    const km = haversineKm(home.coordinates, x.coordinates);
+    if (km <= radiusKm) out.push({ iata:x.code, city:(x.name_translations&&x.name_translations.en)||x.name||x.code, km:Math.round(km) });
+  }
+  out.sort((a,b)=>a.km-b.km);
+  const seenCity = new Set(); const picked = [];   // עיר אחת לכל יעד סמוך
+  for (const c of out) { const cc=c.iata.slice(0,3); if (seenCity.has(cc)) continue; seenCity.add(cc); picked.push(c); if (picked.length>=max) break; }
+  return picked;
+}
+/* שליפה קלה ליעד סמוך — שאילתה אחת (חודש) בלבד, מהיר */
+async function fetchOffersLite(o, d, depart, ret, cur, maxStops, max) {
+  if (!TOKEN_OK) return [];
+  const flex = !ret; const mx = (maxStops==null?9:maxStops);
+  try {
+    const json = await getJSON(tpUrl(o, d, depart, ret, "month", 60, cur));
+    const arr = json && json.success && Array.isArray(json.data) ? json.data : [];
+    const seen = new Set(); const offers = [];
+    for (const it of arr) {
+      if (!it || !it.price) continue;
+      if ((it.departure_at||"").slice(0,10) < depart) continue;
+      if (((typeof it.transfers==="number")?it.transfers:0) > mx) continue;
+      const key = `${it.airline}|${it.price}|${(it.departure_at||"").slice(0,16)}`;
+      if (seen.has(key)) continue; seen.add(key);
+      offers.push(mapFare(it, true, flex));
+      if (offers.length >= (max||4)) break;
+    }
+    return offers;
+  } catch { return []; }
+}
+/* יעד ראשי + שדות סמוכים ברדיוס. מחזיר {offers, flex, nearby:[{iata,city,km}]}.
+   הצעות ראשיות קודם (destKm=0), אחריהן הסמוכות (מתויגות עם מרחק+עיר). */
+async function fetchOffersRadius(o, d, depart, ret, cur, maxStops, radiusKm) {
+  const primary = await fetchOffers(o, d, depart, ret, cur, maxStops);
+  const base = (primary.offers || []).map(x => (x.destKm = 0, x.dest = x.dest || d, x));
+  const flex = primary.flex != null ? primary.flex : !ret;
+  if (!radiusKm || radiusKm <= 0) return { offers: base, flex };
+  const near = await nearbyDests(d, radiusKm, 6);
+  const lists = await Promise.all(near.map(n => fetchOffersLite(o, n.iata, depart, ret, cur, maxStops, 4)));
+  const extra = [];
+  near.forEach((n, i) => { for (const of of lists[i]) { of.destKm = n.km; of.destCity = n.city; of.dest = of.dest || n.iata; extra.push(of); } });
+  extra.sort((a,b)=> a.km!==b.km ? a.destKm-b.destKm : a.price-b.price);
+  return { offers: [...base, ...extra].slice(0, 24), flex, nearby: near };
+}
+
 async function fetchPrice(o, d, depart, ret, cur, maxStops) {
   if (!TOKEN_OK) return { found:false, reason:"no-token" };
   const mx = (maxStops==null?9:maxStops);
@@ -462,7 +536,8 @@ const server = http.createServer(async (req, res) => {
     const depart=u.searchParams.get("depart")||"", ret=u.searchParams.get("return")||"";
     if (!o||!d||!depart) { res.writeHead(400,{"Content-Type":"application/json"});
       return res.end(JSON.stringify({offers:[],reason:"bad-params"})); }
-    const out = await fetchOffers(o,d,depart,ret,curOf(u.searchParams.get("cur")),stopsOf(u.searchParams.get("stops")));
+    const radius = Math.min(Math.max(parseInt(u.searchParams.get("radius"),10)||0, 0), 2000);  // ק"מ סביב היעד (0=כבוי)
+    const out = await fetchOffersRadius(o,d,depart,ret,curOf(u.searchParams.get("cur")),stopsOf(u.searchParams.get("stops")),radius);
     res.writeHead(200,{"Content-Type":"application/json"});
     return res.end(JSON.stringify(out));
   }

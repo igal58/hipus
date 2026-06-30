@@ -652,6 +652,7 @@ const T={
     filtLbl:"עצירות:",filtAll:"הכל",filtDirect:"ישיר",filt1:"עצירה 1",filt2:"2+ עצירות",
     showing:(n,t)=>`מציג ${n} מתוך ${t} כרטיסים`,
     cheapest:"משתלם",
+    nearKm:(km)=>`~${km} ק״מ מהיעד`,
     sDirect:"ישיר",s1:"עצירה 1",s2:(n)=>`${n} עצירות`,layover:"עצירת ביניים",tempLand:"מזג אוויר בנחיתה",tempAvg:"ממוצע עונתי",legOut:"הלוך",legBack:"חזור",
     help:{title:"מדריך ושימוש",intro:"כל מה שצריך כדי להפיק מהאתר את המקסימום. החיפוש מחזיר מחירים אמיתיים בזמן אמת ממקורות מקוונים.",secs:[
       {ic:"fa-magnifying-glass",h:"חיפוש",items:["<b>מאיפה / לאן</b> — בחר עיר מוצא ויעד. אפשר להקליד בעברית, אנגלית, רוסית או קוד שדה תעופה (כמו TLV).","<b>תאריך יציאה / חזרה</b> ו-<b>ימי שהייה</b>. <b>ימי שהייה = 0</b> מפעיל חיפוש גמיש — מוצא את הזול מהתאריך והלאה בלי לקבע חזרה.","<b>מקס׳ עצירות</b> (0 = ישיר, 9 = ללא הגבלה), <b>נוסעים</b>, <b>כבודה</b> ו-<b>מחלקה</b> — כולם משפיעים על התוצאות ועל המחיר."]},
@@ -719,6 +720,7 @@ const T={
     filtLbl:"Stops:",filtAll:"All",filtDirect:"Direct",filt1:"1 stop",filt2:"2+ stops",
     showing:(n,t)=>`Showing ${n} of ${t} tickets`,
     cheapest:"Good value",
+    nearKm:(km)=>`~${km} km from destination`,
     sDirect:"Direct",s1:"1 stop",s2:(n)=>`${n} stops`,layover:"Layover",tempLand:"Weather on landing",tempAvg:"seasonal avg",legOut:"Outbound",legBack:"Return",
     help:{title:"Guide & how to use",intro:"Everything you need to get the most out of the site. Search returns real, live prices from online sources.",secs:[
       {ic:"fa-magnifying-glass",h:"Search",items:["<b>From / To</b> — pick origin and destination. Type in English, Hebrew, Russian, or an airport code (e.g. TLV).","<b>Departure / Return date</b> and <b>Nights</b>. <b>Nights = 0</b> runs a flexible search — the cheapest fare on/after your date, with no fixed return.","<b>Max stops</b> (0 = direct, 9 = no limit), <b>Passengers</b>, <b>Baggage</b> and <b>Class</b> all affect the results and the price."]},
@@ -786,6 +788,7 @@ const T={
     filtLbl:"Пересадки:",filtAll:"Все",filtDirect:"Прямой",filt1:"1 пересадка",filt2:"2+ пересадки",
     showing:(n,t)=>`Показано ${n} из ${t} билетов`,
     cheapest:"Выгодно",
+    nearKm:(km)=>`~${km} км от цели`,
     sDirect:"Прямой",s1:"1 пересадка",s2:(n)=>`${n} пересадки`,layover:"Пересадка",tempLand:"Погода при посадке",tempAvg:"сезонное среднее",legOut:"Туда",legBack:"Обратно",
     help:{title:"Руководство",intro:"Всё, что нужно, чтобы получить максимум от сайта. Поиск показывает реальные цены в реальном времени из онлайн-источников.",secs:[
       {ic:"fa-magnifying-glass",h:"Поиск",items:["<b>Откуда / Куда</b> — выберите город вылета и назначения. Вводите на русском, английском, иврите или код аэропорта (например TLV).","<b>Дата вылета / возврата</b> и <b>Ночей</b>. <b>Ночей = 0</b> запускает гибкий поиск — самый дешёвый рейс с вашей даты и далее, без фиксированного возврата.","<b>Макс. пересадок</b> (0 = прямой, 9 = без ограничений), <b>Пассажиры</b>, <b>Багаж</b> и <b>Класс</b> влияют на результаты и цену."]},
@@ -1948,13 +1951,15 @@ function offerCard(of,fromC,toC,isBest,flex){
   const retDate=of.returnISO?fmtDMY(parseISO(of.returnISO)):"";
   const times=(of.departTime?`<span class="dot">·</span><span><i class="fa-solid fa-plane-departure" aria-hidden="true"></i> ${t.outTime} ${of.departTime}</span>`:"")
              +((showRet&&of.returnTime)?`<span class="dot">·</span><span><i class="fa-solid fa-plane-arrival" aria-hidden="true"></i> ${t.retTime} ${of.returnTime}</span>`:"");
-  return `<a class="ticket engine-card best-card" href="${of.link}" target="_blank" rel="noopener" aria-label="${fromC.iata} ${toC.iata} ${p} ILS">
+  const toIata=of.dest||toC.iata;
+  const nearBadge=(of.destKm>0)?`<span class="badge" style="background:var(--panel2);color:var(--muted);border:1px solid var(--line)"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> ${t.nearKm(of.destKm)}</span>`:"";
+  return `<a class="ticket engine-card best-card" href="${of.link}" target="_blank" rel="noopener" aria-label="${fromC.iata} ${toIata} ${p} ILS">
     <div class="airline">
       ${airlineLogo(of.airline)}
       <div class="airline-name">Aviasales${of.airline?`<br><span class="muted-sm">${airlineName(of.airline)}</span>`:""}</div>
     </div>
     <div class="route">
-      <div class="cities">${fromC.iata} <i class="fa-solid fa-arrow-right-long dir-ic" aria-hidden="true"></i> ${toC.iata}${stopsHtml(of.transfers)}${isBest?`<span class="badge"><i class="fa-solid fa-star" aria-hidden="true"></i> ${t.cheapest}</span>`:""}</div>
+      <div class="cities">${fromC.iata} <i class="fa-solid fa-arrow-right-long dir-ic" aria-hidden="true"></i> ${toIata}${stopsHtml(of.transfers)}${isBest?`<span class="badge"><i class="fa-solid fa-star" aria-hidden="true"></i> ${t.cheapest}</span>`:""}${nearBadge}</div>
       <div class="meta"><span><i class="fa-regular fa-calendar" aria-hidden="true"></i> ${of.depart}</span>${retDate?`<span class="dot">·</span><span>${retDate}</span>`:""}${durTxt?`<span class="dot">·</span><span><i class="fa-regular fa-clock" aria-hidden="true"></i> ${durTxt}</span>`:""}${times}<span class="dot">·</span><span><i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i> ${bagText(t)}</span></div>
       ${stopsCitiesHtml(of,showRet)}
       ${landTempHtml(of)}
@@ -1974,7 +1979,7 @@ async function fetchOffers(s){
   if(box) box.innerHTML="";
   try{
     const u=`${PROXY_BASE}/offers?origin=${s.fromC.iata}&destination=${s.toC.iata}`+
-            `&depart=${fmtISO(s.dep)}`+(s.ret?`&return=${fmtISO(s.ret)}`:"")+`&cur=${currentCur}&stops=${maxStopsVal()}`;
+            `&depart=${fmtISO(s.dep)}`+(s.ret?`&return=${fmtISO(s.ret)}`:"")+`&cur=${currentCur}&stops=${maxStopsVal()}&radius=500`;
     const r=await fetch(u);
     const d=await r.json();
     if(d&&Array.isArray(d.offers)&&d.offers.length){
@@ -1988,7 +1993,7 @@ async function fetchOffers(s){
       const timesTxt=(c.departTime?` · ${t.outTime} ${c.departTime}`:"")+((showRet&&c.returnTime)?` · ${t.retTime} ${c.returnTime}`:"");
       if(el) el.innerHTML=t.priceFrom(cp,airlineName(c.airline),c.depart,c.approx)+timesTxt+` · ${bagText(t)}`+perP;
       /* פותרים את כל ערי העצירה מראש כדי שהכרטיסים יציגו עיר+ארץ ולא קודי IATA */
-      d.offers.forEach(o=>o._toIata=s.toC.iata);   /* היעד זהה לכל ההצעות */
+      d.offers.forEach(o=>o._toIata=o.dest||s.toC.iata);   /* שדה הנחיתה בפועל (יכול להיות יעד סמוך) — לטמפ׳ הנכונה */
       const stopCodes=[...new Set(d.offers.flatMap(o=>[...(o.stopsTo||[]),...(o.stopsBack||[])]))];
       await Promise.all([
         ...stopCodes.map(resolvePlace),
