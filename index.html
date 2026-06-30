@@ -445,6 +445,7 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
         <button class="lang-btn"        data-lang="en">EN</button>
         <button class="lang-btn"        data-lang="ru">RU</button>
       </div>
+      <button class="nav-icon-btn" id="gfToggleBtn" type="button" aria-label="Import from link" title="ייבוא מקישור"><i class="fa-solid fa-link" aria-hidden="true"></i></button>
       <button class="nav-icon-btn" id="helpBtn" type="button" aria-label="Help"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button>
       <button class="nav-icon-btn" id="customizeBtn" type="button" aria-label="Customize"><i class="fa-solid fa-sliders" aria-hidden="true"></i></button>
     </div>
@@ -1762,6 +1763,14 @@ function buildEngines(fromC,toC,dep,ret){
       url:`https://www.kayak.com/flights/${o}-${d}/${depI}/${retI}/${a}adults${ch?`/${ch}children`:""}${kayakCls}` },
     { name:"Momondo", code:"MO", color:"#e6175c",
       url:`https://www.momondo.com/flight-search/${o}-${d}/${depI}/${retI}/${a}adults${ch?`/${ch}children`:""}${kayakCls}` },
+    /* Expedia — פורמט deep-link רשמי (מתועד אצלם): Roundtrip + תאריכים + שדות */
+    { name:"Expedia", code:"EX", color:"#1668e3",
+      url:`https://www.expedia.com/go/flight/search/Roundtrip/${depI}/${retI}?load=1&FromAirport=${o}&ToAirport=${d}` },
+    /* אתרים ישראליים רלוונטיים — אין deep-link ציבורי יציב עם מסלול/תאריכים → מפנים לאתר עצמו, בלי להמציא פרמטרים */
+    { name:"Issta", code:"IS", color:"#e30613",
+      url:`https://www.issta.co.il/`, noPrice:true },
+    { name:"Israir", code:"6H", color:"#0a4ea2",
+      url:`https://www.israir.co.il/`, noPrice:true },
     /* El Al — אין מחיר במקור הנתונים (Aviasales לא כולל את אל על); קישור לדף הטיסות מישראל לפי שפה
        (אין deep-link ציבורי יציב עם מסלול/תאריכים → מפנים לדף הזמנות אמיתי, בלי להמציא פרמטרים) */
     { name:"EL AL", code:"LY", color:"#003399",
@@ -2249,6 +2258,7 @@ updatePaxBtn();
 document.getElementById("searchBtn").addEventListener("click",doSearch);
 /* כפתור "בתי מלון" בכרטיס — הכרטיס עצמו הוא קישור לטיסה, אז עוצרים את הניווט ופותחים חיפוש מלונות */
 document.addEventListener("click",e=>{ const h=e.target.closest(".hotel-btn"); if(!h) return; e.preventDefault(); e.stopPropagation(); const url=h.getAttribute("data-hotel"); if(url) window.open(url,"_blank","noopener"); });
+{ const gtb=document.getElementById("gfToggleBtn"); if(gtb) gtb.addEventListener("click",()=>{ const r=document.getElementById("gfRow"); const show=!(r&&r.style.display==="flex"); setGFVisible(show); const g=document.getElementById("gfUrl"); if(show&&g){ g.focus(); r.scrollIntoView({behavior:"smooth",block:"center"}); } }); }
 document.getElementById("gfBtn").addEventListener("click",importGFlights);
 document.getElementById("gfUrl").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); importGFlights(); } });
 /* תיבת הייבוא מוסתרת מהמשתמש הרגיל — נחשפת רק בקוד סודי: Ctrl+Shift+G, או #gf בכתובת */
