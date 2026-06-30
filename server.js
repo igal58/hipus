@@ -338,6 +338,99 @@ async function runAlertCheck() {
   return { checked: alerts.length, dryRun: !RESEND_KEY, results };
 }
 
+/* ════════════════════════════════════════════════════════════
+   ✈ ייבוא מקישור Google Flights / Explore
+   ────────────────────────────────────────────────────────────
+   מקבל URL של Google Flights, מפענח את הפרמטר tfs (ולעיתים tfu) —
+   פרוטובאף בקידוד base64url שבתוכו תאריכים (ASCII "YYYY-MM-DD") ומזהי
+   ישויות של Google Knowledge Graph ("/m/...") למוצא/יעד. ממיר כל מזהה
+   לקוד IATA דרך Wikidata (P646=Freebase MID → P238=IATA / שדה-תעופה
+   שמשרת את העיר ב-P931). יושר: לא ממציאים — מזהה שלא נפתר מסומן ב-warning.
+   ════════════════════════════════════════════════════════════ */
+function b64urlToBuf(s) {
+  s = String(s || "").replace(/-/g, "+").replace(/_/g, "/");
+  while (s.length % 4) s += "=";
+  try { return Buffer.from(s, "base64"); } catch { return Buffer.alloc(0); }
+}
+/* חילוץ מדויק של מיקומים מ-protobuf: שדה string (tag 0x12) שאורכו נתון בבית שאחריו.
+   ערך תקין = מזהה Google ("/m/...") או קוד IATA ישיר (3 אותיות גדולות). תאריכים מסוננים החוצה. */
+function extractLocations(buf) {
+  const out = [];
+  for (let i = 0; i + 2 < buf.length; i++) {
+    if (buf[i] !== 0x12) continue;                 // tag: field 2, wire type 2 (length-delimited string)
+    const L = buf[i + 1];
+    if (L < 3 || L > 24 || i + 2 + L > buf.length) continue;
+    const val = buf.slice(i + 2, i + 2 + L).toString("latin1");
+    if (/^\/m\/[0-9a-z_]+$/.test(val)) { out.push({ key: val, type: "mid",  value: val }); i += 1 + L; }
+    else if (/^[A-Z]{3}$/.test(val))   { out.push({ key: val, type: "iata", value: val }); i += 1 + L; }
+  }
+  return out;
+}
+function fetchJSONUA(url, timeoutMs = 12000) {        // כמו fetchOnce אבל עם User-Agent (Wikidata חוסם בלי UA)
+  return new Promise(resolve => {
+    let done = false; const finish = v => { if (!done) { done = true; resolve(v); } };
+    const req = https.get(url, { headers: {
+      "User-Agent": "FlyFinder/1.0 (flight search; igal58@gmail.com)",
+      "Accept": "application/sparql-results+json" } }, r => {
+      let b = ""; r.on("data", c => b += c);
+      r.on("end", () => { try { finish(JSON.parse(b)); } catch { finish(null); } });
+    });
+    req.on("error", () => finish(null));
+    req.setTimeout(timeoutMs, () => { req.destroy(); finish(null); });
+  });
+}
+async function resolveMids(mids) {                    // {mid} → {mid:{label,iatas:[]}}
+  const out = {};
+  for (const m of mids) out[m] = { label: "", iatas: [] };
+  if (!mids.length) return out;
+  const values = mids.map(m => `"${m}"`).join(" ");
+  const q = `SELECT ?mid ?label ?iata WHERE {`
+    + ` VALUES ?mid { ${values} } ?item wdt:P646 ?mid.`
+    + ` OPTIONAL { ?item rdfs:label ?label. FILTER(LANG(?label)="en") }`
+    + ` OPTIONAL { { ?item wdt:P238 ?iata } UNION { ?ap wdt:P931 ?item; wdt:P238 ?iata. ?ap wdt:P31/wdt:P279* wd:Q1248784. } } }`;
+  const url = "https://query.wikidata.org/sparql?format=json&query=" + encodeURIComponent(q);
+  const json = await fetchJSONUA(url);
+  const rows = (json && json.results && json.results.bindings) || [];
+  for (const b of rows) {
+    const mid = b.mid && b.mid.value; if (!mid || !out[mid]) continue;
+    if (b.label && b.label.value && !out[mid].label) out[mid].label = b.label.value;
+    const ia = b.iata && b.iata.value;
+    if (ia && /^[A-Z]{3}$/.test(ia) && !out[mid].iatas.includes(ia)) out[mid].iatas.push(ia);
+  }
+  return out;
+}
+async function parseGFlights(gurl) {
+  let tfs = "", tfu = "";
+  try { const u = new URL(gurl); tfs = u.searchParams.get("tfs") || ""; tfu = u.searchParams.get("tfu") || ""; }
+  catch { const mt = /[?&]tfs=([^&]+)/.exec(gurl); if (mt) tfs = decodeURIComponent(mt[1]);
+          const mu = /[?&]tfu=([^&]+)/.exec(gurl); if (mu) tfu = decodeURIComponent(mu[1]); }
+  if (!tfs) return { ok: false, reason: "no-tfs" };
+  const bufTfs = b64urlToBuf(tfs), bufTfu = b64urlToBuf(tfu);
+  const dates = [...new Set((bufTfs.toString("latin1").match(/\d{4}-\d{2}-\d{2}/g) || []))].sort();  // depart=earliest, return=next
+  const locs = [...extractLocations(bufTfs), ...extractLocations(bufTfu)];        // ordered: leg1 origin, leg1 dest, ...
+  const midsToResolve = [...new Set(locs.filter(l => l.type === "mid").map(l => l.value))];
+  const resolved = await resolveMids(midsToResolve);
+  const info = l => l.type === "iata" ? { label: l.value, iatas: [l.value] }
+                                      : (resolved[l.value] || { label: "", iatas: [] });
+  const warnings = [];
+  const origin = locs.length ? info(locs[0]) : { label: "", iatas: [] };
+  const originKey = locs.length ? locs[0].key : "";
+  // destination: first location after the origin that resolves to a real airport (skip the origin itself).
+  // handles plain round-trips [A,B,B,A] → B, and Explore URLs [TLV,IN,IN,TLV,Mumbai] → Mumbai.
+  let destination = { label: "", iatas: [] };
+  for (const l of locs.slice(1)) {
+    if (l.key === originKey) continue;             // never pick the origin as the destination
+    const r = info(l);
+    if (r.iatas.length) { destination = r; break; }
+    if (!destination.label && r.label) destination = r;   // keep a label even with no airport (for the warning)
+  }
+  if (!origin.iatas.length) warnings.push("origin-unresolved");
+  if (!destination.iatas.length) warnings.push("destination-unresolved");
+  return { ok: true, depart: dates[0] || "", ret: dates[1] || "", dates,
+    origin: { label: origin.label, iatas: origin.iatas },
+    destination: { label: destination.label, iatas: destination.iatas }, warnings };
+}
+
 /* ── HTTP server ── */
 const server = http.createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");   // harmless; same-origin anyway
@@ -430,6 +523,14 @@ const server = http.createServer(async (req, res) => {
     if (!o||!d||!from) { res.writeHead(400,{"Content-Type":"application/json"});
       return res.end(JSON.stringify({months:[],reason:"bad-params"})); }
     const out = await fetchFlexMonths(o,d,from,months,curOf(u.searchParams.get("cur")));
+    res.writeHead(200,{"Content-Type":"application/json"});
+    return res.end(JSON.stringify(out));
+  }
+  if (u.pathname === "/parse-gflights") {
+    const gurl = u.searchParams.get("url") || "";
+    if (!gurl) { res.writeHead(400,{"Content-Type":"application/json"});
+      return res.end(JSON.stringify({ok:false,reason:"no-url"})); }
+    const out = await parseGFlights(gurl);
     res.writeHead(200,{"Content-Type":"application/json"});
     return res.end(JSON.stringify(out));
   }

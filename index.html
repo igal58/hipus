@@ -595,6 +595,14 @@ a.best-card{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;marg
     <input type="number" id="budget" class="budget-in" min="0" step="100" placeholder="תקציב מקס׳ ₪">
     <span class="rate" id="rateLabel"></span>
   </div>
+  <div class="gf-row" style="display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap">
+    <i class="fa-brands fa-google" aria-hidden="true" style="color:var(--accent);font-size:1.05em"></i>
+    <input id="gfUrl" type="text" autocomplete="off" spellcheck="false"
+      style="flex:1;min-width:220px;padding:11px 13px;border:1px solid var(--line);border-radius:11px;font:inherit;background:var(--panel);color:var(--text)">
+    <button id="gfBtn" type="button"
+      style="display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border:0;border-radius:11px;background:var(--accent);color:#fff;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap"><i class="fa-solid fa-link" aria-hidden="true"></i><span id="gfBtnTxt"></span></button>
+    <span id="gfMsg" style="flex-basis:100%;font-size:.86em;color:var(--muted);min-height:1.1em"></span>
+  </div>
 </section>
 
 <section class="map-section">
@@ -637,6 +645,9 @@ const T={
     nightsHint:"0 = חיפוש גמיש מתאריך היציאה והלאה",nightsHintActive:"חיפוש גמיש — הזול ביותר מתאריך היציאה והלאה",
     dpTitle:"בחירת תאריכים",dpApply:"אישור",dpClear:"נקה",dpNights:(n)=>`${n} לילות`,mapHead:"היעד על המפה",curLabel:"מטבע",
     searchBtn:"חפש כרטיסים",
+    gfPlh:"הדבק קישור Google Flights / Explore",gfBtn:"ייבא וחפש",
+    gfParsing:"מפענח את הקישור…",gfNeedUrl:"הדבק קישור Google Flights",gfBadUrl:"קישור לא תקין — צריך קישור Google Flights עם פרטי טיסה",
+    gfNoCity:(s)=>`לא נמצא במאגר היעדים שלנו: ${s}`,gfOk:(s)=>`יובא: ${s} — מחפש…`,
     sortLbl:"מיון:",sortPrice:"מחיר",sortStops:"עצירות+מחיר",
     filtLbl:"עצירות:",filtAll:"הכל",filtDirect:"ישיר",filt1:"עצירה 1",filt2:"2+ עצירות",
     showing:(n,t)=>`מציג ${n} מתוך ${t} כרטיסים`,
@@ -701,6 +712,9 @@ const T={
     nightsHint:"0 = flexible search from the departure date onward",nightsHintActive:"Flexible search — cheapest from the departure date onward",
     dpTitle:"Select dates",dpApply:"Apply",dpClear:"Clear",dpNights:(n)=>`${n} night${n===1?"":"s"}`,mapHead:"Destination on the map",curLabel:"Currency",
     searchBtn:"Search flights",
+    gfPlh:"Paste a Google Flights / Explore link",gfBtn:"Import & search",
+    gfParsing:"Parsing the link…",gfNeedUrl:"Paste a Google Flights link",gfBadUrl:"Invalid link — needs a Google Flights link with flight details",
+    gfNoCity:(s)=>`Not in our destination list: ${s}`,gfOk:(s)=>`Imported: ${s} — searching…`,
     sortLbl:"Sort:",sortPrice:"Price",sortStops:"Stops+price",
     filtLbl:"Stops:",filtAll:"All",filtDirect:"Direct",filt1:"1 stop",filt2:"2+ stops",
     showing:(n,t)=>`Showing ${n} of ${t} tickets`,
@@ -765,6 +779,9 @@ const T={
     nightsHint:"0 = гибкий поиск от даты вылета и далее",nightsHintActive:"Гибкий поиск — самое дешёвое от даты вылета и далее",
     dpTitle:"Выбор дат",dpApply:"Применить",dpClear:"Сбросить",dpNights:(n)=>`${n} ноч.`,mapHead:"Направление на карте",curLabel:"Валюта",
     searchBtn:"Найти рейсы",
+    gfPlh:"Вставьте ссылку Google Flights / Explore",gfBtn:"Импорт и поиск",
+    gfParsing:"Разбираем ссылку…",gfNeedUrl:"Вставьте ссылку Google Flights",gfBadUrl:"Неверная ссылка — нужна ссылка Google Flights с деталями рейса",
+    gfNoCity:(s)=>`Нет в нашем списке направлений: ${s}`,gfOk:(s)=>`Импортировано: ${s} — поиск…`,
     sortLbl:"Сортировка:",sortPrice:"Цена",sortStops:"Пересадки+цена",
     filtLbl:"Пересадки:",filtAll:"Все",filtDirect:"Прямой",filt1:"1 пересадка",filt2:"2+ пересадки",
     showing:(n,t)=>`Показано ${n} из ${t} билетов`,
@@ -1242,6 +1259,8 @@ function applyLang(lang){
   document.querySelectorAll(".class-bar .lang-btn").forEach(b=>{ b.textContent=t[b.dataset.clsKey]||b.textContent; b.classList.toggle("active",b.dataset.class===currentClass); });
   document.getElementById("lDateRet").textContent=t.dateRetLbl;
   document.getElementById("searchBtn").innerHTML='<i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><span>'+t.searchBtn+'</span>';
+  { const gu=document.getElementById("gfUrl"); if(gu) gu.placeholder=t.gfPlh;
+    const gb=document.getElementById("gfBtnTxt"); if(gb) gb.textContent=t.gfBtn; }
   document.getElementById("dealsBtn").innerHTML='<i class="fa-solid fa-fire" aria-hidden="true"></i><span>'+t.dealsBtn+'</span>';
   document.getElementById("calBtn").innerHTML='<i class="fa-solid fa-calendar-days" aria-hidden="true"></i><span>'+t.calBtn+'</span>';
   document.getElementById("budget").placeholder=t.budgetPh.replace("₪",curSym());
@@ -1999,6 +2018,43 @@ function doSearch(){
   render();
 }
 
+/* ── ייבוא מסלול+תאריכים מקישור Google Flights → מילוי הטופס + חיפוש ── */
+function pickCountryByIatas(iatas){ for(const ia of (iatas||[])){ const c=findByIata(ia); if(c) return c; } return null; }
+async function importGFlights(){
+  const t=T[currentLang];
+  const url=(document.getElementById("gfUrl").value||"").trim();
+  const msg=document.getElementById("gfMsg");
+  if(!url){ msg.textContent=t.gfNeedUrl; return; }
+  if(!/[?&]tfs=/.test(url)){ msg.textContent=t.gfBadUrl; return; }
+  msg.textContent=t.gfParsing;
+  try{
+    const r=await fetch(`${PROXY_BASE}/parse-gflights?url=${encodeURIComponent(url)}`);
+    const d=await r.json();
+    if(!d||!d.ok){ msg.textContent=t.gfBadUrl; return; }
+    const oC=pickCountryByIatas(d.origin&&d.origin.iatas);
+    const dC=pickCountryByIatas(d.destination&&d.destination.iatas);
+    if(!oC||!dC){
+      const miss=[];
+      if(!oC) miss.push((d.origin&&d.origin.label)||"מוצא");
+      if(!dC) miss.push((d.destination&&d.destination.label)||"יעד");
+      msg.textContent=t.gfNoCity(miss.join(", "));
+      return;
+    }
+    fromSel.value=oC.code; setFromFlag();
+    selectedToCode=dC.code; const dn=cLng(dC); toInput.value=`${dn.c} — ${dn.ct}`; setToFlag(dC.code);
+    if(typeof focusMap==="function") focusMap(dC.code);
+    const dep=d.depart?parseISO(d.depart):null;
+    if(dep) dateOut.value=fmtDMY(dep);
+    const ret=d.ret?parseISO(d.ret):null;
+    if(ret&&dep){ dateReturn.value=fmtDMY(ret); nights.value=Math.max(0,Math.round((ret-dep)/864e5)); }
+    else { dateReturn.value=""; nights.value=0; }
+    saveState();
+    msg.textContent=t.gfOk(`${oC.iata} → ${dC.iata}`);
+    doSearch();
+    const rb=document.getElementById("results"); if(rb) rb.scrollIntoView({behavior:"smooth",block:"start"});
+  }catch(e){ msg.textContent=t.gfBadUrl; }
+}
+
 /* חיפוש דו-כיווני גמיש: יציאה קבועה, חזרה פתוחה — מציאת המחיר הטוב מהתאריך הזה.
    חשוב: לא נוגעים בטופס (ימי שהייה נשאר 0, תאריך חזרה נשאר ריק כפי שהוקש). */
 async function resolveFlexDates(fromC,toC,dep){
@@ -2171,6 +2227,8 @@ document.addEventListener("click",e=>{ if(!e.target.closest(".pax-wrap")) paxPan
 updatePaxBtn();
 
 document.getElementById("searchBtn").addEventListener("click",doSearch);
+document.getElementById("gfBtn").addEventListener("click",importGFlights);
+document.getElementById("gfUrl").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); importGFlights(); } });
 fromSel.addEventListener("change",()=>{ setFromFlag(); focusMap(selectedToCode); saveState(); if(lastSearch) render(); });
 document.getElementById("maxStops").addEventListener("change",()=>{ saveState(); if(lastSearch) doSearch(); });
 restoreState();           /* משחזר בחירות קודמות (F5) — דורס את ברירות המחדל לפני התצוגה */
