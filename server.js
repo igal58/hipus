@@ -184,6 +184,7 @@ async function nearbyDests(destIata, radiusKm, max) {
   const out = [];
   for (const x of air) {
     if (!x || !x.coordinates || x.flightable === false) continue;
+    if (x.code !== x.city_code) continue;                                              // רק שדה ראשי של עיר (מסנן שדות משניים/צבאיים)
     if (x.code === destIata || x.city_code === (home.city_code||destIata)) continue;   // לא היעד עצמו / אותה עיר
     if (home.country_code && x.country_code !== home.country_code) continue;            // אותה מדינה (מונע באגי-קואורדינטות חוצי-יבשות במקור)
     const km = haversineKm(home.coordinates, x.coordinates);
@@ -221,12 +222,12 @@ async function fetchOffersRadius(o, d, depart, ret, cur, maxStops, radiusKm) {
   const base = (primary.offers || []).map(x => (x.destKm = 0, x.dest = x.dest || d, x));
   const flex = primary.flex != null ? primary.flex : !ret;
   if (!radiusKm || radiusKm <= 0) return { offers: base, flex };
-  const near = await nearbyDests(d, radiusKm, 6);
-  const lists = await Promise.all(near.map(n => fetchOffersLite(o, n.iata, depart, ret, cur, maxStops, 4)));
+  const near = await nearbyDests(d, radiusKm, 8);
+  const lists = await Promise.all(near.map(n => fetchOffersLite(o, n.iata, depart, ret, cur, maxStops, 3)));
   const extra = [];
   near.forEach((n, i) => { for (const of of lists[i]) { of.destKm = n.km; of.destCity = n.city; of.dest = of.dest || n.iata; extra.push(of); } });
-  extra.sort((a,b)=> a.km!==b.km ? a.destKm-b.destKm : a.price-b.price);
-  return { offers: [...base, ...extra].slice(0, 24), flex, nearby: near };
+  extra.sort((a,b)=> a.destKm!==b.destKm ? a.destKm-b.destKm : a.price-b.price);
+  return { offers: [...base, ...extra].slice(0, 30), flex, nearby: near };
 }
 
 async function fetchPrice(o, d, depart, ret, cur, maxStops) {

@@ -653,6 +653,7 @@ const T={
     showing:(n,t)=>`מציג ${n} מתוך ${t} כרטיסים`,
     cheapest:"משתלם",
     nearKm:(km)=>`~${km} ק״מ מהיעד`,
+    roundTrip:"הלוך ושוב",hotelsBtn:"בתי מלון בסביבה",
     sDirect:"ישיר",s1:"עצירה 1",s2:(n)=>`${n} עצירות`,layover:"עצירת ביניים",tempLand:"מזג אוויר בנחיתה",tempAvg:"ממוצע עונתי",legOut:"הלוך",legBack:"חזור",
     help:{title:"מדריך ושימוש",intro:"כל מה שצריך כדי להפיק מהאתר את המקסימום. החיפוש מחזיר מחירים אמיתיים בזמן אמת ממקורות מקוונים.",secs:[
       {ic:"fa-magnifying-glass",h:"חיפוש",items:["<b>מאיפה / לאן</b> — בחר עיר מוצא ויעד. אפשר להקליד בעברית, אנגלית, רוסית או קוד שדה תעופה (כמו TLV).","<b>תאריך יציאה / חזרה</b> ו-<b>ימי שהייה</b>. <b>ימי שהייה = 0</b> מפעיל חיפוש גמיש — מוצא את הזול מהתאריך והלאה בלי לקבע חזרה.","<b>מקס׳ עצירות</b> (0 = ישיר, 9 = ללא הגבלה), <b>נוסעים</b>, <b>כבודה</b> ו-<b>מחלקה</b> — כולם משפיעים על התוצאות ועל המחיר."]},
@@ -721,6 +722,7 @@ const T={
     showing:(n,t)=>`Showing ${n} of ${t} tickets`,
     cheapest:"Good value",
     nearKm:(km)=>`~${km} km from destination`,
+    roundTrip:"Round trip",hotelsBtn:"Hotels nearby",
     sDirect:"Direct",s1:"1 stop",s2:(n)=>`${n} stops`,layover:"Layover",tempLand:"Weather on landing",tempAvg:"seasonal avg",legOut:"Outbound",legBack:"Return",
     help:{title:"Guide & how to use",intro:"Everything you need to get the most out of the site. Search returns real, live prices from online sources.",secs:[
       {ic:"fa-magnifying-glass",h:"Search",items:["<b>From / To</b> — pick origin and destination. Type in English, Hebrew, Russian, or an airport code (e.g. TLV).","<b>Departure / Return date</b> and <b>Nights</b>. <b>Nights = 0</b> runs a flexible search — the cheapest fare on/after your date, with no fixed return.","<b>Max stops</b> (0 = direct, 9 = no limit), <b>Passengers</b>, <b>Baggage</b> and <b>Class</b> all affect the results and the price."]},
@@ -789,6 +791,7 @@ const T={
     showing:(n,t)=>`Показано ${n} из ${t} билетов`,
     cheapest:"Выгодно",
     nearKm:(km)=>`~${km} км от цели`,
+    roundTrip:"Туда-обратно",hotelsBtn:"Отели рядом",
     sDirect:"Прямой",s1:"1 пересадка",s2:(n)=>`${n} пересадки`,layover:"Пересадка",tempLand:"Погода при посадке",tempAvg:"сезонное среднее",legOut:"Туда",legBack:"Обратно",
     help:{title:"Руководство",intro:"Всё, что нужно, чтобы получить максимум от сайта. Поиск показывает реальные цены в реальном времени из онлайн-источников.",secs:[
       {ic:"fa-magnifying-glass",h:"Поиск",items:["<b>Откуда / Куда</b> — выберите город вылета и назначения. Вводите на русском, английском, иврите или код аэропорта (например TLV).","<b>Дата вылета / возврата</b> и <b>Ночей</b>. <b>Ночей = 0</b> запускает гибкий поиск — самый дешёвый рейс с вашей даты и далее, без фиксированного возврата.","<b>Макс. пересадок</b> (0 = прямой, 9 = без ограничений), <b>Пассажиры</b>, <b>Багаж</b> и <b>Класс</b> влияют на результаты и цену."]},
@@ -1953,6 +1956,11 @@ function offerCard(of,fromC,toC,isBest,flex){
              +((showRet&&of.returnTime)?`<span class="dot">·</span><span><i class="fa-solid fa-plane-arrival" aria-hidden="true"></i> ${t.retTime} ${of.returnTime}</span>`:"");
   const toIata=of.dest||toC.iata;
   const nearBadge=(of.destKm>0)?`<span class="badge" style="background:var(--panel2);color:var(--muted);border:1px solid var(--line)"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> ${t.nearKm(of.destKm)}</span>`:"";
+  const hCity=of.destCity||(toC.en?toC.en.ct:toIata);   /* עיר הנחיתה (אנגלית) לחיפוש מלונות */
+  let hUrl="https://search.hotellook.com/?marker=742171&destination="+encodeURIComponent(hCity);
+  if(of.departISO) hUrl+="&checkIn="+of.departISO;
+  if(of.returnISO) hUrl+="&checkOut="+of.returnISO;
+  const hotelBtn=`<span class="hotel-btn" data-hotel="${hUrl}" role="button" tabindex="0" style="display:inline-flex;align-items:center;gap:6px;margin-top:9px;padding:6px 11px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;width:max-content"><i class="fa-solid fa-bed" aria-hidden="true"></i> ${t.hotelsBtn}</span>`;
   return `<a class="ticket engine-card best-card" href="${of.link}" target="_blank" rel="noopener" aria-label="${fromC.iata} ${toIata} ${p} ILS">
     <div class="airline">
       ${airlineLogo(of.airline)}
@@ -1963,8 +1971,9 @@ function offerCard(of,fromC,toC,isBest,flex){
       <div class="meta"><span><i class="fa-regular fa-calendar" aria-hidden="true"></i> ${of.depart}</span>${retDate?`<span class="dot">·</span><span>${retDate}</span>`:""}${durTxt?`<span class="dot">·</span><span><i class="fa-regular fa-clock" aria-hidden="true"></i> ${durTxt}</span>`:""}${times}<span class="dot">·</span><span><i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i> ${bagText(t)}</span></div>
       ${stopsCitiesHtml(of,showRet)}
       ${landTempHtml(of)}
+      ${hotelBtn}
     </div>
-    <div class="price"><div class="ils">${est?"≈ ":""}${p} ${curSym()}</div><div class="usd">${[(pc>1?`${pc} × ${per} ${curSym()} ${t.perPerson}`:""),(est?t.classEst:""),((!est&&pc<=1)?(of.approx?t.approxLbl:t.lowestLbl):"")].filter(Boolean).join(" · ")}</div></div>
+    <div class="price"><div class="ils">${est?"≈ ":""}${p} ${curSym()}</div><div class="usd">${[(pc>1?`${pc} × ${per} ${curSym()} ${t.perPerson}`:""),(est?t.classEst:""),((!est&&pc<=1)?(of.approx?t.approxLbl:t.lowestLbl):"")].filter(Boolean).join(" · ")}</div><div class="usd" style="margin-top:2px"><i class="fa-solid fa-arrow-right-arrow-left" aria-hidden="true"></i> ${t.roundTrip}</div></div>
     <span class="buy"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> ${t.aviasalesBuy}</span>
   </a>`;
 }
@@ -1979,7 +1988,7 @@ async function fetchOffers(s){
   if(box) box.innerHTML="";
   try{
     const u=`${PROXY_BASE}/offers?origin=${s.fromC.iata}&destination=${s.toC.iata}`+
-            `&depart=${fmtISO(s.dep)}`+(s.ret?`&return=${fmtISO(s.ret)}`:"")+`&cur=${currentCur}&stops=${maxStopsVal()}&radius=500`;
+            `&depart=${fmtISO(s.dep)}`+(s.ret?`&return=${fmtISO(s.ret)}`:"")+`&cur=${currentCur}&stops=${maxStopsVal()}&radius=1500`;
     const r=await fetch(u);
     const d=await r.json();
     if(d&&Array.isArray(d.offers)&&d.offers.length){
@@ -2236,6 +2245,8 @@ document.addEventListener("click",e=>{ if(!e.target.closest(".pax-wrap")) paxPan
 updatePaxBtn();
 
 document.getElementById("searchBtn").addEventListener("click",doSearch);
+/* כפתור "בתי מלון" בכרטיס — הכרטיס עצמו הוא קישור לטיסה, אז עוצרים את הניווט ופותחים חיפוש מלונות */
+document.addEventListener("click",e=>{ const h=e.target.closest(".hotel-btn"); if(!h) return; e.preventDefault(); e.stopPropagation(); const url=h.getAttribute("data-hotel"); if(url) window.open(url,"_blank","noopener"); });
 document.getElementById("gfBtn").addEventListener("click",importGFlights);
 document.getElementById("gfUrl").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); importGFlights(); } });
 /* תיבת הייבוא מוסתרת מהמשתמש הרגיל — נחשפת רק בקוד סודי: Ctrl+Shift+G, או #gf בכתובת */
